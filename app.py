@@ -41,7 +41,7 @@ from flask_cors import CORS
 # -----------------------
 # Config
 # -----------------------
-DB_PATH = os.environ.get("TODAY_DB", "tomorrow.db")
+DB_PATH = os.environ.get("TODAY_DB", "/tmp/tomorrow.db")
 APP_HOST = os.environ.get("APP_HOST", "0.0.0.0")
 APP_PORT = int(os.environ.get("APP_PORT", 5000))
 ADMIN_PATH = os.environ.get("ADMIN_PATH", "admin256")
@@ -167,6 +167,11 @@ def init_db():
     )
     """)
     db.commit()
+@app.before_request
+def ensure_db_initialized():
+    if not hasattr(g, "_db_initialized"):
+        init_db()
+        g._db_initialized = True
 
 
 @app.teardown_appcontext
@@ -888,3 +893,4 @@ if __name__ == "__main__":
         start_keepalive_thread()
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
     app.run(host=APP_HOST, port=APP_PORT, debug=debug_mode)
+

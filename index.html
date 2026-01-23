@@ -1,4 +1,4 @@
-<!doctype html>
+<!doctype html> 
 <html lang="en">
 <head>
   <meta charset="utf-8"/>
@@ -227,6 +227,7 @@
    - Offline-first; server calls are best-effort (/api/register, /api/ping, /api/status)
    - On first-run (no users) the Register tab is shown by default
    - After successful sign-in, welcome slide shows then hub renders
+   - Added: background status polling to pick up admin enable/disable changes
    ========================= */
 
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
@@ -274,10 +275,31 @@ let state = { settings: {} };
 async function loadSettingsToState(){ const sets = await idbGetAll('settings'); state.settings = {}; sets.forEach(s=>state.settings[s.key]=s.value); applySettings(state.settings); }
 function applySettings(settings = {}){ document.documentElement.style.setProperty('--base-font-size', (settings.fontSize || 15) + 'px'); if(settings.profileName) document.getElementById('appTitle').textContent = `Tomorrow Personal App — ${settings.profileName}`; }
 
+/* status poll handle */
+let statusPollHandle = null;
+function startStatusPolling(email, intervalSec = 15){
+  stopStatusPolling();
+  if(!email) return;
+  statusPollHandle = setInterval(()=> {
+    fetchServerStatusAndApply(email).catch(()=>{ /* ignore */ });
+  }, Math.max(5, intervalSec) * 1000);
+  // do an immediate check too
+  fetchServerStatusAndApply(email).catch(()=>{});
+}
+function stopStatusPolling(){
+  if(statusPollHandle) { clearInterval(statusPollHandle); statusPollHandle = null; }
+}
+
 /* store current auth (email & name) */
 async function setCurrentAuth(email, name){
-  if(!email) return idbDelete('auth','current');
+  if(!email) {
+    // do not remove lastEmail — keep it for polling while locked
+    await idbDelete('auth','current');
+    return;
+  }
   await idbPut('auth', { key:'current', value:{ email, name } });
+  // keep lastEmail for reconnection/polling if admin toggles while locked
+  await idbPut('settings', { key:'lastEmail', value: email });
 }
 
 /* user helpers */
@@ -333,34 +355,70 @@ async function pingServer(email){
     });
   }catch(e){}
 }
+
+/* fetch authoritative status and apply it locally.
+   If user.enabled=false -> clear current auth and lock immediately.
+   If user.enabled=true and client was locked but knows lastEmail, notify user to sign in.
+*/
 async function fetchServerStatusAndApply(email){
   if(!email) return null;
   try{
     const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`, { method:'GET', headers:{ 'Accept':'application/json' }});
     if(!res.ok) return null;
     const data = await res.json();
+    if(!data) return null;
     // apply authoritative values if present
-    if(data && (typeof data.enabled === 'boolean' || Array.isArray(data.disabledApps))){
-      const user = await getUserByEmail(email) || {};
-      if(typeof data.enabled === 'boolean') user.enabled = data.enabled;
-      if(Array.isArray(data.disabledApps)) user.disabledApps = data.disabledApps;
+    const user = await getUserByEmail(email) || {};
+    let changed = false;
+    if(typeof data.enabled === 'boolean' && user.enabled !== data.enabled){
+      user.enabled = data.enabled;
+      changed = true;
+    }
+    if(Array.isArray(data.disabledApps)){
+      user.disabledApps = data.disabledApps;
+      changed = true;
+    }
+    if(changed){
       user.lastSeen = new Date().toISOString();
       await idbPut('users', user);
-      if(user.enabled === false){
-        alert('Your account has been disabled by admin. The app will be locked.');
+    }
+    // authoritative actions
+    if(user.enabled === false){
+      // If user disabled server-side, clear auth and show lock.
+      const current = await idbGet('auth','current');
+      if(current && current.value && current.value.email === email){
+        // this was the signed-in user -> force lock
+        alert('Your account has been disabled by admin. You will be locked out.');
         await setCurrentAuth(null);
-        showLockOverlay(); // ensure lock
+        showLockOverlay();
+        // still keep lastEmail for polling/sync
+      } else {
+        // if not signed in, ensure local record marked disabled
+        // leave overlay shown if already locked
+      }
+    } else {
+      // user enabled server-side
+      const current = await idbGet('auth','current');
+      if(!current || !current.value){
+        // locked or signed-out — notify that account is enabled (so user can sign in)
+        showToast('Account is enabled on server. Sign in to continue.', 4000);
+        // attempt to prefill recovery/register form email
+        await idbPut('settings', { key:'lastEmail', value: email });
+        const regEmailEl = document.getElementById('regEmail');
+        if(regEmailEl) regEmailEl.value = email;
+      } else {
+        // signed-in and enabled — good. ensure hub reflects disabledApps if needed
+        await renderHubGrid();
       }
     }
     return data;
   }catch(e){
-    // offline tolerant
     document.getElementById('offlineNote').style.display = 'block';
     return null;
   }
 }
 
-/* Hub items (same as before) */
+/* Hub items */
 const hubItems = [
   { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 1v22M5 7h14" stroke-linecap="round"/></svg>` },
   { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
@@ -490,6 +548,9 @@ document.getElementById('unlockBtn').addEventListener('click', async ()=>{
   if(found){
     if(found.enabled === false){ alert('Your account has been disabled by admin.'); return; }
     await setCurrentAuth(found.email, found.name);
+    await idbPut('settings', { key:'lastEmail', value: found.email });
+    // start polling status while signed-in
+    startStatusPolling(found.email, 15);
     // ping server and request status
     try{ await pingServer(found.email); await fetchServerStatusAndApply(found.email); }catch(e){}
     // hide overlay and show welcome, then render hub
@@ -523,6 +584,9 @@ document.getElementById('registerBtn').addEventListener('click', async ()=>{
   const user = await createOrUpdateUserLocal({ email, passHash, name, location, country, secQuestion:secQ, secAnswerHash });
   // record auth
   await setCurrentAuth(user.email, user.name);
+  await idbPut('settings', { key:'lastEmail', value: user.email });
+  // start status polling for the newly-registered user
+  startStatusPolling(user.email, 15);
   // attempt to send to server (best-effort), do not block on failure
   try{ await sendRegisterToServer(user); await pingServer(user.email); await fetchServerStatusAndApply(user.email); }catch(e){}
   hideLockOverlay();
@@ -537,9 +601,7 @@ document.getElementById('registerLaterBtn').addEventListener('click', ()=>{
 });
 
 /* Forgot PIN flow */
-document.getElementById('forgotPinBtn').addEventListener('click', ()=>{
-  showTab('recovery');
-});
+document.getElementById('forgotPinBtn').addEventListener('click', ()=>{ showTab('recovery'); });
 document.getElementById('recLookupBtn').addEventListener('click', async ()=>{
   const email = (document.getElementById('recEmail').value || '').trim().toLowerCase();
   if(!email){ alert('Enter your email'); return; }
@@ -584,6 +646,7 @@ async function boot(){
   // If there are no users, show register immediately
   const users = await idbGetAll('users');
   const current = await idbGet('auth','current');
+  const lastEmailRec = await idbGet('settings','lastEmail');
 
   if(!current || !current.value){
     // no current auth -> require sign-in/register
@@ -595,9 +658,15 @@ async function boot(){
     }
     // ensure hub not rendered until signed in; we'll render after sign-in
     document.getElementById('hubGrid').innerHTML = '';
+    // If we know lastEmail, start polling for server-side enable changes so admin toggles are noticed
+    if(lastEmailRec && lastEmailRec.value){
+      startStatusPolling(lastEmailRec.value, 15);
+    }
   } else {
     // we have a signed-in user, validate and sync
     const email = current.value.email;
+    // start status polling for signed-in user
+    startStatusPolling(email, 15);
     // ensure we show welcome and render hub
     try{ await pingServer(email); await fetchServerStatusAndApply(email); }catch(e){}
     showWelcome(current.value.name);
@@ -606,7 +675,7 @@ async function boot(){
 }
 boot();
 
-/* keep previous service worker & utilities intact but resilient */
+/* keep service worker registration */
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').then(reg => {
     if(reg.waiting){ /* optionally notify update */ }
@@ -663,7 +732,6 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
   if(navigator.share){ try{ await navigator.share(shareData); }catch(e){ showToast('Share canceled'); } }
   else { try{ await navigator.clipboard.writeText(shareData.url); showToast('Link copied'); }catch(e){ showToast('Cannot copy link'); } }
 });
-
   </script>
 </body>
 </html>

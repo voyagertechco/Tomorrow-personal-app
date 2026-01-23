@@ -26,14 +26,11 @@
     .hub-btn{border-radius:18px;padding:12px;text-align:center;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(15,23,42,0.06);transition:transform .12s, box-shadow .12s;position:relative;overflow:visible}
     .hub-btn:active{transform:translateY(2px)}
     .hub-icon{width:var(--hub-icon-size);height:var(--hub-icon-size);border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white;font-size:18px;flex:0 0 var(--hub-icon-size)}
+    .hub-icon svg{ width:28px; height:28px; stroke:currentColor; fill:none; display:block;}
     .hub-label{font-weight:700;margin-top:8px;font-size:calc(var(--base-font-size) * 0.95);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
     .hub-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .app-disable-btn{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:6px;border-radius:8px}
-    .app-disable-btn:hover{color:#fff;background:rgba(0,0,0,0.12)}
     .btn{padding:var(--btn-padding);border-radius:var(--btn-radius);border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:var(--btn-shadow);transition:transform .12s,box-shadow .12s}
-    .btn:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(15,23,42,0.12)}
-    .btn.secondary{background:transparent;color:var(--accent);border:1px solid rgba(255,255,255,0.12)}
-    .btn.danger{background:#ef4444}
     .small{font-size:12px;color:var(--muted)}
     footer.small{text-align:center;padding:8px 12px;color:var(--muted);font-size:12px}
     .header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
@@ -45,47 +42,13 @@
     label{display:block;margin-bottom:6px;font-weight:600}
     input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);margin-bottom:8px}
     .muted{font-size:13px;color:var(--muted)}
-    .row{display:flex;gap:8px}
-    .lock-overlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,6,23,0.35),rgba(2,6,23,0.6));display:flex;align-items:center;justify-content:center;z-index:13000}
-    .lock-card{background:var(--surface);padding:18px;border-radius:12px;max-width:520px;width:96%;box-shadow:0 20px 60px rgba(2,6,23,0.3)}
-    .link{background:transparent;border:0;color:var(--accent);cursor:pointer;padding:8px;border-radius:8px}
     .hidden{display:none !important}
-    .danger{background:#ef4444;color:white}
-    .muted-sm{font-size:12px;color:var(--muted)}
-    .tabs{display:flex;gap:8px;margin-bottom:12px}
-    .tabs button{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:#f5f7fb;cursor:pointer}
-    .tabs button.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white}
-    .welcome-slide{position:fixed;left:50%;top:16%;transform:translateX(-50%);background:var(--surface);padding:14px 18px;border-radius:12px;box-shadow:0 20px 60px rgba(2,6,23,0.18);z-index:14000;opacity:0;transition:opacity .28s}
-    .welcome-slide.visible{opacity:1}
-    .admin-notif-wrap{position:fixed;left:12px;bottom:12px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:360px}
-    .admin-notif{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;padding:12px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.22);display:flex;gap:8px;align-items:flex-start}
-
-    /* Floating thin ring with inner 'T' and animations */
-    .ai-float{position:fixed;right:18px;bottom:18px;width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:20000;border:0;background:transparent;cursor:pointer;outline:none}
-    .ai-ring{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
-    .ai-ring::before{content:'';position:absolute;inset:0;border-radius:50%;padding:4px;background:conic-gradient(from 0deg, #06b6d4, #3b82f6, #a78bfa, #fb7185, #06b6d4); -webkit-mask: radial-gradient(farthest-side, transparent calc(50% - 6px), black calc(50% - 5px)); mask: radial-gradient(farthest-side, transparent calc(50% - 6px), black calc(50% - 5px));}
-    .ai-core{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;position:relative;z-index:3;backdrop-filter: blur(4px);}
-    .ai-core .letter{font-weight:800;font-size:20px;color:white;mix-blend-mode:screen;}
-    .ai-ring{animation:ring-rot 12s linear infinite}
-    @keyframes ring-rot{to{transform:rotate(360deg)}}
-    .ai-core .letter{position:relative;display:inline-block;animation:letter-orbit 10s ease-in-out infinite}
-    @keyframes letter-orbit{
-      0%{transform:translate(0,0)}
-      12.5%{transform:translate(10px,-10px)}
-      25%{transform:translate(18px,0)}
-      37.5%{transform:translate(10px,10px)}
-      50%{transform:translate(0,18px)}
-      62.5%{transform:translate(-10px,10px)}
-      75%{transform:translate(-18px,0)}
-      87.5%{transform:translate(-10px,-10px)}
-      100%{transform:translate(0,0)}
-    }
-    .frag{position:absolute;width:6px;height:6px;border-radius:2px;background:white;opacity:0;pointer-events:none}
-    .leave-confirm{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:12px;padding:16px;box-shadow:0 20px 60px rgba(2,6,23,0.24);z-index:25000;display:none}
-    .leave-confirm.visible{display:block}
-    .leave-actions{display:flex;gap:12px;justify-content:center;margin-top:12px}
-    .leave-no{background:#10b981;color:white;padding:10px 18px;border-radius:10px;border:0;cursor:pointer}
-    .leave-yes{background:#ef4444;color:white;padding:10px 18px;border-radius:10px;border:0;cursor:pointer}
+    .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1e293b;font-size:12px}
+    /* Floating 'T' bottom-right */
+    .ai-float{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:20000;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:0 12px 30px rgba(11,22,60,0.12)}
+    .ai-float .letter{font-weight:900;font-size:20px}
+    .profile-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    @media(max-width:520px){ .profile-field-row{grid-template-columns:1fr} }
   </style>
 </head>
 <body>
@@ -93,19 +56,17 @@
     <header>
       <div>
         <h1 id="appTitle">Tomorrow Personal App</h1>
-        <div class="subtitle" id="appSubtitle">Private & local-first — authentication required</div>
+        <div class="subtitle" id="appSubtitle">Private & local-first — local profile saved</div>
       </div>
 
       <div class="header-right" role="navigation" aria-label="Header controls">
         <button id="openSettingsBtn" class="icon-btn" title="Settings / About">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.28 16.9l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82L4.3 3.7A2 2 0 1 1 7.13.87l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V.75A2 2 0 1 1 14 0v.09a1.65 1.65 0 0 0 1 1.51c.39.13.77.33 1.11.59l.06.06A2 2 0 1 1 21.72 7.1l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09c.26.34.46.72.59 1.11z"></path>
-          </svg>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>
           <span class="small" style="color:white">Settings</span>
         </button>
-
-        <button id="installBtn" class="btn secondary" style="display:none">Install</button>
+        <button id="installBtn" class="btn" style="display:none">Install</button>
       </div>
     </header>
 
@@ -114,164 +75,98 @@
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div><strong>Sections</strong><div class="small">Open a page below</div></div>
           <div style="display:flex;gap:8px;align-items:center">
-            <button id="downloadOfflineBtn" class="btn secondary">Download for offline</button>
-            <button id="openExportBtn" class="btn">Export</button>
-            <button id="shareAppBtn" class="btn secondary">Share</button>
+            <button id="downloadOfflineBtn" class="btn">Download for offline</button>
+            <button id="openExportBtn" class="btn" title="Export local data">Export</button>
+            <button id="shareAppBtn" class="btn small" style="background:transparent;color:var(--surface);border:1px solid rgba(255,255,255,0.06)">Share</button>
           </div>
         </div>
 
-        <div style="margin-top:12px" class="grid" id="hubGrid"></div>
+        <div style="margin-top:12px" class="grid" id="hubGrid" aria-live="polite"></div>
         <div id="offlineNote" class="small muted" style="margin-top:8px;display:none">Offline (server unreachable). Local mode active.</div>
       </div>
 
-      <div class="card small" style="text-align:center">This PWA works offline after installation. Use Settings → Clear Cache to safely wipe caches without crashing the app.</div>
+      <div class="card small" style="text-align:center">This PWA works offline after installation. You can update the UI without losing your collected data.</div>
     </main>
 
     <footer class="small">all rights reserved @tomorrow tech.co.</footer>
   </div>
 
-  <!-- admin notifications -->
-  <div class="admin-notif-wrap" id="adminNotifWrap" aria-live="polite"></div>
+  <!-- Profile modal (one-time) -->
+  <div id="profileModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <h3 style="margin-top:0">Tell us about yourself</h3>
+      <div class="muted">Only asked once locally. These details are stored on-device and will be synced to server when online so admin can see them.</div>
 
-  <!-- Welcome slide -->
-  <div id="welcomeSlide" class="welcome-slide" role="status" aria-live="polite"></div>
-
-  <!-- Settings modal (kept minimal) -->
-  <div id="settingsModal" class="modal" aria-hidden="true">
-    <div class="modal-card" style="position:relative;">
-      <button class="settings-close-x" id="settingsCancelX" title="Cancel">✕</button>
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong>Settings & App Info</strong><div class="small">Global settings (applies to all pages)</div></div>
-        <div id="settingsProfile" class="small">—</div>
-      </div>
       <div style="margin-top:12px">
-        <label>Display name</label><input id="settingDisplayName" placeholder="Your name" />
-        <label>Font size (px)</label><input id="settingFontSize" type="number" min="12" max="22" value="15" />
-        <label>Theme accent</label>
-        <select id="settingAccent">
-          <option value="teal">Teal</option><option value="blue">Blue</option><option value="purple">Purple</option><option value="custom">Custom</option>
-        </select>
-        <div id="customAccentRow" style="display:none"><label>Custom accent</label><input id="settingCustomAccent" placeholder="#ff6a00" /></div>
-        <label>Dark mode</label>
-        <div style="display:flex;align-items:center;gap:8px"><input id="settingDarkMode" type="checkbox" /> <div class="small">Toggle</div></div>
-        <hr/>
-        <div style="display:flex;gap:8px;margin-top:12px">
-          <button id="saveSettingsBtn" class="btn">Save</button>
-          <button id="cancelSettingsBtn" class="btn secondary">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Auth overlay (registration & login combined) -->
-  <div id="lockOverlay" class="lock-overlay" aria-hidden="false" role="dialog" aria-label="Authentication required">
-    <div class="lock-card" role="document">
-      <div class="tabs" role="tablist">
-        <button id="tabSignIn" class="active" role="tab" aria-selected="true">Sign in</button>
-        <button id="tabRegister" role="tab" aria-selected="false">Register</button>
-      </div>
-
-      <!-- Sign-in box -->
-      <div id="signinBox">
-        <h3 style="margin-top:0">Sign in</h3>
-        <div class="muted">Enter your PIN to unlock the app.</div>
-        <label for="lockPin">PIN (4-8 digits)</label>
-        <input id="lockPin" type="password" inputmode="numeric" placeholder="4-8 digit PIN" />
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="unlockBtn" class="btn">Unlock</button>
-          <button id="forgotPinBtn" class="link">Forgot PIN</button>
-        </div>
-        <div style="margin-top:12px" class="muted-sm">If you don't have an account, open the Register tab.</div>
-      </div>
-
-      <!-- Register box -->
-      <div id="registerBox" class="hidden">
-        <h3 style="margin-top:0">Register</h3>
-        <div class="muted">Create a local account. These details (except PIN/answer) are sent to the admin when online.</div>
-
-        <label for="regPin">Choose PIN (4-8 digits)</label>
-        <input id="regPin" type="password" placeholder="PIN (numbers only)" inputmode="numeric" />
-
-        <label for="regPinConfirm">Confirm PIN</label>
-        <input id="regPinConfirm" type="password" placeholder="Confirm PIN" inputmode="numeric" />
-
-        <label for="secQuestion">Security question (for recovery)</label>
-        <input id="secQuestion" placeholder="e.g. Your mother's maiden name?" />
-
-        <label for="secAnswer">Security answer</label>
-        <input id="secAnswer" placeholder="Answer (kept hashed locally)" />
-
-        <label for="regEmail">Email</label>
-        <input id="regEmail" placeholder="you@example.com" />
-
-        <label for="regName">Display name</label>
-        <input id="regName" placeholder="Your name" />
-
-        <label style="display:inline-block;width:50%;padding-right:6px">Country</label>
-        <label style="display:inline-block;width:50%;padding-left:6px">Location / City</label>
-        <div style="display:flex;gap:8px">
-          <input id="regCountry" placeholder="Country" />
-          <input id="regLocation" placeholder="City" />
-        </div>
-
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button id="registerBtn" class="btn">Register & Enter</button>
-          <button id="registerLaterBtn" class="btn secondary">Cancel</button>
-        </div>
-      </div>
-
-      <!-- Recovery box (dynamically shown) -->
-      <div id="recoveryBox" class="hidden">
-        <h3 style="margin-top:0">Recover PIN</h3>
-        <div class="muted">Enter the email for the account you created.</div>
-        <label for="recEmail">Email</label>
-        <input id="recEmail" placeholder="you@example.com" />
-        <div style="display:flex;gap:8px;margin-top:8px">
-          <button id="recLookupBtn" class="btn">Lookup</button>
-          <button id="recCancelBtn" class="btn secondary">Cancel</button>
-        </div>
-
-        <div id="recQuestionWrap" class="hidden" style="margin-top:12px">
-          <div class="muted-sm">Answer the security question to reset your PIN.</div>
-          <div id="recQuestion" style="font-weight:700;margin-top:6px"></div>
-          <input id="recAnswer" placeholder="Your answer" />
-          <input id="recNewPin" placeholder="New PIN (4-8 digits)" type="password" inputmode="numeric" />
-          <div style="display:flex;gap:8px;margin-top:8px">
-            <button id="recResetBtn" class="btn">Reset PIN</button>
-            <button id="recCancelBtn2" class="btn secondary">Cancel</button>
+        <label>Full name</label>
+        <input id="profileName" placeholder="Your name" />
+        <div class="profile-field-row">
+          <div>
+            <label>Country</label>
+            <input id="profileCountry" placeholder="Country" />
+          </div>
+          <div>
+            <label>City / Location</label>
+            <input id="profileLocation" placeholder="City" />
           </div>
         </div>
+        <div class="profile-field-row">
+          <div>
+            <label>Age</label>
+            <input id="profileAge" type="number" min="1" max="130" />
+          </div>
+          <div>
+            <label>Gender</label>
+            <select id="profileGender">
+              <option value="">Prefer not to say</option>
+              <option value="female">Female</option>
+              <option value="male">Male</option>
+              <option value="nonbinary">Non-binary</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+          <button id="skipProfileBtn" class="btn secondary">Skip</button>
+          <button id="saveProfileBtn" class="btn">Save</button>
+        </div>
       </div>
-
     </div>
   </div>
 
-  <!-- Floating AI button (thin ring + inner T) -->
-  <button id="aiFloatBtn" class="ai-float" aria-label="Smart action">
-    <div class="ai-ring" aria-hidden="true">
-      <div class="ai-core"><span class="letter">T</span></div>
-    </div>
-  </button>
-
-  <!-- Leave confirm modal -->
-  <div id="leaveConfirm" class="leave-confirm" role="dialog" aria-modal="true">
-    <div><strong>Do you want to leave?</strong></div>
-    <div class="leave-actions">
-      <button id="leaveNo" class="leave-no">No</button>
-      <button id="leaveYes" class="leave-yes">Yes</button>
+  <!-- Settings modal -->
+  <div id="settingsModal" class="modal" aria-hidden="true">
+    <div class="modal-card">
+      <button class="settings-close-x" id="settingsCancelX" title="Close" style="float:right;border:0;background:transparent;font-size:20px">✕</button>
+      <h3 style="margin-top:0">Settings</h3>
+      <label>Display name</label><input id="settingDisplayName" placeholder="Your name" />
+      <label>Font size (px)</label><input id="settingFontSize" type="number" min="12" max="22" value="15" />
+      <label>Theme accent</label>
+      <select id="settingAccent">
+        <option value="teal">Teal</option><option value="blue">Blue</option><option value="purple">Purple</option><option value="custom">Custom</option>
+      </select>
+      <div id="customAccentRow" style="display:none"><label>Custom accent</label><input id="settingCustomAccent" placeholder="#ff6a00" /></div>
+      <label style="margin-top:6px">Dark mode</label>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input id="settingDarkMode" type="checkbox" /> <div class="small">Toggle dark mode</div>
+      </div>
+      <hr/>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="saveSettingsBtn" class="btn">Save</button>
+        <button id="cancelSettingsBtn" class="btn secondary">Cancel</button>
+      </div>
+      <div style="margin-top:14px">
+        <button id="clearCachesBtn" class="btn small" style="background:#ef4444">Clear caches (safe)</button>
+      </div>
     </div>
   </div>
+
+  <!-- Floating T -->
+  <button id="aiFloatBtn" class="ai-float" aria-label="Smart action"><span class="letter">T</span></button>
 
   <script>
-/* =========================
-   Upgraded index.html script
-   - Adds beforeinstallprompt handling (shows Install button & triggers prompt)
-   - Keeps manifest & sw untouched (per request)
-   - Rotating ring + T with explode + shake
-   - Auth: unlock, register, forgot PIN (lookup & reset)
-   - sessionStorage restore so back -> index won't ask for PIN if session active
-   - Leave-confirm intercept on home back (green No, red Yes)
-   ========================= */
+/* index.html — simplified hub with one-time profile, settings, offline sync */
 
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
 let dbPromise = null;
@@ -284,7 +179,7 @@ function openDB(){
       if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
       if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'});
       if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'});
-      if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'});
+      if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id', autoIncrement:true});
     };
     req.onsuccess = e => resolve(e.target.result);
     req.onerror = e => reject(e.target.error);
@@ -296,152 +191,46 @@ async function idbGet(store, key){ const db = await openDB(); return new Promise
 async function idbGetAll(store){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).getAll(); r.onsuccess = e => res(e.target.result || []); r.onerror = e => rej(e.target.error); }); }
 async function idbDelete(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete = ()=>res(true); tx.onerror = e => rej(e.target.error); }); }
 
-/* Simple SHA-256 hex helper */
-async function hashString(str){
-  if(!window.crypto || !crypto.subtle) {
-    let h = 0; for(let i=0;i<str.length;i++) h = ((h<<5)-h)+str.charCodeAt(i);
-    return String(h);
-  }
-  const enc = new TextEncoder();
-  const buf = enc.encode(str);
-  const digest = await crypto.subtle.digest('SHA-256', buf);
-  const arr = Array.from(new Uint8Array(digest));
-  return arr.map(b => b.toString(16).padStart(2,'0')).join('');
+function showToast(msg,ms=2200){
+  const el = document.createElement('div');
+  el.style.position='fixed'; el.style.right='12px'; el.style.bottom='24px'; el.style.zIndex=99999;
+  el.style.background='#111'; el.style.color='white'; el.style.padding='10px 12px'; el.style.borderRadius='10px';
+  el.style.boxShadow='0 8px 30px rgba(2,6,23,0.25)'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), ms);
 }
 
-/* SETTINGS & STATE */
-let state = { settings: {} };
-async function loadSettingsToState(){ const sets = await idbGetAll('settings'); state.settings = {}; sets.forEach(s=>state.settings[s.key]=s.value); applySettings(state.settings); }
-function applySettings(settings = {}){ document.documentElement.style.setProperty('--base-font-size', (settings.fontSize || 15) + 'px'); if(settings.profileName) document.getElementById('appTitle').textContent = `Tomorrow Personal App — ${settings.profileName}`; }
-
-/* SESSION helpers (per-tab by default) */
-const USE_SESSION_STORAGE = true;
-function writeSessionAuth(obj){ try{ if(USE_SESSION_STORAGE) sessionStorage.setItem('sessionAuth', JSON.stringify(obj)); else localStorage.setItem('sessionAuth', JSON.stringify(obj)); }catch(e){} }
-function clearSessionAuth(){ try{ if(USE_SESSION_STORAGE) sessionStorage.removeItem('sessionAuth'); else localStorage.removeItem('sessionAuth'); }catch(e){} }
-function readSessionAuth(){ try{ const v = USE_SESSION_STORAGE ? sessionStorage.getItem('sessionAuth') : localStorage.getItem('sessionAuth'); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
-
-/* status polling (server enable/disable) */
-let statusPollHandle = null;
-function startStatusPolling(email, intervalSec = 15){
-  stopStatusPolling();
-  if(!email) return;
-  statusPollHandle = setInterval(()=> { fetchServerStatusAndApply(email).catch(()=>{}); }, Math.max(5, intervalSec) * 1000);
-  fetchServerStatusAndApply(email).catch(()=>{});
-}
-function stopStatusPolling(){ if(statusPollHandle) { clearInterval(statusPollHandle); statusPollHandle = null; } }
-
-/* set current auth in idb + session snapshot */
-async function setCurrentAuth(email, name){
-  if(!email){
-    try{ await idbDelete('auth','current'); }catch(e){}
-    clearSessionAuth();
-    stopStatusPolling();
-    return;
-  }
-  await idbPut('auth', { key:'current', value:{ email, name } });
-  writeSessionAuth({ email, name, ts: Date.now() });
-  await idbPut('settings', { key:'lastEmail', value: email });
-}
-
-/* user helpers */
-async function createOrUpdateUserLocal({ email='local@you', passHash, name='', location='', country='', secQuestion='', secAnswerHash='' }){
-  const existing = await idbGet('users', email);
-  const now = new Date().toISOString();
-  const user = Object.assign({}, existing || {}, {
-    email,
-    passHash: passHash || existing?.passHash || null,
-    name: name || existing?.name || email,
-    location: location || existing?.location || '',
-    country: country || existing?.country || '',
-    createdAt: existing?.createdAt || now,
-    lastSeen: new Date().toISOString(),
-    enabled: existing?.enabled === undefined ? true : existing.enabled,
-    disabledApps: Array.isArray(existing?.disabledApps) ? existing.disabledApps : (existing?.disabledApps || []),
-    secQuestion: secQuestion || existing?.secQuestion || '',
-    secAnswerHash: secAnswerHash || existing?.secAnswerHash || null,
-    meta: existing?.meta || {}
-  });
-  await idbPut('users', user);
-  return user;
-}
-async function getUserByEmail(email){
-  if(!email) return null;
-  const u = await idbGet('users', email);
-  if(!u) return null;
-  u.enabled = (u.enabled === undefined) ? true : u.enabled;
-  u.disabledApps = Array.isArray(u.disabledApps) ? u.disabledApps : (u.disabledApps ? u.disabledApps : []);
-  return u;
-}
-
-/* server helpers (best-effort) */
-async function sendRegisterToServer(user){
-  try{ await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: user.email, name: user.name, location: user.location, country: user.country, meta: user.meta || {} }) }); }catch(e){}
-}
-async function pingServer(email){ try{ await fetch('/api/ping', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) }); }catch(e){} }
-async function fetchServerStatusAndApply(email){
-  if(!email) return null;
-  try{
-    const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`, { method:'GET', headers:{ 'Accept':'application/json' }});
-    if(!res.ok) return null;
-    const data = await res.json();
-    if(!data) return null;
-    const user = await getUserByEmail(email) || {};
-    let changed = false;
-    if(typeof data.enabled === 'boolean' && user.enabled !== data.enabled){ user.enabled = data.enabled; changed = true; }
-    if(Array.isArray(data.disabledApps)){ user.disabledApps = data.disabledApps; changed = true; }
-    if(changed){ user.lastSeen = new Date().toISOString(); await idbPut('users', user); }
-    if(user.enabled === false){
-      const current = await idbGet('auth','current');
-      if(current && current.value && current.value.email === email){
-        alert('Your account has been disabled by admin. You will be locked out.');
-        await setCurrentAuth(null);
-        showLockOverlay();
-      }
-    } else {
-      const current = await idbGet('auth','current');
-      if(!current || !current.value){
-        showToast('Account is enabled on server. Sign in to continue.', 4000);
-        await idbPut('settings', { key:'lastEmail', value: email });
-        const regEmailEl = document.getElementById('regEmail');
-        if(regEmailEl) regEmailEl.value = email;
-      } else {
-        await renderHubGrid();
-      }
-    }
-    return data;
-  }catch(e){
-    document.getElementById('offlineNote').style.display = 'block';
-    return null;
-  }
-}
-
-/* HUB items */
+/* Hub items (includes 'more') */
 const hubItems = [
-  { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 1v22M5 7h14" stroke-linecap="round"/></svg>` },
-  { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
-  { id:'habits', label:'Habits', sub:'Daily routines', href:'habits.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M3 12h18M12 3v18"/></svg>` },
-  { id:'journal', label:'Journal', sub:'Notes & entries', href:'journal.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M3 4h18v16H3z"/><path d="M8 4v16"/></svg>` },
-  { id:'tasks', label:'Tasks & Reminders', sub:'To-dos & alerts', href:'task_reminders.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M9 11l2 2 4-4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/></svg>` },
-  { id:'wishlist', label:'Wishlist & Health', sub:'Wishes & notes', href:'wishlist_health.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M20.8 4.6a5 5 0 0 0-7.1 0L12 6.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l1.7 1.7L12 21l7.1-7.1 1.7-1.7a5 5 0 0 0 0-7.1z"/></svg>` },
-  { id:'menustral', label:'Menustral Tracking', sub:'Cycle & notes', href:'menustral_tracking.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 2C8 6 6 10 6 14a6 6 0 0 0 12 0c0-4-2-8-6-12z"/></svg>` },
-  { id:'export', label:'Export / Import', sub:'Backup & restore', href:'export.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></svg>` }
+  { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M12 1v22"/><path d="M5 7h14"/></svg>` },
+  { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
+  { id:'habits', label:'Habits', sub:'Daily routines', href:'habits.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M3 12h18"/><path d="M12 3v18"/></svg>` },
+  { id:'journal', label:'Journal', sub:'Notes & entries', href:'journal.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M3 4h18v16H3z"/><path d="M8 4v16"/></svg>` },
+  { id:'tasks', label:'Tasks', sub:'To-dos & alerts', href:'task_reminders.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M9 11l2 2 4-4"/></svg>` },
+  { id:'wishlist', label:'Wishlist & Health', sub:'Wishes & notes', href:'wishlist_health.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M20.8 4.6a5 5 0 0 0-7.1 0"/></svg>` },
+  { id:'menustral', label:'Menstrual', sub:'Cycle & notes', href:'menustral_tracking.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M12 2C8 6 6 10 6 14a6 6 0 0 0 12 0c0-4-2-8-6-12z"/></svg>` },
+  { id:'export', label:'Export / Import', sub:'Backup & restore', href:'export.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M21 15v4a2 2 0 0 1-2 2H5"/></svg>` },
+  { id:'more', label:'More', sub:'Links & apps', href:'more.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M12 5v14M5 12h14"/></svg>` }
 ];
 
 let allowInternalNav = false;
 function markInternalNav(){ allowInternalNav = true; setTimeout(()=> allowInternalNav = false, 900); }
 
-/* Render hub grid */
 async function renderHubGrid(){
   const grid = document.getElementById('hubGrid'); if(!grid) return; grid.innerHTML = '';
-  const sessionAuth = readSessionAuth();
+  // get local profile as current user (if any)
+  const profile = await idbGet('settings','profile') || null;
+  // also try server-driven disabledApps via auth current
   const currentAuth = await idbGet('auth','current');
-  const email = sessionAuth?.email || currentAuth?.value?.email;
-  const currentUser = email ? await getUserByEmail(email) : null;
+  const email = currentAuth?.value?.email || (profile ? profile._email : null);
+  const currentUser = email ? (await idbGet('users', email) || null) : null;
 
   hubItems.forEach(it => {
     const btn = document.createElement('div'); btn.className='hub-btn';
     const disabledForUser = currentUser && Array.isArray(currentUser.disabledApps) && currentUser.disabledApps.includes(it.id);
-    const disableButtonHtml = currentUser ? `<button class="app-disable-btn" data-app="${it.id}" title="${disabledForUser ? 'Enable this section' : 'Disable this section'}">${disabledForUser ? 'Enable' : 'Disable'}</button>` : '';
+    const disableButtonHtml = (currentUser && currentUser.email && currentUser.email.endsWith('@local') === false)
+                             ? `<button class="app-disable-btn" data-app="${it.id}" title="${disabledForUser ? 'Enable this section' : 'Disable this section'}">${disabledForUser ? 'Enable' : 'Disable'}</button>`
+                             : ''; // only allow toggle if real server user present
 
     btn.innerHTML = `
       ${disableButtonHtml}
@@ -472,418 +261,283 @@ async function renderHubGrid(){
   });
 }
 
-/* Toggle app disable for user */
+/* toggle disabled apps -- requires server-registered user (not pure local guest) */
 async function toggleAppDisabledForCurrentUser(appId){
   const currentAuth = await idbGet('auth','current');
-  if(!currentAuth || !currentAuth.value) { showToast('Sign in to toggle'); return; }
+  if(!currentAuth || !currentAuth.value) { showToast('Sign in or register online to toggle'); return; }
   const email = currentAuth.value.email;
-  const user = await getUserByEmail(email);
+  const user = await idbGet('users', email);
   if(!user){ showToast('User record missing'); return; }
   user.disabledApps = user.disabledApps || [];
   const idx = user.disabledApps.indexOf(appId);
   if(idx === -1) user.disabledApps.push(appId); else user.disabledApps.splice(idx,1);
   await idbPut('users', user);
   showToast(idx === -1 ? 'Section disabled for your account' : 'Section enabled for your account');
-}
 
-/* UI helpers */
-function showToast(msg,ms=2200){
-  const el = document.createElement('div');
-  el.style.position='fixed'; el.style.right='12px'; el.style.bottom='24px'; el.style.zIndex=99999;
-  el.style.background='#111'; el.style.color='white'; el.style.padding='10px 12px'; el.style.borderRadius='10px';
-  el.style.boxShadow='0 8px 30px rgba(2,6,23,0.25)'; el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(()=> el.remove(), ms);
-}
-
-/* Lock overlay controls (tabs) */
-const tabSignIn = document.getElementById('tabSignIn');
-const tabRegister = document.getElementById('tabRegister');
-const signinBox = document.getElementById('signinBox');
-const registerBox = document.getElementById('registerBox');
-const recoveryBox = document.getElementById('recoveryBox');
-tabSignIn.addEventListener('click', ()=>{ showTab('signin'); });
-tabRegister.addEventListener('click', ()=>{ showTab('register'); });
-function showTab(t){
-  if(t === 'signin'){
-    tabSignIn.classList.add('active'); tabSignIn.setAttribute('aria-selected','true');
-    tabRegister.classList.remove('active'); tabRegister.setAttribute('aria-selected','false');
-    signinBox.classList.remove('hidden'); registerBox.classList.add('hidden'); recoveryBox.classList.add('hidden');
-  } else if(t === 'register'){
-    tabRegister.classList.add('active'); tabRegister.setAttribute('aria-selected','true');
-    tabSignIn.classList.remove('active'); tabSignIn.setAttribute('aria-selected','false');
-    registerBox.classList.remove('hidden'); signinBox.classList.add('hidden'); recoveryBox.classList.add('hidden');
-  } else if(t === 'recovery'){
-    recoveryBox.classList.remove('hidden'); signinBox.classList.add('hidden'); registerBox.classList.add('hidden');
-    tabSignIn.classList.remove('active'); tabRegister.classList.remove('active');
-  }
-}
-
-/* Show/hide overlay */
-function showLockOverlay(){ document.getElementById('lockOverlay').style.display = 'flex'; document.getElementById('lockOverlay').setAttribute('aria-hidden','false'); }
-function hideLockOverlay(){ document.getElementById('lockOverlay').style.display = 'none'; document.getElementById('lockOverlay').setAttribute('aria-hidden','true'); }
-
-/* ===== Session inactivity / timeout handling ===== */
-let lastActivity = Date.now();
-function updateLastActivity(){ lastActivity = Date.now(); try{ sessionStorage.setItem('lastActivity', String(lastActivity)); }catch(e){} }
-function throttle(fn, wait){ let last=0; return function(...args){ const now = Date.now(); if(now - last > wait){ last = now; fn.apply(this,args); } }; }
-['click','keydown','mousemove','touchstart'].forEach(ev => window.addEventListener(ev, throttle(updateLastActivity, 800), {passive:true}));
-window.addEventListener('storage', (e) => { if(e.key === 'lastActivity' && e.newValue) lastActivity = Math.max(lastActivity, parseInt(e.newValue,10)); });
-
-function handleSessionTimeout(){
-  const session = readSessionAuth();
-  if(session && session.email){
-    showToast('Session timed out — locked for security', 3000);
-    setCurrentAuth(null);
-    showLockOverlay();
-    stopStatusPolling();
-  }
-}
-const SESSION_TIMEOUT_SEC = 300;
-setInterval(()=>{ try{ const stored = parseInt(sessionStorage.getItem('lastActivity')||'0',10); if(stored) lastActivity = Math.max(lastActivity, stored); const idle = Date.now() - lastActivity; if(idle > SESSION_TIMEOUT_SEC * 1000){ handleSessionTimeout(); } }catch(e){} }, 1000);
-
-/* Sign-in */
-document.getElementById('unlockBtn').addEventListener('click', async ()=>{
-  const p = (document.getElementById('lockPin')?.value || '').trim();
-  if(!/^\d{4,8}$/.test(p)){ alert('PIN must be 4-8 digits'); return; }
-  const users = await idbGetAll('users');
-  const pHash = await hashString(p);
-  let found = users.find(u => u.passHash && u.passHash === pHash);
-  if(!found) found = users.find(u => u.pass && String(u.pass) === p);
-  if(found){
-    if(found.enabled === false){ alert('Your account has been disabled by admin.'); return; }
-    await setCurrentAuth(found.email, found.name);
-    await idbPut('settings', { key:'lastEmail', value: found.email });
-    updateLastActivity();
-    startStatusPolling(found.email, 15);
-    try{ await pingServer(found.email); await fetchServerStatusAndApply(found.email); }catch(e){}
-    hideLockOverlay();
-    showWelcome(found.name);
-    await renderHubGrid();
-  } else {
-    alert('PIN not found. Register a new account.');
-    showTab('register');
-  }
-});
-
-/* Register */
-document.getElementById('registerBtn').addEventListener('click', async ()=>{
-  const pin = (document.getElementById('regPin')?.value || '').trim();
-  const pin2 = (document.getElementById('regPinConfirm')?.value || '').trim();
-  const secQ = (document.getElementById('secQuestion')?.value || '').trim();
-  const secA = (document.getElementById('secAnswer')?.value || '').trim();
-  const email = (document.getElementById('regEmail')?.value || '').trim().toLowerCase();
-  const name = (document.getElementById('regName')?.value || '').trim();
-  const country = (document.getElementById('regCountry')?.value || '').trim();
-  const location = (document.getElementById('regLocation')?.value || '').trim();
-
-  if(!/^\d{4,8}$/.test(pin)){ alert('PIN must be 4-8 digits'); return; }
-  if(pin !== pin2){ alert('PINs do not match'); return; }
-  if(!secQ || !secA){ alert('Security question and answer required'); return; }
-  if(!email || !name || !country || !location){ alert('Please fill email, name, country and location'); return; }
-
-  const passHash = await hashString(pin);
-  const secAnswerHash = await hashString(secA.toLowerCase().trim());
-  const user = await createOrUpdateUserLocal({ email, passHash, name, location, country, secQuestion:secQ, secAnswerHash });
-  await setCurrentAuth(user.email, user.name);
-  await idbPut('settings', { key:'lastEmail', value: user.email });
-  updateLastActivity();
-  startStatusPolling(user.email, 15);
-  try{ await sendRegisterToServer(user); await pingServer(user.email); await fetchServerStatusAndApply(user.email); }catch(e){}
-  hideLockOverlay();
-  showWelcome(user.name);
-  await renderHubGrid();
-});
-document.getElementById('registerLaterBtn').addEventListener('click', ()=>{ showTab('signin'); });
-
-/* Forgot PIN: lookup and reset */
-document.getElementById('forgotPinBtn').addEventListener('click', ()=>{ showTab('recovery'); });
-document.getElementById('recLookupBtn').addEventListener('click', async ()=>{
-  const email = (document.getElementById('recEmail')?.value || '').trim().toLowerCase();
-  if(!email){ alert('Enter your email'); return; }
-  const u = await getUserByEmail(email);
-  if(!u){ alert('No such account locally'); return; }
-  if(!u.secQuestion){ alert('No security question set for this account'); return; }
-  document.getElementById('recQuestion').textContent = u.secQuestion;
-  document.getElementById('recQuestionWrap').classList.remove('hidden');
-});
-document.getElementById('recResetBtn').addEventListener('click', async ()=>{
-  const email = (document.getElementById('recEmail')?.value || '').trim().toLowerCase();
-  const ans = (document.getElementById('recAnswer')?.value || '').trim();
-  const newPin = (document.getElementById('recNewPin')?.value || '').trim();
-  if(!ans || !newPin || !/^\d{4,8}$/.test(newPin)){ alert('Provide answer and a valid new PIN'); return; }
-  const u = await getUserByEmail(email);
-  if(!u){ alert('No such account'); return; }
-  const ansHash = await hashString(ans.toLowerCase().trim());
-  if(u.secAnswerHash && u.secAnswerHash === ansHash){
-    const newHash = await hashString(newPin);
-    u.passHash = newHash;
-    await idbPut('users', u);
-    alert('PIN reset. Use the new PIN to sign in.');
-    showTab('signin');
-  } else {
-    alert('Security answer incorrect');
-  }
-});
-document.getElementById('recCancelBtn').addEventListener('click', ()=>{ showTab('signin'); });
-document.getElementById('recCancelBtn2').addEventListener('click', ()=>{ showTab('signin'); });
-
-/* welcome */
-function showWelcome(name){
-  const el = document.getElementById('welcomeSlide');
-  el.textContent = `Welcome, ${name || 'friend'} — glad you're back`;
-  el.classList.add('visible');
-  setTimeout(()=> { el.classList.remove('visible'); }, 2400);
-}
-
-/* BEFOREINSTALLPROMPT handling - shows install button and triggers prompt when clicked */
-let deferredInstallPrompt = null;
-const installBtn = document.getElementById('installBtn');
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  if(installBtn){
-    installBtn.style.display = 'inline-block';
-    installBtn.addEventListener('click', async () => {
-      installBtn.style.display = 'none';
-      if(!deferredInstallPrompt) return;
-      deferredInstallPrompt.prompt();
-      try{
-        const choice = await deferredInstallPrompt.userChoice;
-        if(choice && choice.outcome === 'accepted') showToast('App installed');
-        else showToast('Install dismissed');
-      }catch(e){}
-      deferredInstallPrompt = null;
-    }, { once: true });
-  }
-});
-window.addEventListener('appinstalled', (evt) => {
-  showToast('App installed');
-  if(installBtn) installBtn.style.display = 'none';
-});
-
-/* Boot & pageshow resilience
-   - On load or when page is restored from bfcache, ensure session is restored from sessionStorage and lock overlay is not shown if session exists.
-*/
-async function boot(){
-  try{ await loadSettingsToState(); }catch(e){}
-  const users = await idbGetAll('users');
-  let current = await idbGet('auth','current');
-
-  // Prefer fast per-tab session (sessionStorage/localStorage) if present
-  const sessionAuth = readSessionAuth();
-  if(sessionAuth && (!current || !current.value || current.value.email !== sessionAuth.email)){
-    try{ await idbPut('auth', { key:'current', value:{ email: sessionAuth.email, name: sessionAuth.name } }); current = await idbGet('auth','current'); }catch(e){}
-  }
-
-  const lastEmailRec = await idbGet('settings','lastEmail');
-
-  if(!current || !current.value){
-    // require sign-in/register
-    showLockOverlay();
-    if(!users || users.length === 0) showTab('register'); else showTab('signin');
-    document.getElementById('hubGrid').innerHTML = '';
-    if(lastEmailRec && lastEmailRec.value) startStatusPolling(lastEmailRec.value, 15);
-  } else {
-    const email = current.value.email;
-    startStatusPolling(email, 15);
-    try{ await pingServer(email); await fetchServerStatusAndApply(email); }catch(e){}
-    updateLastActivity();
-    hideLockOverlay(); // ensure overlay hidden if we have a current session
-    showWelcome(current.value.name);
-    await renderHubGrid();
-  }
-
-  // Push spacer state on home so back tries to leave shows our modal
+  // also send to server (best effort) to keep admin view in sync
   try{
-    const pathname = (location.pathname || '/').split('/').pop() || '';
-    const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/';
-    if(isIndex){
-      // replace and push so back triggers popstate with our spacer state
-      history.replaceState({ home: true }, '');
-      history.pushState({ home: true, spacer: true }, '');
-    }
-  }catch(e){}
+    await fetch('/api/register', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ email: user.email, name: user.name || user.email, location: user.location||'', country:user.country||'', meta: { disabledApps:user.disabledApps } })
+    });
+  }catch(e){ /* ignore */ }
 }
-boot();
 
-// pageshow handler — when user navigates back via browser, bfcache may restore page
-window.addEventListener('pageshow', (ev) => {
-  // if there's a session snapshot, ensure overlay is hidden
-  const sessionAuth = readSessionAuth();
-  if(sessionAuth && sessionAuth.email){
-    hideLockOverlay();
-    // restore idb current if missing
-    idbGet('auth','current').then(cur => {
-      if(!cur || !cur.value){ idbPut('auth', { key:'current', value:{ email: sessionAuth.email, name: sessionAuth.name } }).then(()=>{ renderHubGrid().catch(()=>{}); }); }
-    }).catch(()=>{});
-  } else {
-    // if no session and overlay hidden, show it
-    idbGetAll('users').then(users => { if(users && users.length > 0) showLockOverlay(); });
+/* PROFILE: one-time prompt + local store + server sync */
+function makeLocalEmail(){
+  // deterministic-ish local id
+  const rnd = Math.floor(Math.random()*1e8).toString(16);
+  return `user-${Date.now().toString(16)}-${rnd}@local`;
+}
+
+async function saveLocalProfile(profile){
+  // profile: { name, country, location, age, gender }
+  const now = new Date().toISOString();
+  let email = profile.email || (await idbGet('settings','profile'))?._email || makeLocalEmail();
+  const record = {
+    _email: email,
+    name: profile.name || '',
+    country: profile.country || '',
+    location: profile.location || '',
+    age: profile.age || null,
+    gender: profile.gender || '',
+    createdAt: (await idbGet('settings','profile'))?.createdAt || now,
+    lastSeen: now
+  };
+  await idbPut('settings', { key:'profile', value: record });
+  // also store in users store locally (makes logic uniform)
+  await idbPut('users', { email: email, name: record.name, location: record.location, country: record.country, created_at: record.createdAt, last_seen: record.lastSeen, enabled:1, disabled_apps: JSON.stringify([]), meta: JSON.stringify({ age: record.age, gender: record.gender }) });
+  // set auth current to allow toggles etc (will be local@ unless server registers)
+  await idbPut('auth', { key:'current', value:{ email: email, name: record.name }});
+  // render hub
+  await renderHubGrid();
+  // try to sync to server
+  trySyncProfileToServer();
+}
+
+async function trySyncProfileToServer(){
+  const profileWrap = await idbGet('settings','profile');
+  if(!profileWrap) return;
+  const email = profileWrap._email;
+  // if already looks like server email (not @local) we still attempt
+  if(!navigator.onLine) { document.getElementById('offlineNote').style.display = 'block'; return; }
+  try{
+    const payload = { email: email, name: profileWrap.name || email, location: profileWrap.location || '', country: profileWrap.country || '', meta: { age: profileWrap.age||'', gender: profileWrap.gender||'' } };
+    const res = await fetch('/api/register', {
+      method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload)
+    });
+    if(res && res.ok){
+      const json = await res.json().catch(()=>null);
+      if(json && json.ok && json.user){
+        // write server canonical user row (server may persist different fields)
+        const userRec = json.user;
+        // convert server row to local user store shape
+        await idbPut('users', {
+          email: userRec.email,
+          name: userRec.name,
+          location: userRec.location,
+          country: userRec.country,
+          created_at: userRec.createdAt,
+          last_seen: userRec.lastSeen,
+          enabled: userRec.enabled ? 1 : 0,
+          disabled_apps: JSON.stringify(userRec.disabledApps || []),
+          meta: JSON.stringify(userRec.meta || {})
+        });
+        // mark auth current as server email (keeps admin toggles available)
+        await idbPut('auth', { key:'current', value:{ email: userRec.email, name: userRec.name }});
+        showToast('Profile synced to server');
+      } else {
+        // fallback: still ensure local user present
+        showToast('Profile saved locally');
+      }
+    } else {
+      showToast('Could not sync profile (server error)');
+    }
+  }catch(e){
+    console.warn('sync error', e);
+    document.getElementById('offlineNote').style.display = 'block';
   }
+}
+
+/* profile modal wiring */
+document.getElementById('saveProfileBtn').addEventListener('click', async ()=>{
+  const name = (document.getElementById('profileName').value || '').trim();
+  const country = (document.getElementById('profileCountry').value || '').trim();
+  const location = (document.getElementById('profileLocation').value || '').trim();
+  const age = (document.getElementById('profileAge').value || '').trim();
+  const gender = (document.getElementById('profileGender').value || '').trim();
+  if(!name || !country || !location){
+    showToast('Please fill name, country and location (or skip).');
+    return;
+  }
+  await saveLocalProfile({ name, country, location, age: age || null, gender });
+  hideProfileModal();
 });
 
-/* service worker registration (unchanged) */
-if('serviceWorker' in navigator){
-  navigator.serviceWorker.register('/sw.js').then(reg => {
-    if(reg.waiting){ /* optionally notify update */ }
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if(newWorker.state === 'installed') {
-          // optional: inform user update is ready
-        }
-      });
-    });
-  }).catch(e => console.warn('sw register failed', e));
-}
+document.getElementById('skipProfileBtn').addEventListener('click', async ()=>{
+  // create a guest local profile minimal
+  const name = 'Guest';
+  await saveLocalProfile({ name, country:'', location:'', age:null, gender:'' });
+  hideProfileModal();
+});
 
-/* settings & export wiring */
-document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{ await loadSettingsToState(); document.getElementById('settingsModal').classList.add('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','false'); });
+function showProfileModal(){ document.getElementById('profileModal').classList.add('visible'); document.getElementById('profileModal').setAttribute('aria-hidden','false'); }
+function hideProfileModal(){ document.getElementById('profileModal').classList.remove('visible'); document.getElementById('profileModal').setAttribute('aria-hidden','true'); }
+
+/* settings wiring */
+document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{
+  // load current settings and populate
+  const settingsAll = await idbGetAll('settings');
+  const settings = {};
+  settingsAll.forEach(s => settings[s.key] = s.value);
+  document.getElementById('settingDisplayName').value = settings.profileName || (settings.profile && settings.profile.name) || '';
+  document.getElementById('settingFontSize').value = settings.fontSize || 15;
+  document.getElementById('settingAccent').value = settings.accent || 'teal';
+  document.getElementById('settingDarkMode').checked = !!settings.darkMode;
+  document.getElementById('settingsModal').classList.add('visible');
+  document.getElementById('settingsModal').setAttribute('aria-hidden','false');
+});
 document.getElementById('settingsCancelX').addEventListener('click', ()=>{ document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true'); });
 document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('settingDisplayName').value.trim();
   const fz = Number(document.getElementById('settingFontSize').value) || 15;
   const accent = document.getElementById('settingAccent').value;
-  const customAccent = document.getElementById('settingCustomAccent').value.trim();
-  const darkMode = document.getElementById('settingDarkMode').checked;
-  await idbPut('settings', { key:'profileName', value:name });
-  await idbPut('settings', { key:'fontSize', value:fz });
-  await idbPut('settings', { key:'accent', value:accent });
-  if(accent === 'custom') await idbPut('settings', { key:'customAccent', value:customAccent });
-  await idbPut('settings', { key:'darkMode', value:!!darkMode });
-  await loadSettingsToState();
+  const dark = document.getElementById('settingDarkMode').checked;
+  await idbPut('settings', { key:'profileName', value: name });
+  await idbPut('settings', { key:'fontSize', value: fz });
+  await idbPut('settings', { key:'accent', value: accent });
+  await idbPut('settings', { key:'darkMode', value: !!dark });
+  applySettings();
   document.getElementById('settingsModal').classList.remove('visible');
 });
 
-/* export */
+/* clear caches (calls SW) */
+document.getElementById('clearCachesBtn').addEventListener('click', async ()=>{
+  if(navigator.serviceWorker && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' });
+    showToast('Sent clear caches to service worker');
+  } else {
+    showToast('Service worker not active');
+  }
+});
+
+/* export local data */
 document.getElementById('openExportBtn').addEventListener('click', async ()=>{
-  const settings = await idbGetAll('settings');
-  const users = await idbGetAll('users');
-  const auth = await idbGetAll('auth');
-  const data = await idbGetAll('data');
+  const settings = await idbGetAll('settings'); const users = await idbGetAll('users'); const auth = await idbGetAll('auth'); const data = await idbGetAll('data');
   const payload = { exportedAt: new Date().toISOString(), settings, users, auth, data };
   const blob = new Blob([JSON.stringify(payload,null,2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a'); a.href = url; a.download = 'tomorrow-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
 });
 
-/* offline & share buttons */
+/* offline download button */
 document.getElementById('downloadOfflineBtn').addEventListener('click', async ()=>{
   if(navigator.serviceWorker && navigator.serviceWorker.controller){
     navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' });
     showToast('Started download for offline. Background task will cache core assets.');
   } else showToast('Service worker not active yet.');
 });
+
+/* share */
 document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
-  const shareData = { title: 'Tomorrow — Personal App', text: 'Try my Tomorrow PWA', url: location.origin + location.pathname };
+  const shareData = { title: 'Tomorrow — Personal App', text: 'Try Tomorrow PWA', url: location.origin + location.pathname };
   if(navigator.share){ try{ await navigator.share(shareData); }catch(e){ showToast('Share canceled'); } }
   else { try{ await navigator.clipboard.writeText(shareData.url); showToast('Link copied'); }catch(e){ showToast('Cannot copy link'); } }
 });
 
-/* Floating ring behavior: explode fragments on tap, react to device shake */
-(function bindFloat(){
-  const btn = document.getElementById('aiFloatBtn'); if(!btn) return;
-  const ring = btn.querySelector('.ai-ring');
-  const core = btn.querySelector('.ai-core');
-  let busy = false;
-
-  function createFragments(){
-    for(let i=0;i<12;i++){
-      const f = document.createElement('div'); f.className='frag';
-      const rect = btn.getBoundingClientRect();
-      f.style.left = (rect.left + rect.width/2 - 3) + 'px';
-      f.style.top = (rect.top + rect.height/2 - 3) + 'px';
-      document.body.appendChild(f);
-      const angle = Math.random()*Math.PI*2; const dist = 36 + Math.random()*36;
-      const dx = Math.cos(angle)*dist; const dy = Math.sin(angle)*dist;
-      requestAnimationFrame(()=>{ f.style.transition = 'transform 600ms cubic-bezier(.2,.8,.2,1), opacity 600ms'; f.style.transform = `translate(${dx}px,${dy}px) scale(${0.8+Math.random()*0.8})`; f.style.opacity = '0'; });
-      setTimeout(()=> f.remove(), 700);
-    }
+/* apply settings UI */
+async function applySettings(){
+  const settingsAll = await idbGetAll('settings'); const settings = {}; settingsAll.forEach(s=>settings[s.key]=s.value);
+  document.documentElement.style.setProperty('--base-font-size', (settings.fontSize || 15) + 'px');
+  if(settings.profileName) document.getElementById('appTitle').textContent = `Tomorrow Personal App — ${settings.profileName}`;
+  if(settings.darkMode){
+    document.documentElement.style.setProperty('--bg','#061223');
+    document.documentElement.style.setProperty('--surface','#071022');
+    document.documentElement.style.setProperty('--text','#e6eef6');
+    document.documentElement.style.setProperty('--muted','#9aa6b2');
+  } else {
+    document.documentElement.style.setProperty('--bg','#F7FBFF');
+    document.documentElement.style.setProperty('--surface','#fff');
+    document.documentElement.style.setProperty('--text','#0f172a');
+    document.documentElement.style.setProperty('--muted','#6B7280');
   }
+}
 
-  btn.addEventListener('click', async (e)=>{
-    if(busy) { showToast('Processing...'); return; }
-    busy = true;
-    ring.style.transform = 'scale(0.86)';
-    core.style.transform = 'scale(0.72)';
-    createFragments();
-    await new Promise(r=>setTimeout(r, 300));
-    ring.style.transition = 'transform 420ms cubic-bezier(.2,.8,.2,1)';
-    core.style.transition = 'transform 420ms';
-    ring.style.transform = 'scale(1)';
-    core.style.transform = 'scale(1)';
-    showToast('Smart action — done');
-    setTimeout(()=>{ busy = false; ring.style.transition=''; core.style.transition=''; }, 520);
-  });
+/* install prompt handling */
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(installBtn){ installBtn.style.display='inline-block'; installBtn.onclick = async ()=>{
+    installBtn.style.display='none'; deferredInstallPrompt.prompt();
+    try{ const choice = await deferredInstallPrompt.userChoice; if(choice && choice.outcome==='accepted') showToast('App installed'); else showToast('Install dismissed'); }catch(e){}
+    deferredInstallPrompt = null;
+  }; }
+});
 
-  if('DeviceMotionEvent' in window){
-    let last = { x: null, y: null, z: null, t: Date.now() };
-    window.addEventListener('devicemotion', (ev)=>{
-      try{
-        const a = ev.accelerationIncludingGravity || ev.acceleration || {};
-        if(a.x == null || a.y == null || a.z == null) return;
-        const now = Date.now();
-        if(last.x !== null){
-          const dx = Math.abs(a.x - last.x); const dy = Math.abs(a.y - last.y); const dz = Math.abs(a.z - last.z);
-          const delta = dx + dy + dz;
-          if(delta > 18 && (now - last.t) > 300){
-            ring.style.transition = 'transform 220ms cubic-bezier(.2,.8,.2,1)';
-            ring.style.transform = 'translateX(6px) scale(1.02)';
-            core.style.transition = 'transform 220ms';
-            core.style.transform = 'translateX(10px)';
-            setTimeout(()=>{ ring.style.transform=''; core.style.transform=''; }, 260);
-            last.t = now;
-          }
-        }
-        last.x = a.x; last.y = a.y; last.z = a.z;
-      }catch(e){}
-    }, { passive:true });
-  }
-})();
-
-/* Intercept popstate on home to show leave-confirm modal */
-(function setupLeaveConfirm(){
-  const leaveModal = document.getElementById('leaveConfirm');
-  const leaveNo = document.getElementById('leaveNo');
-  const leaveYes = document.getElementById('leaveYes');
-
-  window.addEventListener('popstate', (ev) => {
-    if(ev.state && ev.state.spacer){
-      leaveModal.classList.add('visible');
-      leaveModal.style.display = 'block';
-      history.pushState({ home:true, spacer:true }, '');
-    }
-  });
-
-  leaveNo.addEventListener('click', () => {
-    const leaveModal = document.getElementById('leaveConfirm');
-    leaveModal.classList.remove('visible');
-    leaveModal.style.display = 'none';
-    try{ history.pushState({ home:true, spacer:true }, ''); }catch(e){}
-  });
-
-  leaveYes.addEventListener('click', () => {
-    const leaveModal = document.getElementById('leaveConfirm');
-    leaveModal.classList.remove('visible');
-    leaveModal.style.display = 'none';
+/* service worker registration (robust) */
+async function registerServiceWorker(){
+  if(!('serviceWorker' in navigator)){ showToast('Service worker not supported'); return; }
+  const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+  if(location.protocol !== 'https:' && !isLocalhost){ console.warn('SW requires HTTPS or localhost'); /* still try to register on localhost */ }
+  try{
+    // quick fetch to assert availability (helps debugging)
     try{
-      history.replaceState({}, '');
-      history.back();
-    }catch(e){
-      window.history.back();
-    }
-  });
-})();
+      const pre = await fetch('/sw.js', { method:'GET', cache:'no-store', mode:'same-origin' });
+      if(!pre.ok && pre.type !== 'opaque') console.warn('sw.js fetch returned', pre.status);
+    }catch(e){ /* ignore */ }
+    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    console.log('SW registered', reg);
+  }catch(e){
+    console.warn('sw register failed', e);
+    showToast('Service worker registration failed (check console).');
+  }
+}
+registerServiceWorker();
 
-/* beforeunload: avoid accidental prompt on internal navigations */
-let unsavedChanges = false;
-window.addEventListener('beforeunload', (e)=>{
-  if(unsavedChanges && !allowInternalNav){
-    e.preventDefault();
-    e.returnValue = '';
+/* startup flow */
+async function boot(){
+  await applySettings().catch(()=>{});
+  // If no profile, show profile modal
+  const profileWrap = await idbGet('settings','profile');
+  if(!profileWrap){
+    // show modal for mobile-first UX
+    showProfileModal();
+  } else {
+    // update auth.current from profile
+    await idbPut('auth', { key:'current', value:{ email: profileWrap._email, name: profileWrap.name }});
+    // attempt to sync if online
+    trySyncProfileToServer();
+    renderHubGrid();
+  }
+
+  // ensure we render hub grid always (guest fallback)
+  await renderHubGrid();
+}
+boot();
+
+/* when network comes back, try sync and refresh status */
+window.addEventListener('online', () => { showToast('Online — syncing...'); trySyncProfileToServer(); renderHubGrid(); });
+window.addEventListener('offline', () => { showToast('Offline — local-only mode'); document.getElementById('offlineNote').style.display = 'block'; });
+
+/* minimal floating T action */
+document.getElementById('aiFloatBtn').addEventListener('click', ()=>{ showToast('Smart action (placeholder)'); });
+
+/* pageshow/back handling: push spacer state */
+try{
+  const pathname = (location.pathname || '/').split('/').pop() || '';
+  const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/';
+  if(isIndex){ history.replaceState({ home: true }, ''); history.pushState({ home: true, spacer: true }, ''); }
+}catch(e){}
+
+/* leave confirm */
+window.addEventListener('popstate', (ev) => {
+  if(ev.state && ev.state.spacer){
+    if(confirm('Do you want to leave the app?')) { history.back(); } else { history.pushState({ home:true, spacer:true }, ''); }
   }
 });
-  </script>
+
+</script>
 </body>
 </html>

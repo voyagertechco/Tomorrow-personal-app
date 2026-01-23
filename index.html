@@ -265,10 +265,12 @@
   <script>
 /* =========================
    Upgraded index.html script
+   - Adds beforeinstallprompt handling (shows Install button & triggers prompt)
+   - Keeps manifest & sw untouched (per request)
    - Rotating ring + T with explode + shake
    - Auth: unlock, register, forgot PIN (lookup & reset)
    - sessionStorage restore so back -> index won't ask for PIN if session active
-   - Leave-confirm intercept on home back
+   - Leave-confirm intercept on home back (green No, red Yes)
    ========================= */
 
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
@@ -373,13 +375,9 @@ async function getUserByEmail(email){
 
 /* server helpers (best-effort) */
 async function sendRegisterToServer(user){
-  try{
-    await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: user.email, name: user.name, location: user.location, country: user.country, meta: user.meta || {} }) });
-  }catch(e){}
+  try{ await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: user.email, name: user.name, location: user.location, country: user.country, meta: user.meta || {} }) }); }catch(e){}
 }
-async function pingServer(email){
-  try{ await fetch('/api/ping', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) }); }catch(e){}
-}
+async function pingServer(email){ try{ await fetch('/api/ping', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) }); }catch(e){} }
 async function fetchServerStatusAndApply(email){
   if(!email) return null;
   try{
@@ -400,8 +398,15 @@ async function fetchServerStatusAndApply(email){
         showLockOverlay();
       }
     } else {
-      // if unlocked externally, we optionally auto-restore (not enabled by default)
-      // we leave UI to show sign-in if user isn't signed in
+      const current = await idbGet('auth','current');
+      if(!current || !current.value){
+        showToast('Account is enabled on server. Sign in to continue.', 4000);
+        await idbPut('settings', { key:'lastEmail', value: email });
+        const regEmailEl = document.getElementById('regEmail');
+        if(regEmailEl) regEmailEl.value = email;
+      } else {
+        await renderHubGrid();
+      }
     }
     return data;
   }catch(e){
@@ -410,7 +415,7 @@ async function fetchServerStatusAndApply(email){
   }
 }
 
-/* HUB items (unchanged content) */
+/* HUB items */
 const hubItems = [
   { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 1v22M5 7h14" stroke-linecap="round"/></svg>` },
   { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
@@ -425,7 +430,7 @@ const hubItems = [
 let allowInternalNav = false;
 function markInternalNav(){ allowInternalNav = true; setTimeout(()=> allowInternalNav = false, 900); }
 
-/* Render hub grid — changed to use text Enable/Disable */
+/* Render hub grid */
 async function renderHubGrid(){
   const grid = document.getElementById('hubGrid'); if(!grid) return; grid.innerHTML = '';
   const sessionAuth = readSessionAuth();
@@ -448,10 +453,7 @@ async function renderHubGrid(){
     btn.addEventListener('click', async (ev)=>{
       const targetIsDisable = ev.target && ev.target.matches('button[data-app]');
       if(targetIsDisable) return;
-      if(disabledForUser){
-        showToast('This section is disabled for your account.');
-        return;
-      }
+      if(disabledForUser){ showToast('This section is disabled for your account.'); return; }
       markInternalNav();
       location.href = it.href;
     });
@@ -465,14 +467,12 @@ async function renderHubGrid(){
       });
     }
 
-    if(disabledForUser){
-      btn.style.opacity = '0.56';
-      btn.style.filter = 'grayscale(6%)';
-    }
-
+    if(disabledForUser){ btn.style.opacity = '0.56'; btn.style.filter = 'grayscale(6%)'; }
     grid.appendChild(btn);
   });
 }
+
+/* Toggle app disable for user */
 async function toggleAppDisabledForCurrentUser(appId){
   const currentAuth = await idbGet('auth','current');
   if(!currentAuth || !currentAuth.value) { showToast('Sign in to toggle'); return; }
@@ -496,7 +496,7 @@ function showToast(msg,ms=2200){
   setTimeout(()=> el.remove(), ms);
 }
 
-/* Lock overlay tabs */
+/* Lock overlay controls (tabs) */
 const tabSignIn = document.getElementById('tabSignIn');
 const tabRegister = document.getElementById('tabRegister');
 const signinBox = document.getElementById('signinBox');
@@ -523,12 +523,13 @@ function showTab(t){
 function showLockOverlay(){ document.getElementById('lockOverlay').style.display = 'flex'; document.getElementById('lockOverlay').setAttribute('aria-hidden','false'); }
 function hideLockOverlay(){ document.getElementById('lockOverlay').style.display = 'none'; document.getElementById('lockOverlay').setAttribute('aria-hidden','true'); }
 
-/* inactivity / session timeout */
+/* ===== Session inactivity / timeout handling ===== */
 let lastActivity = Date.now();
 function updateLastActivity(){ lastActivity = Date.now(); try{ sessionStorage.setItem('lastActivity', String(lastActivity)); }catch(e){} }
 function throttle(fn, wait){ let last=0; return function(...args){ const now = Date.now(); if(now - last > wait){ last = now; fn.apply(this,args); } }; }
 ['click','keydown','mousemove','touchstart'].forEach(ev => window.addEventListener(ev, throttle(updateLastActivity, 800), {passive:true}));
 window.addEventListener('storage', (e) => { if(e.key === 'lastActivity' && e.newValue) lastActivity = Math.max(lastActivity, parseInt(e.newValue,10)); });
+
 function handleSessionTimeout(){
   const session = readSessionAuth();
   if(session && session.email){
@@ -635,11 +636,41 @@ function showWelcome(name){
   setTimeout(()=> { el.classList.remove('visible'); }, 2400);
 }
 
-/* Boot */
+/* BEFOREINSTALLPROMPT handling - shows install button and triggers prompt when clicked */
+let deferredInstallPrompt = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  if(installBtn){
+    installBtn.style.display = 'inline-block';
+    installBtn.addEventListener('click', async () => {
+      installBtn.style.display = 'none';
+      if(!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      try{
+        const choice = await deferredInstallPrompt.userChoice;
+        if(choice && choice.outcome === 'accepted') showToast('App installed');
+        else showToast('Install dismissed');
+      }catch(e){}
+      deferredInstallPrompt = null;
+    }, { once: true });
+  }
+});
+window.addEventListener('appinstalled', (evt) => {
+  showToast('App installed');
+  if(installBtn) installBtn.style.display = 'none';
+});
+
+/* Boot & pageshow resilience
+   - On load or when page is restored from bfcache, ensure session is restored from sessionStorage and lock overlay is not shown if session exists.
+*/
 async function boot(){
   try{ await loadSettingsToState(); }catch(e){}
   const users = await idbGetAll('users');
   let current = await idbGet('auth','current');
+
+  // Prefer fast per-tab session (sessionStorage/localStorage) if present
   const sessionAuth = readSessionAuth();
   if(sessionAuth && (!current || !current.value || current.value.email !== sessionAuth.email)){
     try{ await idbPut('auth', { key:'current', value:{ email: sessionAuth.email, name: sessionAuth.name } }); current = await idbGet('auth','current'); }catch(e){}
@@ -648,6 +679,7 @@ async function boot(){
   const lastEmailRec = await idbGet('settings','lastEmail');
 
   if(!current || !current.value){
+    // require sign-in/register
     showLockOverlay();
     if(!users || users.length === 0) showTab('register'); else showTab('signin');
     document.getElementById('hubGrid').innerHTML = '';
@@ -657,21 +689,39 @@ async function boot(){
     startStatusPolling(email, 15);
     try{ await pingServer(email); await fetchServerStatusAndApply(email); }catch(e){}
     updateLastActivity();
+    hideLockOverlay(); // ensure overlay hidden if we have a current session
     showWelcome(current.value.name);
     await renderHubGrid();
   }
 
-  // On home page push a spacer state to intercept back press and show our own leave confirm
+  // Push spacer state on home so back tries to leave shows our modal
   try{
     const pathname = (location.pathname || '/').split('/').pop() || '';
     const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/';
     if(isIndex){
+      // replace and push so back triggers popstate with our spacer state
       history.replaceState({ home: true }, '');
       history.pushState({ home: true, spacer: true }, '');
     }
   }catch(e){}
 }
 boot();
+
+// pageshow handler — when user navigates back via browser, bfcache may restore page
+window.addEventListener('pageshow', (ev) => {
+  // if there's a session snapshot, ensure overlay is hidden
+  const sessionAuth = readSessionAuth();
+  if(sessionAuth && sessionAuth.email){
+    hideLockOverlay();
+    // restore idb current if missing
+    idbGet('auth','current').then(cur => {
+      if(!cur || !cur.value){ idbPut('auth', { key:'current', value:{ email: sessionAuth.email, name: sessionAuth.name } }).then(()=>{ renderHubGrid().catch(()=>{}); }); }
+    }).catch(()=>{});
+  } else {
+    // if no session and overlay hidden, show it
+    idbGetAll('users').then(users => { if(users && users.length > 0) showLockOverlay(); });
+  }
+});
 
 /* service worker registration (unchanged) */
 if('serviceWorker' in navigator){
@@ -688,7 +738,7 @@ if('serviceWorker' in navigator){
   }).catch(e => console.warn('sw register failed', e));
 }
 
-/* settings & export wiring (unchanged) */
+/* settings & export wiring */
 document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{ await loadSettingsToState(); document.getElementById('settingsModal').classList.add('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','false'); });
 document.getElementById('settingsCancelX').addEventListener('click', ()=>{ document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true'); });
 document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
@@ -705,6 +755,8 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
   await loadSettingsToState();
   document.getElementById('settingsModal').classList.remove('visible');
 });
+
+/* export */
 document.getElementById('openExportBtn').addEventListener('click', async ()=>{
   const settings = await idbGetAll('settings');
   const users = await idbGetAll('users');
@@ -739,7 +791,6 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
   function createFragments(){
     for(let i=0;i<12;i++){
       const f = document.createElement('div'); f.className='frag';
-      // attach to btn for simple coordinate flow
       const rect = btn.getBoundingClientRect();
       f.style.left = (rect.left + rect.width/2 - 3) + 'px';
       f.style.top = (rect.top + rect.height/2 - 3) + 'px';
@@ -757,7 +808,6 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
     ring.style.transform = 'scale(0.86)';
     core.style.transform = 'scale(0.72)';
     createFragments();
-    // short delay to simulate action
     await new Promise(r=>setTimeout(r, 300));
     ring.style.transition = 'transform 420ms cubic-bezier(.2,.8,.2,1)';
     core.style.transition = 'transform 420ms';
@@ -767,7 +817,6 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
     setTimeout(()=>{ busy = false; ring.style.transition=''; core.style.transition=''; }, 520);
   });
 
-  // device motion shake -> nudge ring + core
   if('DeviceMotionEvent' in window){
     let last = { x: null, y: null, z: null, t: Date.now() };
     window.addEventListener('devicemotion', (ev)=>{
@@ -800,12 +849,9 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
   const leaveYes = document.getElementById('leaveYes');
 
   window.addEventListener('popstate', (ev) => {
-    // If state indicates our spacer, show modal and push state back so user stays until they confirm
     if(ev.state && ev.state.spacer){
-      // show modal
       leaveModal.classList.add('visible');
       leaveModal.style.display = 'block';
-      // push state back to keep user in place until they choose
       history.pushState({ home:true, spacer:true }, '');
     }
   });
@@ -814,7 +860,6 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
     const leaveModal = document.getElementById('leaveConfirm');
     leaveModal.classList.remove('visible');
     leaveModal.style.display = 'none';
-    // ensure we're on the spacer state
     try{ history.pushState({ home:true, spacer:true }, ''); }catch(e){}
   });
 
@@ -822,13 +867,10 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
     const leaveModal = document.getElementById('leaveConfirm');
     leaveModal.classList.remove('visible');
     leaveModal.style.display = 'none';
-    // Remove spacer and go back (actual navigation)
     try{
-      // Replace current state so the next back goes out of app
       history.replaceState({}, '');
       history.back();
     }catch(e){
-      // Fallback: allow default
       window.history.back();
     }
   });

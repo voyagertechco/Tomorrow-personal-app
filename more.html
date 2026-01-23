@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>More — Tomorrow</title>
+
+  <meta name="theme-color" content="#0f172a"/>
+
+  <style>
+    :root{
+      --bg-main:#0b1220;
+      --bg-card:#111827;
+      --bg-soft:#0f172a;
+      --text-main:#e5e7eb;
+      --text-muted:#9ca3af;
+      --accent:#6366f1;
+      --radius:18px;
+    }
+
+    *{box-sizing:border-box}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(99,102,241,0.08), transparent),
+        radial-gradient(900px 500px at 90% 10%, rgba(56,189,248,0.06), transparent),
+        var(--bg-main);
+      color:var(--text-main);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+
+    .wrap{
+      max-width:820px;
+      width:100%;
+    }
+
+    .card{
+      background:linear-gradient(180deg, var(--bg-card), var(--bg-soft));
+      border-radius:var(--radius);
+      padding:28px;
+      box-shadow:
+        0 20px 40px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.04);
+    }
+
+    h1{
+      margin:0 0 8px 0;
+      font-size:26px;
+      letter-spacing:-0.02em;
+    }
+
+    .subtitle{
+      color:var(--text-muted);
+      font-size:15px;
+      margin-bottom:24px;
+      max-width:600px;
+    }
+
+    .section{
+      background:rgba(255,255,255,0.03);
+      border:1px dashed rgba(255,255,255,0.08);
+      border-radius:14px;
+      padding:22px;
+      margin-top:20px;
+    }
+
+    .empty{
+      text-align:center;
+      color:var(--text-muted);
+      font-size:14px;
+    }
+
+    .empty strong{
+      display:block;
+      color:var(--text-main);
+      font-size:16px;
+      margin-bottom:6px;
+    }
+
+    .about{
+      font-size:14px;
+      line-height:1.6;
+      color:var(--text-muted);
+    }
+
+    .about strong{
+      color:var(--text-main);
+      font-weight:600;
+    }
+
+    footer{
+      margin-top:26px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--text-muted);
+      font-size:13px;
+    }
+
+    .badge{
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(99,102,241,0.15);
+      color:#c7d2fe;
+      font-size:12px;
+      border:1px solid rgba(99,102,241,0.25);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>More</h1>
+      <div class="subtitle">
+        Extra links, tools, and updates — shared by the Tomorrow team.
+      </div>
+
+      <!-- EMPTY / COMING SOON -->
+      <div class="section">
+        <div class="empty">
+          <strong>Nothing here yet</strong>
+          We’ll be adding links, tools, and useful resources soon.<br/>
+          Check back later.
+        </div>
+      </div>
+
+      <!-- ABOUT -->
+      <div class="section">
+        <div class="about">
+          <strong>About Tomorrow</strong><br/><br/>
+          Tomorrow is being built to make AI interactions simpler, more human,
+          and more reliable — even when you’re offline or on low connectivity.
+          <br/><br/>
+          This page will be used to share official links, apps, announcements,
+          and recommended tools. Users can view content here, but cannot post or edit anything.
+        </div>
+      </div>
+
+      <footer>
+        <div class="badge">Viewer only</div>
+        <div>© Tomorrow</div>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

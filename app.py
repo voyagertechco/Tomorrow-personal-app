@@ -12,7 +12,7 @@ Environment:
   TODAY_DB           - path to sqlite DB (default: tomorrow.db)
   APP_HOST           - host to bind (default: 0.0.0.0)
   APP_PORT           - port to bind  (default: 5000)
-  ADMIN_PATH         - admin path suffix (default: admin256)
+  ADMIN_PATH         - admin path suffix (default: admin128)
   TRUST_PROXY        - if "1", consider X-Forwarded-For for client IP detection
   KEEPALIVE_ENABLE   - "1" to enable the internal keepalive thread (default "1")
   KEEPALIVE_INTERVAL - seconds between heartbeats (default 240)
@@ -44,7 +44,7 @@ from flask_cors import CORS
 DB_PATH = os.environ.get("TODAY_DB", "tomorrow.db")
 APP_HOST = os.environ.get("APP_HOST", "0.0.0.0")
 APP_PORT = int(os.environ.get("APP_PORT", 5000))
-ADMIN_PATH = os.environ.get("ADMIN_PATH", "admin256")
+ADMIN_PATH = os.environ.get("ADMIN_PATH", "admin128")
 TRUST_PROXY = os.environ.get("TRUST_PROXY", "0") == "1"
 
 KEEPALIVE_ENABLE = os.environ.get("KEEPALIVE_ENABLE", "1") != "0"
@@ -797,3 +797,4 @@ if __name__ == "__main__":
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
     # Note: for production, run behind a process manager (systemd, supervisor) or use gunicorn.
     app.run(host=APP_HOST, port=APP_PORT, debug=debug_mode)
+

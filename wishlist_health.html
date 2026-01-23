@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Wishlist & Health</title>
+<style>
+body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
+.header{padding:14px;background:linear-gradient(90deg,#EC4899,#F472B6);color:#fff;border-radius:0 0 18px 18px}
+.container{padding:14px}
+.card{background:white;padding:14px;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+.btn{padding:10px;border-radius:12px;border:0;background:#EC4899;color:#fff;width:100%}
+.item{padding:10px 0;border-bottom:1px solid #eee}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center}
+</style>
+</head>
+<body>
+<div class="header"><h1>Wishlist & Health</h1><small>Your desires & wellbeing</small></div>
+<div class="container">
+  <div class="card">
+    <input id="wishText" placeholder="Add wish or health note"/>
+    <button class="btn" onclick="addWish()" style="margin-top:8px">Add</button>
+  </div>
+  <div class="card">
+    <div id="wishList"></div>
+  </div>
+</div>
+<div class="bottom-nav"><a href="index.html">🏠</a></div>
+
+<script>
+const DB='tomorrowai-db';
+function db(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
+async function all(){const d=await db();return new Promise(res=>{const r=d.transaction('data').objectStore('data').getAll();r.onsuccess=e=>res(e.target.result||[]);});}
+async function put(v){const d=await db();d.transaction('data','readwrite').objectStore('data').put(v);}
+async function del(id){const d=await db();d.transaction('data','readwrite').objectStore('data').delete(id);}
+
+async function render(){
+  const items=(await all()).filter(x=>x.type==='wish');
+  wishList.innerHTML=items.map(i=>`<div class="item">${i.text}<button onclick="remove('${i.id}')">✕</button></div>`).join('');
+}
+async function addWish(){
+  if(!wishText.value)return;
+  await put({id:'wish_'+Date.now(),type:'wish',text:wishText.value});
+  wishText.value=''; render();
+}
+async function remove(id){await del(id);render();}
+render();
+</script>
+</body>
+</html>

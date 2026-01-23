@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SW Debug — Tomorrow</title>
+  <style>
+    body{font-family:Inter,system-ui,Arial;padding:18px;background:#F7FBFF;color:#0f172a}
+    button{padding:10px 12px;border-radius:10px;border:0;background:#0EA5A4;color:#fff;margin-right:8px;margin-bottom:8px}
+    .muted{color:#6B7280;font-size:13px}
+    pre{background:#fff;padding:10px;border-radius:8px;box-shadow:0 6px 18px rgba(2,6,23,0.06);max-height:320px;overflow:auto}
+  </style>
+</head>
+<body>
+  <h2>Service worker debug</h2>
+  <p class="muted">
+    Use these controls to ask the service worker to download offline assets or clear caches. Helpful while testing on mobile.
+  </p>
+
+  <div style="margin-top:12px">
+    <button id="btnDownload">Download for offline</button>
+    <button id="btnClear">Clear caches</button>
+    <button id="btnList">List caches</button>
+    <button id="btnRefresh">Refresh registration</button>
+  </div>
+
+  <h3 style="margin-top:14px">Status</h3>
+  <div id="status" class="muted">waiting...</div>
+  <pre id="out">-- output --</pre>
+
+  <script>
+    const out = document.getElementById('out');
+    const status = document.getElementById('status');
+
+    function log(...args){
+      out.textContent = args.join(' ') + '\n' + out.textContent;
+    }
+
+    async function postToSW(msg){
+      if(navigator.serviceWorker && navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage(msg);
+        log('posted:', JSON.stringify(msg));
+      } else if(navigator.serviceWorker && navigator.serviceWorker.ready){
+        const reg = await navigator.serviceWorker.ready;
+        reg.active && reg.active.postMessage(msg);
+        log('posted to active:', JSON.stringify(msg));
+      } else {
+        log('No active service worker to post to');
+      }
+    }
+
+    document.getElementById('btnDownload').addEventListener('click', async ()=>{
+      status.textContent = 'requesting download...';
+      await postToSW({ type:'DOWNLOAD_OFFLINE' });
+      status.textContent = 'download requested';
+    });
+
+    document.getElementById('btnClear').addEventListener('click', async ()=>{
+      if(!confirm('Clear caches? This removes local cached files.')) return;
+      status.textContent = 'clearing caches...';
+      await postToSW({ type:'CLEAR_CACHES' });
+
+      // also clear from page context
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+
+      const after = await caches.keys();
+      log('caches after clear:', JSON.stringify(after));
+      status.textContent = 'caches cleared';
+    });
+
+    document.getElementById('btnList').addEventListener('click', async ()=>{
+      const keys = await caches.keys();
+      log('cache keys:', JSON.stringify(keys));
+      for(const k of keys){
+        const c = await caches.open(k);
+        const r = await c.keys();
+        log(k + ' -> ' + r.length + ' entries');
+        // show first few entries
+        r.slice(0, 20).forEach(req => log('  -', req.url));
+        if(r.length > 20) log('  ...', (r.length - 20), 'more');
+      }
+      status.textContent = 'listed caches';
+    });
+
+    document.getElementById('btnRefresh').addEventListener('click', async ()=>{
+      try{
+        const reg = await navigator.serviceWorker.getRegistration();
+        if(reg) { await reg.update(); log('registration updated'); }
+        else { log('no registration found'); }
+      }catch(e){ log('refresh err', e && e.message); }
+    });
+
+    // SW messages
+    if(navigator.serviceWorker){
+      navigator.serviceWorker.addEventListener('message', (ev)=>{
+        log('SW → page', JSON.stringify(ev.data));
+      });
+    }
+
+    // initial status
+    (async ()=>{
+      try{
+        const regs = await navigator.serviceWorker.getRegistrations();
+        log('registrations:', regs.length);
+      }catch(e){
+        log('getRegistrations failed:', e && e.message);
+      }
+      status.textContent = 'ready';
+    })();
+  </script>
+</body>
+</html>

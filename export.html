@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Export / Import — Tomorrow</title>
+  <style>
+    body{font-family:Inter,system-ui,Arial;background:#F7FBFF;margin:0;color:#0f172a}
+    .top{display:flex;align-items:center;padding:14px}
+    .card{background:#fff;margin:12px;border-radius:12px;padding:12px;box-shadow:0 10px 30px rgba(2,6,23,0.06)}
+    .btn{padding:8px;border-radius:10px;border:0;background:#0EA5A4;color:#fff}
+    .small{font-size:13px;color:#6B7280}
+  </style>
+</head>
+<body>
+  <div class="top">
+    <a href="index.html">←</a>
+    <div style="margin-left:10px"><div style="font-weight:700">Export / Import</div><div class="small">Backup & restore your data</div></div>
+  </div>
+
+  <div style="padding:12px">
+    <div class="card">
+      <strong>Export</strong>
+      <div class="small">Download your IndexedDB data as JSON</div>
+      <div style="margin-top:8px"><button id="exportBtn" class="btn">Export JSON</button></div>
+    </div>
+
+    <div class="card">
+      <strong>Import</strong>
+      <div class="small">Upload a JSON file previously exported to restore</div>
+      <input id="fileInput" type="file" accept="application/json" style="margin-top:8px" />
+      <div style="margin-top:8px"><button id="importBtn" class="btn">Import</button></div>
+    </div>
+  </div>
+
+<script>
+const DB_NAME='tomorrowai-db', DB_VER=2;
+function openDB(){ return new Promise((res,rej)=>{ const req=indexedDB.open(DB_NAME,DB_VER); req.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'}); if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'}); if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'}); if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'}); }; req.onsuccess=e=>res(e.target.result); req.onerror=e=>rej(e.target.error); }); }
+async function idbGetAll(store){ const db = await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readonly'); const r=tx.objectStore(store).getAll(); r.onsuccess=e=>res(e.target.result||[]); r.onerror=e=>rej(e.target.error); }); }
+async function idbPut(store,val){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).put(val); tx.oncomplete=()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
+
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  const settings = await idbGetAll('settings');
+  const users = await idbGetAll('users');
+  const auth = await idbGetAll('auth');
+  const data = await idbGetAll('data');
+  const payload = { exportedAt: new Date().toISOString(), settings, users, auth, data };
+  const blob = new Blob([JSON.stringify(payload,null,2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'tomorrow-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', async ()=>{
+  const f = document.getElementById('fileInput').files[0];
+  if(!f) return alert('Select a JSON file first');
+  const txt = await f.text();
+  try{
+    const obj = JSON.parse(txt);
+    if(!confirm('Import will merge data into your local DB. Continue?')) return;
+    if(obj.settings) for(const s of obj.settings) await idbPut('settings', s);
+    if(obj.users) for(const u of obj.users) await idbPut('users', u);
+    if(obj.auth) for(const a of obj.auth) await idbPut('auth', a);
+    if(obj.data) for(const d of obj.data) await idbPut('data', d);
+    alert('Import complete');
+  } catch(e){ alert('Invalid JSON'); }
+});
+</script>
+</body>
+</html>

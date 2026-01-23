@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Unlock — Tomorrow</title>
+  <link rel="manifest" href="/manifest.json" />
+  <style>
+    :root{--bg:#F7FBFF;--card:#fff;--accent:#0EA5A4;--muted:#6B7280;--text:#0f172a}
+    body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,Arial;background:var(--bg);color:var(--text)}
+    .card{width:94%;max-width:440px;background:var(--card);border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.06)}
+    h2{margin:0 0 6px 0}
+    .muted{color:var(--muted);font-size:13px;margin-bottom:12px}
+    input{width:100%;padding:12px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);margin-bottom:10px;font-size:15px}
+    button{padding:10px 12px;border-radius:10px;border:0;background:var(--accent);color:#fff;cursor:pointer}
+    .link{background:transparent;border:0;color:var(--accent);cursor:pointer;padding:8px;border-radius:8px}
+    .row{display:flex;gap:8px}
+    .more-menu{margin-top:10px;padding:10px;border-radius:10px;background:#F3F4F6;display:none}
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-label="Authentication Gate">
+    <h2>Welcome — Unlock</h2>
+    <div class="muted" id="desc">Enter your local PIN to continue, or choose other options in <strong>More</strong>.</div>
+
+    <div id="pinArea">
+      <input id="pin" type="password" inputmode="numeric" placeholder="4-8 digit PIN" />
+      <div style="display:flex;gap:8px">
+        <button id="unlockBtn">Unlock</button>
+        <button id="setBtn" class="link" title="Set a new PIN">Set / Register</button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;margin-top:12px">
+      <button id="moreToggle" class="link">More ▾</button>
+      <button id="bypassBtn" class="link">Enter without auth</button>
+    </div>
+
+    <div id="moreMenu" class="more-menu" aria-hidden="true">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button id="regBtn" class="link">Register (profile + PIN)</button>
+        <button id="personalizeBtn" class="link">Personalize (open Settings)</button>
+        <button id="fingerBtn" class="link">Try Fingerprint (WebAuthn)</button>
+        <div class="muted">Fingerprint requires HTTPS (or localhost). If unsupported, fallback to PIN.</div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px" class="muted">
+      If authentication is enabled in Settings, you'll be required to unlock here. If not enabled, you may enter without auth.
+    </div>
+  </div>
+
+<script>
+/* ======== IndexedDB helpers (shared DB name) ======== */
+const DB_NAME='tomorrowai-db', DB_VER=2;
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'});
+      if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'});
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+async function idbGet(store, key){
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(store,'readonly');
+    const r = tx.objectStore(store).get(key);
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = e => rej(e.target.error);
+  });
+}
+async function idbGetAll(store){
+  const db = await openDB();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readonly');
+    const r = tx.objectStore(store).getAll();
+    r.onsuccess = e => res(e.target.result || []);
+    r.onerror = e => rej(e.target.error);
+  });
+}
+async function idbPut(store, val){
+  const db = await openDB();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readwrite');
+    tx.objectStore(store).put(val);
+    tx.oncomplete = ()=>res(true);
+    tx.onerror = e=>rej(e.target.error);
+  });
+}
+async function idbDelete(store, key){
+  const db = await openDB();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction(store,'readwrite');
+    tx.objectStore(store).delete(key);
+    tx.oncomplete = ()=>res(true);
+    tx.onerror = e=>rej(e.target.error);
+  });
+}
+
+/* ======== helpers ======== */
+function qs(k){ return new URL(location.href).searchParams.get(k); }
+function goNext(href){ location.href = href || 'index.html'; }
+function showMsg(txt){ alert(txt); }
+
+/* ======== Boot: check if already unlocked in this session ======== */
+(async function boot(){
+  try{
+    // load flags
+    const sActive = await idbGet('settings','authActive');
+    const sEnable = await idbGet('settings','authEnabled');
+    const nextParam = qs('next') || 'index.html';
+
+    // if user already has current auth (unlocked in this session) -> go straight to next
+    const current = await idbGet('auth','current');
+    if(current && current.value){
+      // already authenticated in this session
+      goNext(nextParam);
+      return;
+    }
+
+    // If lock not active (authActive false) then show skip option; otherwise require PIN/unlock
+    const authActive = !!(sActive && sActive.value);
+    const authEnabled = !!(sEnable && sEnable.value);
+
+    // if auth was enabled earlier but flagged to activate on next launch, that flag will be set by index on enable.
+    // Here, if authActive is false but authEnabled is true and no 'authActivateOnNextLaunch' flag remains, we treat as not active.
+    // The index page when enabling sets authActivateOnNextLaunch; we rely on index to transfer that flag to authActive on next app full load.
+    // UX: however, we still allow "Enter without auth" if authActive is false.
+    // UI adjustments:
+    const pinArea = document.getElementById('pinArea');
+    const bypass = document.getElementById('bypassBtn');
+
+    if(!authActive){
+      // no enforced lock this launch — allow bypass and keep PIN optional
+      bypass.style.display = 'inline-block';
+      // help text
+      document.getElementById('desc').textContent = 'Authentication is not enforced right now. You can enter the app or set/register a PIN.';
+    } else {
+      // lock active: hide bypass, require unlock
+      bypass.style.display = 'none';
+      document.getElementById('desc').textContent = 'Authentication required. Enter your PIN or use a registered credential.';
+    }
+  }catch(err){
+    console.warn('auth boot err', err);
+  }
+})();
+
+/* ======== Unlock with PIN ======== */
+document.getElementById('unlockBtn').addEventListener('click', async ()=>{
+  const p = document.getElementById('pin').value.trim();
+  if(!/^\d{4,8}$/.test(p)){ showMsg('PIN must be 4-8 digits'); return; }
+  const users = await idbGetAll('users');
+  const found = users.find(u => String(u.pass) === p);
+  if(found){
+    await idbPut('auth', { key:'current', value: { email: found.email, name: found.name } });
+    const next = qs('next') || 'index.html';
+    goNext(next);
+  } else {
+    showMsg('PIN not found. Use Register/Set to create a new PIN.');
+  }
+});
+
+/* ======== Set / Register (quick) ======== */
+document.getElementById('setBtn').addEventListener('click', async ()=>{
+  const p = document.getElementById('pin').value.trim();
+  if(!/^\d{4,8}$/.test(p)){ showMsg('PIN must be 4-8 digits'); return; }
+  const email = prompt('Local id (used as key):', 'local@you') || 'local@you';
+  const name = prompt('Display name (optional):', '') || email;
+  await idbPut('users', { email, pass: p, name });
+  await idbPut('auth', { key:'current', value: { email, name } });
+  // enable auth settings and ensure it becomes enforced next launch:
+  await idbPut('settings', { key:'authEnabled', value: true });
+  await idbPut('settings', { key:'authActivateOnNextLaunch', value: true });
+  showMsg('PIN set and you are now unlocked locally. Auth will be enforced next app launch.');
+  goNext(qs('next') || 'index.html');
+});
+
+/* ======== More menu toggle ======== */
+document.getElementById('moreToggle').addEventListener('click', ()=>{
+  const m = document.getElementById('moreMenu');
+  m.style.display = (m.style.display === 'none' || !m.style.display) ? 'block' : 'none';
+  m.setAttribute('aria-hidden', m.style.display === 'none' ? 'true' : 'false');
+});
+
+/* ======== Register (with profile) ======== */
+document.getElementById('regBtn').addEventListener('click', async ()=>{
+  const name = prompt('Display name (optional):', '') || '';
+  const pin = prompt('Choose a 4-8 digit PIN:', '');
+  if(!pin || !/^\d{4,8}$/.test(pin)){ showMsg('Invalid PIN'); return; }
+  const email = prompt('Local id (used as key):', 'local@you') || 'local@you';
+  await idbPut('users', { email, pass: pin, name: name || email });
+  await idbPut('auth', { key:'current', value:{ email, name: name || email } });
+  // set settings to enable auth and enforce next launch
+  await idbPut('settings', { key:'profileName', value: name || '' });
+  await idbPut('settings', { key:'authEnabled', value: true });
+  await idbPut('settings', { key:'authActivateOnNextLaunch', value: true });
+  showMsg('Registered and unlocked. Auth will be enforced next app launch.');
+  goNext(qs('next') || 'index.html');
+});
+
+/* ======== Personalize: open index and auto-open settings ======== */
+document.getElementById('personalizeBtn').addEventListener('click', async ()=> {
+  // If there's a user record create current auth marker for the session (no PIN requirement now)
+  const users = await idbGetAll('users');
+  if(users.length === 0){
+    showMsg('No local profiles found. Please Register first.');
+    return;
+  }
+  const u = users[0];
+  await idbPut('auth', { key:'current', value: { email: u.email, name: u.name }});
+  // open index with param to auto-open settings
+  location.href = 'index.html?openSettings=1';
+});
+
+/* ======== Fingerprint (WebAuthn) attempt - graceful fallback ======== */
+document.getElementById('fingerBtn').addEventListener('click', async ()=>{
+  if(!window.PublicKeyCredential){
+    showMsg('WebAuthn / fingerprint not supported in this browser.');
+    return;
+  }
+  try{
+    // Lightweight local-only create: many browsers require proper RPID and HTTPS; this may fail gracefully.
+    showMsg('Attempting WebAuthn credential creation. Follow browser prompts.');
+    const publicKey = {
+      challenge: Uint8Array.from(String(Date.now()), c=>c.charCodeAt(0)),
+      rp: { name: "Tomorrow" },
+      user: { id: Uint8Array.from('local-user', c=>c.charCodeAt(0)), name: 'local@you', displayName: 'Local user' },
+      pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+      timeout: 60000
+    };
+    const cred = await navigator.credentials.create({ publicKey });
+    if(cred){
+      // success: mark session as unlocked (purely local)
+      await idbPut('auth', { key:'current', value:{ email:'webauthn-local', name:'Fingerprint user' }});
+      showMsg('Fingerprint credential created locally. You are unlocked.');
+      goNext(qs('next') || 'index.html');
+    } else {
+      showMsg('WebAuthn did not create a credential. Try PIN.');
+    }
+  }catch(err){
+    console.warn('webAuthn', err);
+    showMsg('Fingerprint/WebAuthn attempt failed or blocked. Use PIN or Register instead.');
+  }
+});
+
+/* ======== Enter without auth (bypass) ======== */
+document.getElementById('bypassBtn').addEventListener('click', ()=> {
+  // Open app but do not change any settings; user consciously bypasses the lock this session.
+  const next = qs('next') || 'index.html';
+  location.href = next;
+});
+</script>
+</body>
+</html>

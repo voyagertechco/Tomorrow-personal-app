@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>babra — keepalive</title>
+  <meta name="theme-color" content="#4F46E5"/>
+  <style>
+    body{font-family:system-ui,Arial,Helvetica,sans-serif;margin:0;background:#0b1220;color:#e6eef6;display:flex;align-items:center;justify-content:center;height:100vh}
+    .card{background:#071022;padding:20px;border-radius:12px;max-width:720px;width:92%;box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+    h1{margin:0 0 8px 0;font-size:18px}
+    .muted{opacity:.8;font-size:13px}
+    .row{display:flex;gap:8px;align-items:center;margin-top:12px}
+    button{padding:8px 12px;border-radius:8px;border:0;background:#4f46e5;color:white;cursor:pointer}
+    input{padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:transparent;color:inherit}
+    pre{background:#071022;padding:8px;border-radius:8px;overflow:auto}
+    label{min-width:90px}
+    a.small{color:#93c5fd;text-decoration:none;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-labelledby="title">
+    <h1 id="title">babra — keepalive</h1>
+    <div class="muted">This page will periodically ping <code>/api/health</code> and show server keepalive status. Open it on a remote machine or monitoring host to generate real inbound traffic.</div>
+
+    <div class="row" style="margin-top:12px">
+      <label for="interval">Interval (sec):</label>
+      <input id="interval" type="number" min="10" value="180" style="width:96px"/>
+      <button id="startBtn">Start</button>
+      <button id="stopBtn" disabled>Stop</button>
+      <a class="small" id="autostartHint" href="?autostart=1" title="Open with autostart">Open with autostart</a>
+    </div>
+
+    <div style="margin-top:12px">
+      <div class="muted">Last ping:</div>
+      <pre id="lastPing">never</pre>
+      <div class="muted" style="margin-top:8px">Keepalive status (server):</div>
+      <pre id="keepalive">loading…</pre>
+    </div>
+
+    <div style="margin-top:12px" class="muted">Tip: point an external uptime monitor at <code>/api/health</code> or open this page on a remote device so the requests come from outside the host.</div>
+  </div>
+
+<script>
+(() => {
+  const startBtn = document.getElementById('startBtn');
+  const stopBtn  = document.getElementById('stopBtn');
+  const intervalEl = document.getElementById('interval');
+  const lastPing = document.getElementById('lastPing');
+  const keepalive = document.getElementById('keepalive');
+
+  let timer = null;
+
+  async function doPing(){
+    try{
+      // cache-buster and no-store to avoid caches
+      const url = '/api/health?_=' + Date.now();
+      const res = await fetch(url, { cache: 'no-store', mode: 'same-origin' });
+      const json = await res.json().catch(()=>({ ok:false }));
+      lastPing.textContent = new Date().toISOString() + '  |  status: ' + (res.status || 'n/a') + '\\n' + JSON.stringify(json);
+    }catch(e){
+      lastPing.textContent = new Date().toISOString() + '  |  ERROR: ' + String(e);
+    }
+
+    // show server-side keepalive row if available
+    try{
+      const ku = await fetch('/api/keepalive_status?_=' + Date.now(), { cache: 'no-store' });
+      const kjson = await ku.json().catch(()=>null);
+      keepalive.textContent = JSON.stringify(kjson, null, 2);
+    }catch(e){
+      keepalive.textContent = 'error: '+ String(e);
+    }
+  }
+
+  function start(){
+    stop(); // clear any existing timer
+    const secs = Math.max(10, Number(intervalEl.value) || 180);
+    doPing(); // immediate
+    timer = setInterval(() => {
+      // small image request to mimic typical client resource load
+      const img = new Image();
+      img.src = '/babra-pixel?_=' + Date.now();
+      doPing();
+    }, secs * 1000);
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+  }
+
+  function stop(){
+    if(timer) { clearInterval(timer); timer = null; }
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+  }
+
+  startBtn.addEventListener('click', start);
+  stopBtn.addEventListener('click', stop);
+
+  // auto-start when opened with ?autostart=1
+  if(new URLSearchParams(location.search).get('autostart') === '1') start();
+})();
+</script>
+</body>
+</html>

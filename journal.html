@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Journal — Tomorrow</title>
+<link rel="manifest" href="/manifest.json"/>
+<style>
+  /* --- Theme variables (can be switched live) --- */
+  :root{
+    --bg: #F7FBFF;
+    --card: #fff;
+    --text: #0f172a;
+    --muted: #6B7280;
+    --accent: #0EA5A4;
+    --accent-2: #3B82F6;
+    --paper: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));
+    --radius: 12px;
+    --shadow: 0 10px 30px rgba(2,6,23,0.06);
+    --line: rgba(15,23,42,0.04);
+    --font: Inter, system-ui, Arial, sans-serif;
+    --max-width: 920px;
+  }
+  /* Notebook mode will use subtle lines and warm paper; Night mode overrides variables when applied by JS. */
+
+  html,body{height:100%;margin:0;background:var(--bg);font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased}
+  .app{max-width:var(--max-width);margin:0 auto;min-height:100vh;padding:12px 12px 120px}
+  header{display:flex;align-items:center;gap:12px;padding:8px 0}
+  header h1{margin:0;font-size:20px}
+  header .sub{font-size:13px;color:var(--muted)}
+  .btn{padding:10px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer}
+  .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(15,23,42,0.06)}
+  .btn.danger{background:#ef4444}
+  .row{display:flex;gap:8px;align-items:center}
+  .col{flex:1}
+  .card{background:var(--card);border-radius:var(--radius);padding:12px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.04)}
+  .muted{color:var(--muted);font-size:13px}
+  .small{font-size:13px;color:var(--muted)}
+
+  /* Layout: mobile-first stacked; on wide show two columns */
+  .layout{display:flex;flex-direction:column;gap:12px}
+  @media(min-width:860px){ .layout{flex-direction:row} .left{flex:0 0 46%} .right{flex:1} }
+
+  /* New entry editor */
+  .editor{background:var(--paper);border-radius:10px;padding:10px;border:1px solid var(--line);min-height:220px;position:relative}
+  .editor textarea{width:100%;min-height:140px;border:0;outline:none;font-size:15px;padding:8px;background:transparent;resize:vertical;font-family:inherit;color:var(--text)}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
+  .input{padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:white}
+
+  /* Notebook visual lines for notebook mode */
+  .notebook .editor{background:
+    repeating-linear-gradient(to bottom, rgba(240,239,255,0.06) 0px, rgba(240,239,255,0.06) 36px, transparent 36px, transparent 72px),
+    linear-gradient(90deg, rgba(255,255,255,0.98), rgba(255,255,255,0.98));
+    box-shadow: 0 8px 24px rgba(20,18,50,0.04);
+  }
+
+  /* Entries list */
+  .entries{display:flex;flex-direction:column;gap:8px}
+  .entry{padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));display:flex;flex-direction:column;gap:8px}
+  .entry.head{display:flex;justify-content:space-between;align-items:center}
+  .entry .meta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .tag{padding:4px 8px;border-radius:999px;background:rgba(14,165,164,0.08);color:var(--accent);font-weight:600;font-size:12px}
+  .mood{font-size:18px}
+  .preview{color:var(--muted);white-space:pre-wrap;max-height:84px;overflow:hidden}
+
+  /* controls on top of list */
+  .list-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  .search{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);}
+
+  /* selection bar for bulk actions */
+  .selection-bar{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(14,165,164,0.06);color:var(--accent);font-weight:600}
+
+  /* modal backdrop */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s}
+  .modal-backdrop.visible{visibility:visible;opacity:1}
+  .modal{background:var(--card);padding:14px;border-radius:12px;max-width:520px;width:92%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
+
+  /* bottom home FAB */
+  .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
+  .fab-home svg{width:22px;height:22px;fill:white}
+
+  /* small helpers */
+  .muted-xs{font-size:12px;color:var(--muted)}
+  .favorite{color:#F59E0B;font-weight:700}
+  .trash-note{font-size:13px;color:var(--muted);margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="app" id="app">
+    <header>
+      <a href="index.html" aria-label="Home" title="Home" style="text-decoration:none;color:var(--accent)">←</a>
+      <div>
+        <h1>Journal</h1>
+        <div class="sub muted">Write, reflect, and browse — private & beautiful</div>
+      </div>
+
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button class="btn ghost" id="importBtn">Import</button>
+        <button class="btn ghost" id="exportBtn">Export</button>
+        <button class="btn ghost" id="settingsBtn">Settings</button>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- left: editor -->
+      <section class="left">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>New entry</strong><div class="muted">Write freely — supports mood, tags, and date</div></div>
+            <div class="muted-xs">Auto-save enabled</div>
+          </div>
+
+          <div style="margin-top:8px" class="editor" id="editorArea">
+            <input id="entryTitle" class="input" placeholder="Title (optional)" style="margin-bottom:8px;font-weight:700"/>
+            <textarea id="entryText" placeholder="Write what happened, how you feel, or anything you want to remember..."></textarea>
+
+            <div class="meta">
+              <input id="entryDate" class="input" type="date" />
+              <select id="entryMood" class="input" style="width:110px">
+                <option value="">Mood</option>
+                <option value="😊">😊 Happy</option>
+                <option value="😔">😔 Sad</option>
+                <option value="😌">😌 Calm</option>
+                <option value="😡">😡 Angry</option>
+                <option value="😴">😴 Tired</option>
+                <option value="🤧">🤧 Unwell</option>
+              </select>
+              <input id="entryTags" class="input" placeholder="Tags (comma separated)" />
+              <button id="saveEntry" class="btn">Save</button>
+              <button id="clearEntry" class="btn ghost">Clear</button>
+            </div>
+
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <label class="muted-xs">Mode:</label>
+              <select id="modeSelect" class="input" style="width:160px">
+                <option value="notebook">Notebook (lined)</option>
+                <option value="minimal">Minimal</option>
+                <option value="night">Night</option>
+              </select>
+              <label class="muted-xs" style="margin-left:auto">Font size</label>
+              <input id="fontSize" type="number" min="13" max="20" value="15" style="width:72px" class="input"/>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <strong>Quick actions</strong>
+          <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+            <button id="newQuick" class="btn ghost">New blank</button>
+            <button id="todayQuick" class="btn ghost">Add Today's Note</button>
+            <button id="favQuick" class="btn ghost">Show Favorites</button>
+          </div>
+          <div class="trash-note">Deleted entries go to Trash — you can restore them or empty Trash permanently.</div>
+        </div>
+      </section>
+
+      <!-- right: entries list -->
+      <section class="right">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>Entries</strong><div class="muted">Search, filter, edit or delete</div></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input id="searchInput" class="search" placeholder="Search text, tags or date (YYYY-MM-DD)"/>
+              <select id="filterSelect" class="input" style="width:140px">
+                <option value="all">All</option>
+                <option value="notes">Notes</option>
+                <option value="favorites">Favorites</option>
+                <option value="trash">Trash</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="selectionBar" class="selection-bar" style="display:none;margin-top:10px">
+            <div id="selectionCount">0 selected</div>
+            <div style="margin-left:auto;display:flex;gap:8px">
+              <button id="bulkRestore" class="btn ghost">Restore</button>
+              <button id="bulkDelete" class="btn danger">Delete permanently</button>
+              <button id="bulkMoveTrash" class="btn ghost">Move to Trash</button>
+            </div>
+          </div>
+
+          <div style="margin-top:10px" id="entriesContainer" class="entries"></div>
+        </div>
+      </section>
+    </main>
+
+    <!-- settings modal -->
+    <div id="settingsModal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Journal Settings</strong><div class="muted">Privacy & display options</div></div>
+          <div><button id="closeSettings" class="btn ghost">Close</button></div>
+        </div>
+
+        <div style="margin-top:12px">
+          <label class="muted-xs">Security: Enable a security question for Journal (stored hashed locally)</label>
+          <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+            <select id="secEnable" class="input" style="width:120px"><option value="no">Disabled</option><option value="yes">Enabled</option></select>
+            <select id="secQuestion" class="input" style="width:260px">
+              <option value="pet">Your first pet?</option>
+              <option value="city">City you were born in?</option>
+              <option value="school">Mother's maiden name?</option>
+              <option value="custom">Custom question</option>
+            </select>
+          </div>
+          <input id="secCustomQ" class="input" placeholder="Custom question" style="margin-top:8px;display:none"/>
+          <input id="secAnswer" class="input" placeholder="Answer (hidden)" type="password" style="margin-top:8px"/>
+
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button id="saveSecurity" class="btn">Save security</button>
+            <button id="removeSecurity" class="btn ghost">Remove security</button>
+          </div>
+
+          <hr style="margin:12px 0;border:none;border-top:1px solid rgba(15,23,42,0.04)"/>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button id="clearAllBtn" class="btn danger">Remove all local journal data</button>
+            <button id="closeCacheBtn" class="btn ghost">Clear caches (SW)</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Unlock modal shown when security is enabled -->
+    <div id="unlockModal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal">
+        <div><strong>Unlock Journal</strong><div class="muted">Answer your security question to access your entries</div></div>
+        <div id="unlockQuestion" style="margin-top:10px;font-weight:600"></div>
+        <input id="unlockAnswer" class="input" placeholder="Answer" style="margin-top:8px"/>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="unlockSubmit" class="btn">Unlock</button>
+          <button id="unlockCancel" class="btn ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- editor edit modal -->
+    <div id="editModal" class="modal-backdrop" aria-hidden="true">
+      <div class="modal">
+        <div><strong>Edit entry</strong></div>
+        <input id="editTitle" class="input" placeholder="Title" style="margin-top:8px"/>
+        <textarea id="editText" style="width:100%;min-height:140px;margin-top:8px;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+          <input id="editDate" type="date" class="input" />
+          <select id="editMood" class="input" style="width:120px"><option value="">Mood</option><option value="😊">😊</option><option value="😔">😔</option><option value="😌">😌</option></select>
+          <input id="editTags" class="input" placeholder="Tags" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="saveEdit" class="btn">Save</button>
+          <button id="cancelEdit" class="btn ghost">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- floating home -->
+    <div class="fab-home" id="homeBtn" title="Home">
+      <svg viewBox="0 0 24 24"><path d="M12 3l9 8h-3v8h-4v-6H10v6H6v-8H3z"></path></svg>
+    </div>
+  </div>
+
+<script>
+/* ---------------------------
+   IndexedDB helpers (same DB used app-wide)
+   --------------------------- */
+const DB_NAME = 'tomorrowai-db', DB_VER = 2;
+function openDB(){ return new Promise((res,rej)=>{ const req = indexedDB.open(DB_NAME, DB_VER); req.onupgradeneeded = e => { const db = e.target.result; if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'}); if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'}); if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'}); if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'}); }; req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error); }); }
+async function idbPut(store, val){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).put(val); tx.oncomplete = ()=>res(true); tx.onerror = e=>rej(e.target.error); }); }
+async function idbGet(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).get(key); r.onsuccess = e => res(e.target.result); r.onerror = e => rej(e.target.error); }); }
+async function idbGetAll(store){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).getAll(); r.onsuccess = e => res(e.target.result || []); r.onerror = e => rej(e.target.error); }); }
+async function idbDelete(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete = ()=>res(true); tx.onerror = e => rej(e.target.error); }); }
+
+/* ---------------------------
+   SHA-256 for security answers
+   --------------------------- */
+async function sha256hex(text){
+  const enc = new TextEncoder().encode(text);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ---------------------------
+   Utility helpers
+   --------------------------- */
+function toISODate(d){ if(!d) return null; const y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2); return `${y}-${m}-${day}`; }
+function nowTs(){ return Date.now(); }
+function uid(prefix='j'){ return prefix + '_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
+function showToast(msg, time=1800){ const el = document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.textContent = msg; document.body.appendChild(el); setTimeout(()=>el.remove(), time); }
+
+/* ---------------------------
+   App state
+   --------------------------- */
+let state = {
+  entries: [],       // all entries loaded from DB
+  selection: new Set(),
+  unlocked: true,    // will be set by security logic
+  editingId: null
+};
+
+/* ---------------------------
+   Load entries and render
+   --------------------------- */
+async function loadEntries(){
+  const all = await idbGetAll('data');
+  // ensure entries have consistent structure: { id, type:'journal', title, text, date(iso), mood, tags:[...], ts, favorite:boolean, deleted:boolean, deletedAt }
+  state.entries = (all.filter(x => x.type === 'journal')).sort((a,b)=> (b.ts||0) - (a.ts||0));
+}
+
+function parseTags(s){
+  if(!s) return [];
+  return s.split(',').map(x => x.trim()).filter(Boolean).slice(0,6);
+}
+
+function renderEntries(){
+  const container = document.getElementById('entriesContainer');
+  container.innerHTML = '';
+  const filter = document.getElementById('filterSelect').value;
+  const search = (document.getElementById('searchInput').value || '').toLowerCase().trim();
+
+  let list = state.entries.slice();
+
+  // apply filter
+  if(filter === 'favorites') list = list.filter(e=> e.favorite);
+  else if(filter === 'trash') list = list.filter(e=> e.deleted);
+  else if(filter === 'notes') list = list.filter(e=> !e.deleted);
+  // apply search
+  if(search){
+    list = list.filter(e => {
+      const hay = ((e.title||'') + ' ' + (e.text||'') + ' ' + (e.tags||[]).join(' ') + ' ' + (e.date||'')).toLowerCase();
+      return hay.includes(search);
+    });
+  }
+
+  if(list.length === 0){
+    container.innerHTML = `<div class="muted">No entries found.</div>`;
+    return;
+  }
+
+  list.forEach(e => {
+    const el = document.createElement('div');
+    el.className = 'entry';
+    el.dataset.id = e.id;
+    const head = document.createElement('div'); head.className='entry head';
+    const left = document.createElement('div');
+    const title = document.createElement('div'); title.innerHTML = `<strong>${e.title ? e.title : (e.text ? e.text.slice(0,32) : 'Untitled')}</strong>`;
+    const meta = document.createElement('div'); meta.className='meta-row muted-sm';
+    const dateText = e.date ? e.date : new Date(e.ts).toLocaleString();
+    meta.innerHTML = `<span class="muted-xs">${dateText}</span> ${e.mood ? '<span class="mood">'+e.mood+'</span>' : ''} ${e.favorite ? '<span class="tag" style="background:rgba(245,158,11,0.12);color:#F59E0B">★ favorite</span>' : ''} ${e.deleted ? '<span class="tag" style="background:rgba(239,68,68,0.06);color:#ef4444">Trash</span>' : ''}`;
+    left.appendChild(title); left.appendChild(meta);
+
+    const right = document.createElement('div');
+    right.style.display = 'flex'; right.style.gap = '8px'; right.style.alignItems = 'center';
+
+    const check = document.createElement('input'); check.type='checkbox'; check.style.width='18px'; check.style.height='18px';
+    check.checked = state.selection.has(e.id);
+    check.addEventListener('change', (ev) => {
+      if(ev.target.checked) state.selection.add(e.id); else state.selection.delete(e.id);
+      refreshSelectionBar();
+    });
+    right.appendChild(check);
+
+    const favBtn = document.createElement('button'); favBtn.className='btn ghost'; favBtn.innerHTML = e.favorite ? '★' : '☆';
+    favBtn.addEventListener('click', async ()=>{ e.favorite = !e.favorite; await idbPut('data', e); await loadEntries(); renderEntries(); });
+    right.appendChild(favBtn);
+
+    const editBtn = document.createElement('button'); editBtn.className='btn ghost'; editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', ()=> openEditModal(e));
+    right.appendChild(editBtn);
+
+    const delBtn = document.createElement('button'); delBtn.className='btn ghost'; delBtn.textContent = e.deleted ? 'Delete' : 'Trash';
+    delBtn.addEventListener('click', async ()=> {
+      if(e.deleted){
+        if(!confirm('Permanently delete this entry? This cannot be undone.')) return;
+        await idbDelete('data', e.id);
+        await loadEntries(); renderEntries(); showToast('Entry permanently deleted');
+      } else {
+        e.deleted = true; e.deletedAt = Date.now(); await idbPut('data', e); await loadEntries(); renderEntries(); showToast('Moved to Trash');
+      }
+    });
+    right.appendChild(delBtn);
+
+    head.appendChild(left); head.appendChild(right);
+    el.appendChild(head);
+
+    const preview = document.createElement('div'); preview.className='preview'; preview.textContent = e.text || '';
+    el.appendChild(preview);
+
+    if(e.tags && e.tags.length){
+      const tagsRow = document.createElement('div'); tagsRow.style.display='flex'; tagsRow.style.gap='6px'; tagsRow.style.flexWrap='wrap';
+      e.tags.forEach(t => { const tEl = document.createElement('div'); tEl.className='tag'; tEl.textContent = t; tagsRow.appendChild(tEl); });
+      el.appendChild(tagsRow);
+    }
+
+    container.appendChild(el);
+  });
+  refreshSelectionBar();
+}
+
+/* ---------------------------
+   Selection bar and bulk actions
+   --------------------------- */
+function refreshSelectionBar(){
+  const selBar = document.getElementById('selectionBar');
+  const count = state.selection.size;
+  if(count === 0){ selBar.style.display = 'none'; return; }
+  selBar.style.display = 'flex';
+  document.getElementById('selectionCount').textContent = `${count} selected`;
+}
+
+document.getElementById('bulkMoveTrash').addEventListener('click', async ()=>{
+  if(state.selection.size === 0) return;
+  if(!confirm('Move selected entries to Trash?')) return;
+  for(const id of Array.from(state.selection)){
+    const e = state.entries.find(x=>x.id===id);
+    if(e){ e.deleted = true; e.deletedAt = Date.now(); await idbPut('data', e); }
+  }
+  state.selection.clear();
+  await loadEntries(); renderEntries(); showToast('Moved to Trash');
+});
+document.getElementById('bulkRestore').addEventListener('click', async ()=>{
+  if(state.selection.size === 0) return;
+  for(const id of Array.from(state.selection)){
+    const e = state.entries.find(x=>x.id===id);
+    if(e){ e.deleted = false; delete e.deletedAt; await idbPut('data', e); }
+  }
+  state.selection.clear();
+  await loadEntries(); renderEntries(); showToast('Restored selected');
+});
+document.getElementById('bulkDelete').addEventListener('click', async ()=>{
+  if(state.selection.size === 0) return;
+  if(!confirm('Permanently delete selected entries?')) return;
+  for(const id of Array.from(state.selection)){
+    await idbDelete('data', id);
+  }
+  state.selection.clear();
+  await loadEntries(); renderEntries(); showToast('Permanently deleted');
+});
+
+/* ---------------------------
+   Create / Save / Clear entry
+   --------------------------- */
+async function saveNewEntry(){
+  const title = document.getElementById('entryTitle').value.trim();
+  const text = document.getElementById('entryText').value.trim();
+  const date = document.getElementById('entryDate').value || toISODate(new Date());
+  const mood = document.getElementById('entryMood').value || '';
+  const tags = parseTags(document.getElementById('entryTags').value || '');
+  if(!text && !title){ alert('Write something or add a title before saving'); return; }
+  const ent = { id: uid('journal'), type:'journal', title, text, date, mood, tags, ts: nowTs(), favorite:false, deleted:false };
+  await idbPut('data', ent);
+  await loadEntries(); renderEntries();
+  document.getElementById('entryTitle').value=''; document.getElementById('entryText').value=''; document.getElementById('entryTags').value=''; showToast('Saved');
+}
+
+document.getElementById('saveEntry').addEventListener('click', saveNewEntry);
+document.getElementById('clearEntry').addEventListener('click', ()=>{ if(!confirm('Clear editor?')) return; document.getElementById('entryTitle').value=''; document.getElementById('entryText').value=''; document.getElementById('entryTags').value=''; });
+
+/* quick actions */
+document.getElementById('newQuick').addEventListener('click', ()=>{ document.getElementById('entryTitle').focus(); });
+document.getElementById('todayQuick').addEventListener('click', async ()=>{ document.getElementById('entryDate').value = toISODate(new Date()); document.getElementById('entryText').value = ''; document.getElementById('entryTitle').value = `Note — ${new Date().toLocaleDateString()}`; });
+document.getElementById('favQuick').addEventListener('click', ()=>{ document.getElementById('filterSelect').value='favorites'; renderEntries(); });
+
+/* search and filter */
+document.getElementById('searchInput').addEventListener('input', ()=> renderEntries());
+document.getElementById('filterSelect').addEventListener('change', ()=> renderEntries());
+
+/* ---------------------------
+   Edit modal
+   --------------------------- */
+function openEditModal(entry){
+  state.editingId = entry.id;
+  document.getElementById('editTitle').value = entry.title || '';
+  document.getElementById('editText').value = entry.text || '';
+  document.getElementById('editDate').value = entry.date || toISODate(new Date(entry.ts));
+  document.getElementById('editMood').value = entry.mood || '';
+  document.getElementById('editTags').value = (entry.tags || []).join(', ');
+  document.getElementById('editModal').classList.add('visible'); document.getElementById('editModal').style.visibility='visible'; document.getElementById('editModal').style.opacity=1;
+  document.getElementById('editModal').setAttribute('aria-hidden','false');
+}
+
+document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
+function closeEditModal(){
+  state.editingId = null;
+  document.getElementById('editModal').classList.remove('visible'); document.getElementById('editModal').style.visibility='hidden'; document.getElementById('editModal').style.opacity=0;
+  document.getElementById('editModal').setAttribute('aria-hidden','true');
+}
+
+document.getElementById('saveEdit').addEventListener('click', async ()=>{
+  const id = state.editingId; if(!id) return;
+  const ent = state.entries.find(x=>x.id===id); if(!ent) return;
+  ent.title = document.getElementById('editTitle').value.trim();
+  ent.text = document.getElementById('editText').value.trim();
+  ent.date = document.getElementById('editDate').value || ent.date;
+  ent.mood = document.getElementById('editMood').value || '';
+  ent.tags = parseTags(document.getElementById('editTags').value || '');
+  ent.ts = nowTs();
+  await idbPut('data', ent);
+  await loadEntries(); renderEntries(); closeEditModal(); showToast('Entry updated');
+});
+
+/* ---------------------------
+   Export / Import
+   --------------------------- */
+document.getElementById('exportBtn').addEventListener('click', async ()=>{
+  const data = await idbGetAll('data');
+  const settings = await idbGetAll('settings');
+  const payload = { exportedAt: new Date().toISOString(), data, settings };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'journal-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('importBtn').addEventListener('click', ()=> {
+  const input = document.createElement('input'); input.type='file'; input.accept='application/json';
+  input.addEventListener('change', async (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const text = await f.text();
+      const obj = JSON.parse(text);
+      if(obj.data && Array.isArray(obj.data)){
+        for(const item of obj.data){
+          // avoid duplicates by id; if id exists skip
+          const existing = await idbGet('data', item.id);
+          if(!existing) await idbPut('data', item);
+        }
+        await loadEntries(); renderEntries(); showToast('Import complete');
+      } else alert('Invalid import file');
+    }catch(err){ alert('Import failed: ' + err.message); }
+  });
+  input.click();
+});
+
+/* ---------------------------
+   Settings modal (security)
+   --------------------------- */
+document.getElementById('settingsBtn').addEventListener('click', async ()=> {
+  // load current security state
+  const sec = await idbGet('settings','journal.security');
+  document.getElementById('secEnable').value = (sec && sec.value && sec.value.enabled) ? 'yes' : 'no';
+  if(sec && sec.value && sec.value.custom) document.getElementById('secCustomQ').value = sec.value.customQuestion || '';
+  document.getElementById('secCustomQ').style.display = (sec && sec.value && sec.value.questionKey === 'custom') ? 'block' : 'none';
+  document.getElementById('settingsModal').classList.add('visible'); document.getElementById('settingsModal').style.visibility='visible'; document.getElementById('settingsModal').style.opacity=1; document.getElementById('settingsModal').setAttribute('aria-hidden','false');
+});
+document.getElementById('closeSettings').addEventListener('click', ()=> {
+  document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').style.visibility='hidden'; document.getElementById('settingsModal').style.opacity=0; document.getElementById('settingsModal').setAttribute('aria-hidden','true');
+});
+
+document.getElementById('secQuestion').addEventListener('change', (e)=> {
+  document.getElementById('secCustomQ').style.display = e.target.value === 'custom' ? 'block' : 'none';
+});
+
+document.getElementById('saveSecurity').addEventListener('click', async ()=>{
+  const enabled = document.getElementById('secEnable').value === 'yes';
+  if(!enabled){
+    await idbPut('settings', { key:'journal.security', value: { enabled:false }});
+    showToast('Security disabled');
+    return;
+  }
+  const qKey = document.getElementById('secQuestion').value;
+  const customQ = document.getElementById('secCustomQ').value.trim();
+  const answer = document.getElementById('secAnswer').value || '';
+  if(!answer) return alert('Provide an answer');
+  const hash = await sha256hex(answer);
+  const payload = { enabled:true, questionKey:qKey, customQuestion: customQ, answerHash: hash };
+  await idbPut('settings', { key:'journal.security', value: payload });
+  showToast('Security saved locally (hashed)');
+  document.getElementById('secAnswer').value = '';
+});
+
+document.getElementById('removeSecurity').addEventListener('click', async ()=>{
+  if(!confirm('Remove the journal security question?')) return;
+  await idbPut('settings', { key:'journal.security', value: { enabled:false }});
+  showToast('Security removed');
+});
+
+/* ---------------------------
+   Unlock flow on load if security enabled
+   --------------------------- */
+async function checkSecurityOnLoad(){
+  const sec = await idbGet('settings','journal.security');
+  if(sec && sec.value && sec.value.enabled){
+    // show unlock modal and block interaction
+    document.getElementById('unlockModal').classList.add('visible'); document.getElementById('unlockModal').style.visibility='visible'; document.getElementById('unlockModal').style.opacity=1; document.getElementById('unlockModal').setAttribute('aria-hidden','false');
+    // populate question
+    const k = sec.value.questionKey;
+    const q = k === 'custom' ? (sec.value.customQuestion || 'Security question') : (k === 'pet' ? "What was your first pet's name?" : k === 'city' ? "What city were you born in?" : "What is your mother's maiden name?");
+    document.getElementById('unlockQuestion').textContent = q;
+    state.unlocked = false;
+  } else {
+    state.unlocked = true;
+  }
+}
+
+document.getElementById('unlockCancel').addEventListener('click', ()=> {
+  // keep locked but hide prompt? We'll keep it visible and do nothing to prevent access. To be safe we hide UI by overlay:
+  alert('Journal remains locked until you unlock it.');
+});
+
+document.getElementById('unlockSubmit').addEventListener('click', async ()=>{
+  const ans = document.getElementById('unlockAnswer').value || '';
+  const sec = await idbGet('settings','journal.security');
+  if(!sec || !sec.value || !sec.value.enabled){ document.getElementById('unlockModal').classList.remove('visible'); return; }
+  const hash = await sha256hex(ans);
+  if(hash === sec.value.answerHash){
+    state.unlocked = true;
+    document.getElementById('unlockModal').classList.remove('visible');
+    document.getElementById('unlockModal').style.visibility='hidden'; document.getElementById('unlockModal').style.opacity=0;
+    document.getElementById('unlockModal').setAttribute('aria-hidden','true');
+    // load and render now
+    await initLoad();
+    showToast('Unlocked');
+  } else {
+    alert('Incorrect answer');
+  }
+});
+
+/* ---------------------------
+   Remove all local journal data (danger)
+   --------------------------- */
+document.getElementById('clearAllBtn').addEventListener('click', async ()=>{
+  if(!confirm('Remove all journal entries and settings for the journal? This cannot be undone.')) return;
+  const all = await idbGetAll('data');
+  for(const it of all.filter(x=>x.type==='journal')) await idbDelete('data', it.id);
+  await idbPut('settings', { key:'journal.security', value: { enabled:false }});
+  // reload state
+  await initLoad();
+  showToast('All journal data removed');
+});
+
+/* ---------------------------
+   Clear caches / service worker messaging
+   --------------------------- */
+document.getElementById('closeCacheBtn').addEventListener('click', async ()=>{
+  if(!confirm('Ask service worker to clear cached assets? App will reload.')) return;
+  if(navigator.serviceWorker && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' });
+  }
+  setTimeout(()=> location.reload(true), 800);
+});
+
+/* ---------------------------
+   Page mode / theme handling
+   --------------------------- */
+document.getElementById('modeSelect').addEventListener('change', (e)=>{
+  const mode = e.target.value;
+  document.body.classList.remove('notebook');
+  if(mode === 'notebook'){ document.body.classList.add('notebook'); }
+  else if(mode === 'night'){
+    // apply night theme variables
+    document.documentElement.style.setProperty('--bg', '#071022');
+    document.documentElement.style.setProperty('--card', '#071a2a');
+    document.documentElement.style.setProperty('--text', '#E6EEF6');
+    document.documentElement.style.setProperty('--muted', '#9AA4B2');
+    document.documentElement.style.setProperty('--accent', '#7C3AED');
+    document.documentElement.style.setProperty('--accent-2', '#4F46E5');
+  } else {
+    // reset to default light theme
+    document.documentElement.style.removeProperty('--bg');
+    document.documentElement.style.removeProperty('--card');
+    document.documentElement.style.removeProperty('--text');
+    document.documentElement.style.removeProperty('--muted');
+    document.documentElement.style.removeProperty('--accent');
+    document.documentElement.style.removeProperty('--accent-2');
+  }
+});
+
+/* font size */
+document.getElementById('fontSize').addEventListener('change', (e)=>{
+  const v = Number(e.target.value) || 15;
+  document.documentElement.style.setProperty('font-size', v + 'px');
+});
+
+/* ---------------------------
+   Home FAB
+   --------------------------- */
+document.getElementById('homeBtn').addEventListener('click', ()=> location.href='index.html');
+
+/* ---------------------------
+   Init: load entries and apply security
+   --------------------------- */
+async function initLoad(){
+  await loadEntries();
+  renderEntries();
+}
+
+// On initial load: check journal-specific security; if unlocked then init; otherwise wait for unlock
+(async function boot(){
+  await checkSecurityOnLoad();
+  if(state.unlocked){
+    await initLoad();
+  } else {
+    // keep app locked until unlock — nothing to render
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+  <link rel="manifest" href="/manifest.json"/>
+  <title>Tomorrow Personal App — Hub</title>
+  <meta name="theme-color" content="#4F46E5"/>
+  <style>
+    :root{
+      --bg:#F7FBFF;--surface:#fff;--muted:#6B7280;--text:#0f172a;
+      --accent:#0EA5A4;--accent-2:#3B82F6;--radius:14px;--base-font-size:15px;
+      --title-accent:#FFD166;
+      --hub-icon-size:56px;
+      --btn-radius:20px; --btn-padding:10px 14px; --btn-shadow:0 10px 30px rgba(15,23,42,0.08);
+    }
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial;font-size:var(--base-font-size)}
+    .app{max-width:920px;margin:0 auto;height:100vh;display:flex;flex-direction:column}
+    header{padding:14px 16px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;border-radius:0 0 12px 12px;display:flex;align-items:center;gap:12px}
+    header h1{margin:0;font-size:20px;font-weight:800;color:var(--title-accent);text-shadow:0 2px 6px rgba(0,0,0,0.12)}
+    header .subtitle{font-size:12px;opacity:.95}
+    main{flex:1;overflow:auto;padding:16px}
+    .card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--btn-shadow);border:1px solid rgba(15,23,42,0.04)}
+    .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+    @media(min-width:720px){.grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}}
+    .hub-btn{border-radius:18px;padding:12px;text-align:center;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(15,23,42,0.06);transition:transform .12s, box-shadow .12s;position:relative;overflow:visible}
+    .hub-btn:active{transform:translateY(2px)}
+    .hub-icon{width:var(--hub-icon-size);height:var(--hub-icon-size);border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white;font-size:18px;flex:0 0 var(--hub-icon-size)}
+    .hub-label{font-weight:700;margin-top:8px;font-size:calc(var(--base-font-size) * 0.95);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .hub-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .app-disable-btn{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:6px;border-radius:8px}
+    .app-disable-btn:hover{color:#fff;background:rgba(0,0,0,0.12)}
+    .btn{padding:var(--btn-padding);border-radius:var(--btn-radius);border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:var(--btn-shadow);transition:transform .12s,box-shadow .12s}
+    .btn:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(15,23,42,0.12)}
+    .btn.secondary{background:transparent;color:var(--accent);border:1px solid rgba(255,255,255,0.12)}
+    .btn.danger{background:#ef4444}
+    .small{font-size:12px;color:var(--muted)}
+    footer.small{text-align:center;padding:8px 12px;color:var(--muted);font-size:12px}
+    .header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
+    .icon-btn{background:transparent;border:0;color:white;cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px}
+    .icon-svg{width:20px;height:20px;display:inline-block;vertical-align:middle}
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.45);padding:20px;visibility:hidden;opacity:0;transition:opacity .12s;z-index:12000}
+    .modal.visible{visibility:visible;opacity:1}
+    .modal-card{width:100%;max-width:520px;background:var(--surface);border-radius:12px;padding:18px;box-shadow:0 20px 60px rgba(2,6,23,0.22)}
+    label{display:block;margin-bottom:6px;font-weight:600}
+    input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);margin-bottom:8px}
+    .muted{font-size:13px;color:var(--muted)}
+    .row{display:flex;gap:8px}
+    .lock-overlay{position:fixed;inset:0;background:linear-gradient(180deg,rgba(2,6,23,0.35),rgba(2,6,23,0.6));display:flex;align-items:center;justify-content:center;z-index:13000}
+    .lock-card{background:var(--surface);padding:18px;border-radius:12px;max-width:520px;width:96%;box-shadow:0 20px 60px rgba(2,6,23,0.3)}
+    .link{background:transparent;border:0;color:var(--accent);cursor:pointer;padding:8px;border-radius:8px}
+    .hidden{display:none !important}
+    .danger{background:#ef4444;color:white}
+    .muted-sm{font-size:12px;color:var(--muted)}
+    .tabs{display:flex;gap:8px;margin-bottom:12px}
+    .tabs button{flex:1;padding:10px;border-radius:8px;border:1px solid rgba(0,0,0,0.06);background:#f5f7fb;cursor:pointer}
+    .tabs button.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white}
+    .welcome-slide{position:fixed;left:50%;top:16%;transform:translateX(-50%);background:var(--surface);padding:14px 18px;border-radius:12px;box-shadow:0 20px 60px rgba(2,6,23,0.18);z-index:14000;opacity:0;transition:opacity .28s}
+    .welcome-slide.visible{opacity:1}
+    .admin-notif-wrap{position:fixed;left:12px;bottom:12px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:360px}
+    .admin-notif{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;padding:12px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.22);display:flex;gap:8px;align-items:flex-start}
+  </style>
+</head>
+<body>
+  <div class="app" id="app" aria-hidden="false">
+    <header>
+      <div>
+        <h1 id="appTitle">Tomorrow Personal App</h1>
+        <div class="subtitle" id="appSubtitle">Private & local-first — authentication required</div>
+      </div>
+
+      <div class="header-right" role="navigation" aria-label="Header controls">
+        <button id="openSettingsBtn" class="icon-btn" title="Settings / About">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06A2 2 0 1 1 2.28 16.9l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82L4.3 3.7A2 2 0 1 1 7.13.87l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V.75A2 2 0 1 1 14 0v.09a1.65 1.65 0 0 0 1 1.51c.39.13.77.33 1.11.59l.06.06A2 2 0 1 1 21.72 7.1l-.06.06a1.65 1.65 0 0 0-.33 1.82v.09c.26.34.46.72.59 1.11z"></path>
+          </svg>
+          <span class="small" style="color:white">Settings</span>
+        </button>
+
+        <button id="installBtn" class="btn secondary" style="display:none">Install</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Sections</strong><div class="small">Open a page below</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="downloadOfflineBtn" class="btn secondary">Download for offline</button>
+            <button id="openExportBtn" class="btn">Export</button>
+            <button id="shareAppBtn" class="btn secondary">Share</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="grid" id="hubGrid"></div>
+        <div id="offlineNote" class="small muted" style="margin-top:8px;display:none">Offline (server unreachable). Local mode active.</div>
+      </div>
+
+      <div class="card small" style="text-align:center">This PWA works offline after installation. Use Settings → Clear Cache to safely wipe caches without crashing the app.</div>
+    </main>
+
+    <footer class="small">all rights reserved @tomorrow tech.co.</footer>
+  </div>
+
+  <!-- admin notifications -->
+  <div class="admin-notif-wrap" id="adminNotifWrap" aria-live="polite"></div>
+
+  <!-- Welcome slide -->
+  <div id="welcomeSlide" class="welcome-slide" role="status" aria-live="polite"></div>
+
+  <!-- Settings modal (kept minimal) -->
+  <div id="settingsModal" class="modal" aria-hidden="true">
+    <div class="modal-card" style="position:relative;">
+      <button class="settings-close-x" id="settingsCancelX" title="Cancel">✕</button>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>Settings & App Info</strong><div class="small">Global settings (applies to all pages)</div></div>
+        <div id="settingsProfile" class="small">—</div>
+      </div>
+      <div style="margin-top:12px">
+        <label>Display name</label><input id="settingDisplayName" placeholder="Your name" />
+        <label>Font size (px)</label><input id="settingFontSize" type="number" min="12" max="22" value="15" />
+        <label>Theme accent</label>
+        <select id="settingAccent">
+          <option value="teal">Teal</option><option value="blue">Blue</option><option value="purple">Purple</option><option value="custom">Custom</option>
+        </select>
+        <div id="customAccentRow" style="display:none"><label>Custom accent</label><input id="settingCustomAccent" placeholder="#ff6a00" /></div>
+        <label>Dark mode</label>
+        <div style="display:flex;align-items:center;gap:8px"><input id="settingDarkMode" type="checkbox" /> <div class="small">Toggle</div></div>
+        <hr/>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button id="saveSettingsBtn" class="btn">Save</button>
+          <button id="cancelSettingsBtn" class="btn secondary">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth overlay (registration & login combined) -->
+  <div id="lockOverlay" class="lock-overlay" aria-hidden="false" role="dialog" aria-label="Authentication required">
+    <div class="lock-card" role="document">
+      <div class="tabs" role="tablist">
+        <button id="tabSignIn" class="active" role="tab" aria-selected="true">Sign in</button>
+        <button id="tabRegister" role="tab" aria-selected="false">Register</button>
+      </div>
+
+      <!-- Sign-in box -->
+      <div id="signinBox">
+        <h3 style="margin-top:0">Sign in</h3>
+        <div class="muted">Enter your PIN to unlock the app.</div>
+        <label for="lockPin">PIN (4-8 digits)</label>
+        <input id="lockPin" type="password" inputmode="numeric" placeholder="4-8 digit PIN" />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="unlockBtn" class="btn">Unlock</button>
+          <button id="forgotPinBtn" class="link">Forgot PIN</button>
+        </div>
+        <div style="margin-top:12px" class="muted-sm">If you don't have an account, open the Register tab.</div>
+      </div>
+
+      <!-- Register box -->
+      <div id="registerBox" class="hidden">
+        <h3 style="margin-top:0">Register</h3>
+        <div class="muted">Create a local account. These details (except PIN/answer) are sent to the admin when online.</div>
+
+        <label for="regPin">Choose PIN (4-8 digits)</label>
+        <input id="regPin" type="password" placeholder="PIN (numbers only)" inputmode="numeric" />
+
+        <label for="regPinConfirm">Confirm PIN</label>
+        <input id="regPinConfirm" type="password" placeholder="Confirm PIN" inputmode="numeric" />
+
+        <label for="secQuestion">Security question (for recovery)</label>
+        <input id="secQuestion" placeholder="e.g. Your mother's maiden name?" />
+
+        <label for="secAnswer">Security answer</label>
+        <input id="secAnswer" placeholder="Answer (kept hashed locally)" />
+
+        <label for="regEmail">Email</label>
+        <input id="regEmail" placeholder="you@example.com" />
+
+        <label for="regName">Display name</label>
+        <input id="regName" placeholder="Your name" />
+
+        <label style="display:inline-block;width:50%;padding-right:6px">Country</label>
+        <label style="display:inline-block;width:50%;padding-left:6px">Location / City</label>
+        <div style="display:flex;gap:8px">
+          <input id="regCountry" placeholder="Country" />
+          <input id="regLocation" placeholder="City" />
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="registerBtn" class="btn">Register & Enter</button>
+          <button id="registerLaterBtn" class="btn secondary">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Recovery box (dynamically shown) -->
+      <div id="recoveryBox" class="hidden">
+        <h3 style="margin-top:0">Recover PIN</h3>
+        <div class="muted">Enter the email for the account you created.</div>
+        <label for="recEmail">Email</label>
+        <input id="recEmail" placeholder="you@example.com" />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="recLookupBtn" class="btn">Lookup</button>
+          <button id="recCancelBtn" class="btn secondary">Cancel</button>
+        </div>
+
+        <div id="recQuestionWrap" class="hidden" style="margin-top:12px">
+          <div class="muted-sm">Answer the security question to reset your PIN.</div>
+          <div id="recQuestion" style="font-weight:700;margin-top:6px"></div>
+          <input id="recAnswer" placeholder="Your answer" />
+          <input id="recNewPin" placeholder="New PIN (4-8 digits)" type="password" inputmode="numeric" />
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <button id="recResetBtn" class="btn">Reset PIN</button>
+            <button id="recCancelBtn2" class="btn secondary">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+/* =========================
+   Auth-first single-file app
+   - IndexedDB storage
+   - PIN & security answer hashed with SHA-256 (Web Crypto)
+   - Offline-first; server calls are best-effort (/api/register, /api/ping, /api/status)
+   - On first-run (no users) the Register tab is shown by default
+   - After successful sign-in, welcome slide shows then hub renders
+   ========================= */
+
+const DB_NAME = 'tomorrowai-db', DB_VER = 2;
+let dbPromise = null;
+function openDB(){
+  if(dbPromise) return dbPromise;
+  dbPromise = new Promise((resolve,reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'});
+      if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'});
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error);
+  });
+  return dbPromise;
+}
+async function idbPut(store, value){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).put(value); tx.oncomplete = ()=>res(true); tx.onerror = e => rej(e.target.error); }); }
+async function idbGet(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).get(key); r.onsuccess = e => res(e.target.result); r.onerror = e => rej(e.target.error); }); }
+async function idbGetAll(store){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).getAll(); r.onsuccess = e => res(e.target.result || []); r.onerror = e => rej(e.target.error); }); }
+async function idbDelete(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete = ()=>res(true); tx.onerror = e => rej(e.target.error); }); }
+
+/* Simple SHA-256 hex helper */
+async function hashString(str){
+  if(!window.crypto || !crypto.subtle) {
+    // fallback naive (not secure) — only if crypto unavailable
+    let h = 0;
+    for(let i=0;i<str.length;i++) h = ((h<<5)-h)+str.charCodeAt(i);
+    return String(h);
+  }
+  const enc = new TextEncoder();
+  const buf = enc.encode(str);
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  const arr = Array.from(new Uint8Array(digest));
+  return arr.map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+/* state */
+let state = { settings: {} };
+
+/* apply settings minimal */
+async function loadSettingsToState(){ const sets = await idbGetAll('settings'); state.settings = {}; sets.forEach(s=>state.settings[s.key]=s.value); applySettings(state.settings); }
+function applySettings(settings = {}){ document.documentElement.style.setProperty('--base-font-size', (settings.fontSize || 15) + 'px'); if(settings.profileName) document.getElementById('appTitle').textContent = `Tomorrow Personal App — ${settings.profileName}`; }
+
+/* store current auth (email & name) */
+async function setCurrentAuth(email, name){
+  if(!email) return idbDelete('auth','current');
+  await idbPut('auth', { key:'current', value:{ email, name } });
+}
+
+/* user helpers */
+async function createOrUpdateUserLocal({ email='local@you', passHash, name='', location='', country='', secQuestion='', secAnswerHash='' }){
+  const existing = await idbGet('users', email);
+  const now = new Date().toISOString();
+  const user = Object.assign({}, existing || {}, {
+    email,
+    passHash: passHash || existing?.passHash || null,
+    name: name || existing?.name || email,
+    location: location || existing?.location || '',
+    country: country || existing?.country || '',
+    createdAt: existing?.createdAt || now,
+    lastSeen: new Date().toISOString(),
+    enabled: existing?.enabled === undefined ? true : existing.enabled,
+    disabledApps: Array.isArray(existing?.disabledApps) ? existing.disabledApps : (existing?.disabledApps || []),
+    secQuestion: secQuestion || existing?.secQuestion || '',
+    secAnswerHash: secAnswerHash || existing?.secAnswerHash || null,
+    meta: existing?.meta || {}
+  });
+  await idbPut('users', user);
+  return user;
+}
+async function getUserByEmail(email){
+  if(!email) return null;
+  const u = await idbGet('users', email);
+  if(!u) return null;
+  u.enabled = (u.enabled === undefined) ? true : u.enabled;
+  u.disabledApps = Array.isArray(u.disabledApps) ? u.disabledApps : (u.disabledApps ? u.disabledApps : []);
+  return u;
+}
+
+/* send registration info to server (best-effort) */
+async function sendRegisterToServer(user){
+  try{
+    await fetch('/api/register', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email: user.email, name: user.name, location: user.location, country: user.country, meta: user.meta || {} })
+    });
+  }catch(e){
+    // offline — ignore
+  }
+}
+
+/* update ping on sign-in */
+async function pingServer(email){
+  try{
+    await fetch('/api/ping', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ email })
+    });
+  }catch(e){}
+}
+async function fetchServerStatusAndApply(email){
+  if(!email) return null;
+  try{
+    const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`, { method:'GET', headers:{ 'Accept':'application/json' }});
+    if(!res.ok) return null;
+    const data = await res.json();
+    // apply authoritative values if present
+    if(data && (typeof data.enabled === 'boolean' || Array.isArray(data.disabledApps))){
+      const user = await getUserByEmail(email) || {};
+      if(typeof data.enabled === 'boolean') user.enabled = data.enabled;
+      if(Array.isArray(data.disabledApps)) user.disabledApps = data.disabledApps;
+      user.lastSeen = new Date().toISOString();
+      await idbPut('users', user);
+      if(user.enabled === false){
+        alert('Your account has been disabled by admin. The app will be locked.');
+        await setCurrentAuth(null);
+        showLockOverlay(); // ensure lock
+      }
+    }
+    return data;
+  }catch(e){
+    // offline tolerant
+    document.getElementById('offlineNote').style.display = 'block';
+    return null;
+  }
+}
+
+/* Hub items (same as before) */
+const hubItems = [
+  { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 1v22M5 7h14" stroke-linecap="round"/></svg>` },
+  { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
+  { id:'habits', label:'Habits', sub:'Daily routines', href:'habits.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M3 12h18M12 3v18"/></svg>` },
+  { id:'journal', label:'Journal', sub:'Notes & entries', href:'journal.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M3 4h18v16H3z"/><path d="M8 4v16"/></svg>` },
+  { id:'tasks', label:'Tasks & Reminders', sub:'To-dos & alerts', href:'task_reminders.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M9 11l2 2 4-4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5"/></svg>` },
+  { id:'wishlist', label:'Wishlist & Health', sub:'Wishes & notes', href:'wishlist_health.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M20.8 4.6a5 5 0 0 0-7.1 0L12 6.3l-1.7-1.7a5 5 0 0 0-7.1 7.1l1.7 1.7L12 21l7.1-7.1 1.7-1.7a5 5 0 0 0 0-7.1z"/></svg>` },
+  { id:'menustral', label:'Menustral Tracking', sub:'Cycle & notes', href:'menustral_tracking.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 2C8 6 6 10 6 14a6 6 0 0 0 12 0c0-4-2-8-6-12z"/></svg>` },
+  { id:'export', label:'Export / Import', sub:'Backup & restore', href:'export.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></svg>` }
+];
+
+async function renderHubGrid(){
+  const grid = document.getElementById('hubGrid'); grid.innerHTML = '';
+  const currentAuth = await idbGet('auth','current');
+  const currentUser = currentAuth?.value ? await getUserByEmail(currentAuth.value.email) : null;
+
+  hubItems.forEach(it => {
+    const btn = document.createElement('div'); btn.className='hub-btn';
+    const disabledForUser = currentUser && Array.isArray(currentUser.disabledApps) && currentUser.disabledApps.includes(it.id);
+
+    const disableButtonHtml = currentUser ? `<button class="app-disable-btn" data-app="${it.id}" title="${disabledForUser ? 'Enable this section' : 'Disable this section'}">${disabledForUser ? '🔓' : '🔒'}</button>` : '';
+
+    btn.innerHTML = `
+      ${disableButtonHtml}
+      <div class="hub-icon" aria-hidden="true">${it.icon}</div>
+      <div class="hub-label" title="${it.label}">${it.label}</div>
+      <div class="hub-sub">${it.sub}</div>
+    `;
+
+    btn.addEventListener('click', async (ev)=>{
+      const targetIsDisable = ev.target && ev.target.matches('button[data-app]');
+      if(targetIsDisable) return;
+      if(disabledForUser){
+        showToast('This section is disabled for your account.');
+        return;
+      }
+      location.href = it.href;
+    });
+
+    const disableBtn = btn.querySelector('button[data-app]');
+    if(disableBtn){
+      disableBtn.addEventListener('click', async (ev)=>{
+        ev.stopPropagation();
+        await toggleAppDisabledForCurrentUser(it.id);
+        await renderHubGrid();
+      });
+    }
+
+    if(disabledForUser){
+      btn.style.opacity = '0.56';
+      btn.style.filter = 'grayscale(6%)';
+    }
+
+    grid.appendChild(btn);
+  });
+}
+
+async function toggleAppDisabledForCurrentUser(appId){
+  const currentAuth = await idbGet('auth','current');
+  if(!currentAuth || !currentAuth.value) { showToast('Sign in to toggle'); return; }
+  const email = currentAuth.value.email;
+  const user = await getUserByEmail(email);
+  if(!user){ showToast('User record missing'); return; }
+  user.disabledApps = user.disabledApps || [];
+  const idx = user.disabledApps.indexOf(appId);
+  if(idx === -1) user.disabledApps.push(appId);
+  else user.disabledApps.splice(idx,1);
+  await idbPut('users', user);
+  showToast(idx === -1 ? 'Section disabled for your account' : 'Section enabled for your account');
+}
+
+/* UI helpers */
+function showToast(msg,ms=2200){
+  const el = document.createElement('div');
+  el.style.position='fixed'; el.style.right='12px'; el.style.bottom='24px'; el.style.zIndex=99999;
+  el.style.background='#111'; el.style.color='white'; el.style.padding='10px 12px'; el.style.borderRadius='10px';
+  el.style.boxShadow='0 8px 30px rgba(2,6,23,0.25)'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), ms);
+}
+
+/* Lock overlay controls (tabs) */
+const tabSignIn = document.getElementById('tabSignIn');
+const tabRegister = document.getElementById('tabRegister');
+const signinBox = document.getElementById('signinBox');
+const registerBox = document.getElementById('registerBox');
+const recoveryBox = document.getElementById('recoveryBox');
+
+tabSignIn.addEventListener('click', ()=>{ showTab('signin'); });
+tabRegister.addEventListener('click', ()=>{ showTab('register'); });
+
+function showTab(t){
+  if(t === 'signin'){
+    tabSignIn.classList.add('active'); tabSignIn.setAttribute('aria-selected','true');
+    tabRegister.classList.remove('active'); tabRegister.setAttribute('aria-selected','false');
+    signinBox.classList.remove('hidden'); registerBox.classList.add('hidden'); recoveryBox.classList.add('hidden');
+  } else if(t === 'register'){
+    tabRegister.classList.add('active'); tabRegister.setAttribute('aria-selected','true');
+    tabSignIn.classList.remove('active'); tabSignIn.setAttribute('aria-selected','false');
+    registerBox.classList.remove('hidden'); signinBox.classList.add('hidden'); recoveryBox.classList.add('hidden');
+  } else if(t === 'recovery'){
+    recoveryBox.classList.remove('hidden'); signinBox.classList.add('hidden'); registerBox.classList.add('hidden');
+    tabSignIn.classList.remove('active'); tabRegister.classList.remove('active');
+  }
+}
+
+/* Show/hide overlay explicitly */
+function showLockOverlay(){
+  document.getElementById('lockOverlay').style.display = 'flex';
+  document.getElementById('lockOverlay').setAttribute('aria-hidden','false');
+}
+function hideLockOverlay(){
+  document.getElementById('lockOverlay').style.display = 'none';
+  document.getElementById('lockOverlay').setAttribute('aria-hidden','true');
+}
+
+/* Sign-in logic */
+document.getElementById('unlockBtn').addEventListener('click', async ()=>{
+  const p = document.getElementById('lockPin').value.trim();
+  if(!/^\d{4,8}$/.test(p)){ alert('PIN must be 4-8 digits'); return; }
+  const users = await idbGetAll('users');
+  // try hashed match first
+  const pHash = await hashString(p);
+  let found = users.find(u => u.passHash && u.passHash === pHash);
+  // fallback: accept legacy plain 'pass' field if present
+  if(!found) found = users.find(u => u.pass && String(u.pass) === p);
+  if(found){
+    if(found.enabled === false){ alert('Your account has been disabled by admin.'); return; }
+    await setCurrentAuth(found.email, found.name);
+    // ping server and request status
+    try{ await pingServer(found.email); await fetchServerStatusAndApply(found.email); }catch(e){}
+    // hide overlay and show welcome, then render hub
+    hideLockOverlay();
+    showWelcome(found.name);
+    await renderHubGrid();
+  } else {
+    alert('PIN not found. Register a new account.');
+    showTab('register');
+  }
+});
+
+/* Register logic */
+document.getElementById('registerBtn').addEventListener('click', async ()=>{
+  const pin = document.getElementById('regPin').value.trim();
+  const pin2 = document.getElementById('regPinConfirm').value.trim();
+  const secQ = document.getElementById('secQuestion').value.trim();
+  const secA = document.getElementById('secAnswer').value.trim();
+  const email = (document.getElementById('regEmail').value || '').trim().toLowerCase();
+  const name = (document.getElementById('regName').value || '').trim();
+  const country = (document.getElementById('regCountry').value || '').trim();
+  const location = (document.getElementById('regLocation').value || '').trim();
+
+  if(!/^\d{4,8}$/.test(pin)){ alert('PIN must be 4-8 digits'); return; }
+  if(pin !== pin2){ alert('PINs do not match'); return; }
+  if(!secQ || !secA){ alert('Security question and answer required'); return; }
+  if(!email || !name || !country || !location){ alert('Please fill email, name, country and location'); return; }
+
+  const passHash = await hashString(pin);
+  const secAnswerHash = await hashString(secA.toLowerCase().trim());
+  const user = await createOrUpdateUserLocal({ email, passHash, name, location, country, secQuestion:secQ, secAnswerHash });
+  // record auth
+  await setCurrentAuth(user.email, user.name);
+  // attempt to send to server (best-effort), do not block on failure
+  try{ await sendRegisterToServer(user); await pingServer(user.email); await fetchServerStatusAndApply(user.email); }catch(e){}
+  hideLockOverlay();
+  showWelcome(user.name);
+  await renderHubGrid();
+});
+
+/* Register cancel */
+document.getElementById('registerLaterBtn').addEventListener('click', ()=>{
+  // Keep overlay visible but go to sign-in
+  showTab('signin');
+});
+
+/* Forgot PIN flow */
+document.getElementById('forgotPinBtn').addEventListener('click', ()=>{
+  showTab('recovery');
+});
+document.getElementById('recLookupBtn').addEventListener('click', async ()=>{
+  const email = (document.getElementById('recEmail').value || '').trim().toLowerCase();
+  if(!email){ alert('Enter your email'); return; }
+  const u = await getUserByEmail(email);
+  if(!u){ alert('No such account locally'); return; }
+  if(!u.secQuestion){ alert('No security question set for this account'); return; }
+  document.getElementById('recQuestion').textContent = u.secQuestion;
+  document.getElementById('recQuestionWrap').classList.remove('hidden');
+});
+document.getElementById('recResetBtn').addEventListener('click', async ()=>{
+  const email = (document.getElementById('recEmail').value || '').trim().toLowerCase();
+  const ans = (document.getElementById('recAnswer').value || '').trim();
+  const newPin = (document.getElementById('recNewPin').value || '').trim();
+  if(!ans || !newPin || !/^\d{4,8}$/.test(newPin)){ alert('Provide answer and a valid new PIN'); return; }
+  const u = await getUserByEmail(email);
+  if(!u){ alert('No such account'); return; }
+  const ansHash = await hashString(ans.toLowerCase().trim());
+  if(u.secAnswerHash && u.secAnswerHash === ansHash){
+    const newHash = await hashString(newPin);
+    u.passHash = newHash;
+    await idbPut('users', u);
+    alert('PIN reset. Use the new PIN to sign in.');
+    showTab('signin');
+  } else {
+    alert('Security answer incorrect');
+  }
+});
+document.getElementById('recCancelBtn').addEventListener('click', ()=>{ showTab('signin'); });
+document.getElementById('recCancelBtn2').addEventListener('click', ()=>{ showTab('signin'); });
+
+/* Small welcome slide */
+function showWelcome(name){
+  const el = document.getElementById('welcomeSlide');
+  el.textContent = `Welcome, ${name || 'friend'} — glad you're back`;
+  el.classList.add('visible');
+  setTimeout(()=> { el.classList.remove('visible'); }, 2400);
+}
+
+/* Boot sequence - auth-first */
+async function boot(){
+  try{ await loadSettingsToState(); }catch(e){}
+  // If there are no users, show register immediately
+  const users = await idbGetAll('users');
+  const current = await idbGet('auth','current');
+
+  if(!current || !current.value){
+    // no current auth -> require sign-in/register
+    showLockOverlay();
+    if(!users || users.length === 0){
+      showTab('register');
+    } else {
+      showTab('signin');
+    }
+    // ensure hub not rendered until signed in; we'll render after sign-in
+    document.getElementById('hubGrid').innerHTML = '';
+  } else {
+    // we have a signed-in user, validate and sync
+    const email = current.value.email;
+    // ensure we show welcome and render hub
+    try{ await pingServer(email); await fetchServerStatusAndApply(email); }catch(e){}
+    showWelcome(current.value.name);
+    await renderHubGrid();
+  }
+}
+boot();
+
+/* keep previous service worker & utilities intact but resilient */
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').then(reg => {
+    if(reg.waiting){ /* optionally notify update */ }
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if(newWorker.state === 'installed') {
+          // optional: inform user update is ready
+        }
+      });
+    });
+  }).catch(e => console.warn('sw register failed', e));
+}
+
+/* simple settings & export wiring (kept lightweight) */
+document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{ await loadSettingsToState(); document.getElementById('settingsModal').classList.add('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','false'); });
+document.getElementById('settingsCancelX').addEventListener('click', ()=>{ document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true'); });
+document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
+  const name = document.getElementById('settingDisplayName').value.trim();
+  const fz = Number(document.getElementById('settingFontSize').value) || 15;
+  const accent = document.getElementById('settingAccent').value;
+  const customAccent = document.getElementById('settingCustomAccent').value.trim();
+  const darkMode = document.getElementById('settingDarkMode').checked;
+  await idbPut('settings', { key:'profileName', value:name });
+  await idbPut('settings', { key:'fontSize', value:fz });
+  await idbPut('settings', { key:'accent', value:accent });
+  if(accent === 'custom') await idbPut('settings', { key:'customAccent', value:customAccent });
+  await idbPut('settings', { key:'darkMode', value:!!darkMode });
+  await loadSettingsToState();
+  document.getElementById('settingsModal').classList.remove('visible');
+});
+
+/* export */
+document.getElementById('openExportBtn').addEventListener('click', async ()=>{
+  const settings = await idbGetAll('settings');
+  const users = await idbGetAll('users');
+  const auth = await idbGetAll('auth');
+  const data = await idbGetAll('data');
+  const payload = { exportedAt: new Date().toISOString(), settings, users, auth, data };
+  const blob = new Blob([JSON.stringify(payload,null,2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'tomorrow-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+/* clear caches / remove data buttons (kept) */
+document.getElementById('downloadOfflineBtn').addEventListener('click', async ()=>{
+  if(navigator.serviceWorker && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' });
+    showToast('Started download for offline. Background task will cache core assets.');
+  } else showToast('Service worker not active yet.');
+});
+document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
+  const shareData = { title: 'Tomorrow — Personal App', text: 'Try my Tomorrow PWA', url: location.origin + location.pathname };
+  if(navigator.share){ try{ await navigator.share(shareData); }catch(e){ showToast('Share canceled'); } }
+  else { try{ await navigator.clipboard.writeText(shareData.url); showToast('Link copied'); }catch(e){ showToast('Cannot copy link'); } }
+});
+
+  </script>
+</body>
+</html>

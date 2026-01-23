@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Tasks & Reminders — Tomorrow</title>
+
+<style>
+:root{
+  --bg:#FFF8F1; --card:#fff; --text:#3B2F2F; --muted:#7A6F66;
+  --accent:#14B8A6; --accent2:#0D9488; --radius:16px;
+}
+body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
+.header{padding:14px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border-radius:0 0 18px 18px}
+h1{margin:0;font-size:18px}
+.sub{font-size:12px;opacity:.9}
+.container{padding:14px}
+.card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
+.btn{width:100%;padding:12px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:600}
+.task{padding:10px 0;border-bottom:1px solid #f0e7dc}
+.task:last-child{border-bottom:none}
+.task small{color:var(--muted)}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;display:flex;justify-content:center;box-shadow:0 -4px 10px rgba(0,0,0,.06)}
+.icon{width:22px;height:22px}
+</style>
+</head>
+
+<body>
+<div class="header">
+  <h1>Tasks & Reminders</h1>
+  <div class="sub">Plan your day clearly</div>
+</div>
+
+<div class="container">
+  <div class="card">
+    <strong>New Task</strong><br/><br/>
+    <input id="taskText" placeholder="What do you need to do?"/>
+    <input id="taskTime" type="datetime-local" style="margin-top:8px"/>
+    <button class="btn" style="margin-top:10px" onclick="addTask()">Add Task</button>
+  </div>
+
+  <div class="card">
+    <strong>Your Tasks</strong>
+    <div id="tasksList" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<div class="bottom-nav">
+  <a href="index.html">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+      <path d="M3 10L12 3l9 7v10a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/>
+    </svg>
+  </a>
+</div>
+
+<script>
+const DB='tomorrowai-db'; 
+function openDB(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
+async function getAll(){const d=await openDB();return new Promise(res=>{const t=d.transaction('data','readonly').objectStore('data').getAll();t.onsuccess=e=>res(e.target.result||[]);});}
+async function put(v){const d=await openDB();const tx=d.transaction('data','readwrite');tx.objectStore('data').put(v);}
+async function del(id){const d=await openDB();const tx=d.transaction('data','readwrite');tx.objectStore('data').delete(id);}
+
+async function render(){
+  const all=(await getAll()).filter(x=>x.type==='task');
+  const out=document.getElementById('tasksList'); out.innerHTML='';
+  if(!all.length) return out.innerHTML='<small>No tasks yet</small>';
+  all.forEach(t=>{
+    const div=document.createElement('div');
+    div.className='task';
+    div.innerHTML=`<strong>${t.text}</strong>
+      <div><small>${t.time||''}</small></div>
+      <button onclick="delTask('${t.id}')">Delete</button>`;
+    out.appendChild(div);
+  });
+}
+async function addTask(){
+  if(!taskText.value)return alert('Enter task');
+  await put({id:'task_'+Date.now(),type:'task',text:taskText.value,time:taskTime.value});
+  taskText.value=''; taskTime.value=''; render();
+}
+async function delTask(id){await del(id);render();}
+render();
+</script>
+</body>
+</html>

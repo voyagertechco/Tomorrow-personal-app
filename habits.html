@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Habits — Tomorrow</title>
+<style>
+body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
+.header{padding:14px;background:linear-gradient(90deg,#10B981,#059669);color:white;border-radius:0 0 18px 18px}
+.container{padding:14px}
+.card{background:white;padding:14px;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+.habit{padding:10px 0;border-bottom:1px solid #eee}
+.btn{padding:10px;border-radius:12px;border:0;background:#10B981;color:white;width:100%}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Habits</h1>
+  <small>Build consistency daily</small>
+</div>
+
+<div class="container">
+  <div class="card">
+    <input id="habitText" placeholder="New habit e.g Drink water"/>
+    <button class="btn" onclick="addHabit()" style="margin-top:8px">Add Habit</button>
+  </div>
+
+  <div class="card">
+    <div id="habitsList"></div>
+  </div>
+</div>
+
+<div class="bottom-nav"><a href="index.html">🏠</a></div>
+
+<script>
+const DB='tomorrowai-db';
+function db(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
+async function all(){const d=await db();return new Promise(res=>{const r=d.transaction('data').objectStore('data').getAll();r.onsuccess=e=>res(e.target.result||[]);});}
+async function put(v){const d=await db();d.transaction('data','readwrite').objectStore('data').put(v);}
+async function del(id){const d=await db();d.transaction('data','readwrite').objectStore('data').delete(id);}
+
+async function render(){
+  const items=(await all()).filter(x=>x.type==='habit');
+  habitsList.innerHTML=items.map(h=>`
+    <div class="habit">
+      <strong>${h.text}</strong><br/>
+      <small>Streak: ${h.streak||0} days</small><br/>
+      <button onclick="markDone('${h.id}')">Done Today</button>
+      <button onclick="remove('${h.id}')">Delete</button>
+    </div>`).join('');
+}
+async function addHabit(){
+  if(!habitText.value)return;
+  await put({id:'habit_'+Date.now(),type:'habit',text:habitText.value,streak:0,last:null});
+  habitText.value=''; render();
+}
+async function markDone(id){
+  const items=await all();
+  const h=items.find(x=>x.id===id);
+  if(!h)return;
+  const today=new Date().toDateString();
+  if(h.last!==today){h.streak++; h.last=today;}
+  await put(h); render();
+}
+async function remove(id){await del(id);render();}
+render();
+</script>
+</body>
+</html>

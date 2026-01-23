@@ -1,6 +1,9 @@
+ 
+
+
 #!/usr/bin/env python3
 """
-app.py - Tomorrow PWA backend + Admin UI (admin UI always shows users)
+app.py - Tomorrow PWA backend + Admin UI (LAN-only)
 
 Usage:
   python app.py
@@ -14,10 +17,9 @@ Environment:
   KEEPALIVE_ENABLE   - "1" to enable the internal keepalive thread (default "1")
   KEEPALIVE_INTERVAL - seconds between heartbeats (default 240)
   KEEPALIVE_URLS     - comma-separated external URLs to ping (optional)
-
 Notes:
- - This variant intentionally exposes the admin UI listing and a few admin actions
-   unconditionally (no LAN-only restriction) per user request. Use with care.
+ - The heartbeat writes to DB and performs self-HTTP and optional external pings.
+ - This increases process activity but cannot override a host that forcibly suspends.
 """
 
 import os
@@ -29,19 +31,17 @@ import time
 import urllib.request
 import urllib.error
 import base64
-import csv
-import io
 from datetime import datetime
 from ipaddress import ip_address, ip_network
 from flask import (
-    Flask, request, jsonify, g, send_from_directory, abort, redirect, url_for, Response
+    Flask, request, jsonify, g, send_from_directory, abort, redirect, url_for
 )
 from flask_cors import CORS
 
 # -----------------------
 # Config
 # -----------------------
-DB_PATH = os.environ.get("TODAY_DB", "/tmp/tomorrow.db")
+DB_PATH = os.environ.get("TODAY_DB", "tomorrow.db")
 APP_HOST = os.environ.get("APP_HOST", "0.0.0.0")
 APP_PORT = int(os.environ.get("APP_PORT", 5000))
 ADMIN_PATH = os.environ.get("ADMIN_PATH", "admin256")
@@ -51,7 +51,7 @@ KEEPALIVE_ENABLE = os.environ.get("KEEPALIVE_ENABLE", "1") != "0"
 KEEPALIVE_INTERVAL = int(os.environ.get("KEEPALIVE_INTERVAL", "240"))
 KEEPALIVE_URLS = [u.strip() for u in (os.environ.get("KEEPALIVE_URLS", "") or "").split(",") if u.strip()]
 
-# private networks allowed to access admin UI (kept for helper; NOT enforced)
+# private networks allowed to access admin UI
 PRIVATE_NETS = [
     ip_network("10.0.0.0/8"),
     ip_network("172.16.0.0/12"),
@@ -76,7 +76,6 @@ logger = logging.getLogger("tomorrow-backend")
 def now_iso():
     return datetime.utcnow().isoformat() + "Z"
 
-
 def get_client_ip():
     """
     Resolve client IP. If TRUST_PROXY, prefer X-Forwarded-For first item.
@@ -84,9 +83,10 @@ def get_client_ip():
     if TRUST_PROXY:
         xff = request.headers.get("X-Forwarded-For", "")
         if xff:
+            # Use first IP in header
             return xff.split(",")[0].strip()
+    # fallback to remote_addr
     return request.remote_addr or "0.0.0.0"
-
 
 def is_private_ip(ip_str: str) -> bool:
     try:
@@ -95,6 +95,10 @@ def is_private_ip(ip_str: str) -> bool:
     except Exception:
         return False
 
+def require_lan_admin():
+    ip = get_client_ip()
+    if not is_private_ip(ip):
+        abort(403, description="Admin is LAN-only")
 
 def safe_json_list(v, default=None):
     if default is None:
@@ -103,6 +107,7 @@ def safe_json_list(v, default=None):
         return default
     if isinstance(v, list):
         return v
+    # if stored as string, try parse
     if isinstance(v, str):
         try:
             parsed = json.loads(v)
@@ -115,18 +120,18 @@ def safe_json_list(v, default=None):
 # -----------------------
 # Database
 # -----------------------
-
 def get_db():
     db = getattr(g, "_db", None)
     if db is None:
+        # allow cross-thread access for read/write in this simple app
         db = g._db = sqlite3.connect(DB_PATH, detect_types=sqlite3.PARSE_DECLTYPES, check_same_thread=False)
         db.row_factory = sqlite3.Row
     return db
 
-
 def init_db():
     db = get_db()
     cur = db.cursor()
+    # Users: server-side profile only (no PINs)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         email TEXT PRIMARY KEY,
@@ -140,6 +145,7 @@ def init_db():
         meta TEXT DEFAULT '{}'
     )
     """)
+    # Messages/Announcements
     cur.execute("""
     CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -151,6 +157,7 @@ def init_db():
         target_emails TEXT DEFAULT '[]'
     )
     """)
+    # Message dismissals (device can call dismiss)
     cur.execute("""
     CREATE TABLE IF NOT EXISTS message_dismissals (
         message_id INTEGER NOT NULL,
@@ -159,6 +166,7 @@ def init_db():
         PRIMARY KEY (message_id, user_email)
     )
     """)
+    # Keepalive table used by background heartbeat
     cur.execute("""
     CREATE TABLE IF NOT EXISTS keepalive (
         key TEXT PRIMARY KEY,
@@ -167,19 +175,12 @@ def init_db():
     )
     """)
     db.commit()
-@app.before_request
-def ensure_db_initialized():
-    if not hasattr(g, "_db_initialized"):
-        init_db()
-        g._db_initialized = True
-
 
 @app.teardown_appcontext
 def close_db(exc):
     db = getattr(g, "_db", None)
     if db is not None:
         db.close()
-
 
 def row_to_user_dict(row):
     if row is None:
@@ -199,16 +200,16 @@ def row_to_user_dict(row):
 # -----------------------
 # Static file serving (PWA)
 # -----------------------
-
 @app.route("/")
 def serve_index():
+    # serve index.html from project root
     if os.path.exists(os.path.join(".", "index.html")):
         return send_from_directory(".", "index.html")
     return ("Not found", 404)
 
-
 @app.route("/<path:filename>")
 def serve_static(filename):
+    # secure-ish check: don't allow escaping out of folder
     safe_path = os.path.abspath(os.path.join(".", filename))
     if not safe_path.startswith(os.path.abspath(".")):
         return ("Not found", 404)
@@ -219,7 +220,6 @@ def serve_static(filename):
 # -----------------------
 # API: register / ping / status
 # -----------------------
-
 @app.route("/api/register", methods=["POST"])
 def api_register():
     data = request.get_json(silent=True) or {}
@@ -260,7 +260,6 @@ def api_register():
     row = cur.fetchone()
     return jsonify({"ok": True, "user": row_to_user_dict(row)}), 200
 
-
 @app.route("/api/ping", methods=["POST"])
 def api_ping():
     data = request.get_json(silent=True) or {}
@@ -286,7 +285,6 @@ def api_ping():
             "disabledApps": json.loads(row["disabled_apps"] or "[]")
         }
     }), 200
-
 
 @app.route("/api/status", methods=["GET"])
 def api_status():
@@ -321,7 +319,7 @@ def api_get_messages():
     cur.execute("""SELECT * FROM messages WHERE active=1 ORDER BY id DESC LIMIT 50""")
     rows = cur.fetchall()
     cur.execute("SELECT message_id FROM message_dismissals WHERE user_email=?", (email,))
-    dismissed = {r[0] for r in cur.fetchall()}
+    dismissed = {r["message_id"] for r in cur.fetchall()}
 
     out = []
     for r in rows:
@@ -336,7 +334,6 @@ def api_get_messages():
         if applies:
             out.append({"id": mid, "title": r["title"], "body": r["body"], "createdAt": r["created_at"]})
     return jsonify({"ok": True, "messages": out}), 200
-
 
 @app.route("/api/messages/dismiss", methods=["POST"])
 def api_dismiss_message():
@@ -356,9 +353,9 @@ def api_dismiss_message():
     db.commit()
     return jsonify({"ok": True}), 200
 
-
 @app.route("/api/notifications", methods=["GET"])
 def api_notifications():
+    # mirror messages for legacy clients
     email = (request.args.get("email") or "").strip().lower()
     if not email:
         return jsonify({"ok": False, "error": "email required"}), 400
@@ -367,7 +364,7 @@ def api_notifications():
     cur.execute("""SELECT * FROM messages WHERE active=1 ORDER BY id DESC LIMIT 50""")
     rows = cur.fetchall()
     cur.execute("SELECT message_id FROM message_dismissals WHERE user_email=?", (email,))
-    dismissed = {r[0] for r in cur.fetchall()}
+    dismissed = {r["message_id"] for r in cur.fetchall()}
     out = []
     for r in rows:
         mid = r["id"]
@@ -386,6 +383,7 @@ def api_notifications():
 # Keepalive / heartbeat support
 # -----------------------
 def _db_touch_keepalive():
+    """Open a fresh sqlite connection and upsert keepalive row."""
     try:
         conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
@@ -402,7 +400,6 @@ def _db_touch_keepalive():
         logger.exception("Keepalive DB touch failed: %s", e)
         return False
 
-
 def _http_ping(url, timeout=8):
     try:
         with urllib.request.urlopen(url, timeout=timeout) as resp:
@@ -412,13 +409,13 @@ def _http_ping(url, timeout=8):
     except Exception:
         return None, None
 
-
 def background_heartbeat_loop():
+    """Background thread that periodically touches DB and pings URLs (self + optional external)."""
     logger.info("Keepalive thread started (interval=%ss) keepalive_enabled=%s", KEEPALIVE_INTERVAL, KEEPALIVE_ENABLE)
     self_url = f"http://127.0.0.1:{APP_PORT}/api/health"
     urls = list(KEEPALIVE_URLS)
     if self_url not in urls:
-        urls.insert(0, self_url)
+        urls.insert(0, self_url)  # ensure self is pinged first
     while True:
         try:
             ok = _db_touch_keepalive()
@@ -432,11 +429,12 @@ def background_heartbeat_loop():
                     logger.info("Keepalive ping error %s -> %s", u, e)
         except Exception as e:
             logger.exception("Keepalive loop error: %s", e)
-        time.sleep(max(10, KEEPALIVE_INTERVAL))
-
+        # sleep interval
+        time.sleep(max(10, KEEPALIVE_INTERVAL))  # minimum 10s safety
 
 @app.route("/api/keepalive_status", methods=["GET"])
 def api_keepalive_status():
+    """Return the last keepalive DB row for monitoring."""
     try:
         conn = sqlite3.connect(DB_PATH)
         cur = conn.cursor()
@@ -451,15 +449,15 @@ def api_keepalive_status():
         return jsonify({"ok": False, "error": "internal error"}), 500
 
 # -----------------------
-# Admin UI (always show users unconditionally)
+# Admin UI (LAN-only, hidden path, no password)
 # -----------------------
-@app.route(f"/{ADMIN_PATH}", methods=["GET", "POST"]) 
+@app.route(f"/{ADMIN_PATH}", methods=["GET", "POST"])
 def admin_dashboard():
-    # NOTE: per request, this admin UI will list users unconditionally.
+    require_lan_admin()
     db = get_db()
     cur = db.cursor()
 
-    # Handle POST actions (extended admin abilities)
+    # Handle POST actions...
     if request.method == "POST":
         action = request.form.get("action", "")
         if action == "toggle_user":
@@ -467,35 +465,12 @@ def admin_dashboard():
             if email:
                 cur.execute("UPDATE users SET enabled = CASE enabled WHEN 1 THEN 0 ELSE 1 END WHERE email=?", (email,))
                 db.commit()
-        elif action == "set_enable":
-            email = (request.form.get("email") or "").strip().lower()
-            val = request.form.get("value", "1")
-            if email:
-                try:
-                    v = 1 if str(val) in ("1", "true", "True") else 0
-                    cur.execute("UPDATE users SET enabled=? WHERE email=?", (v, email))
-                    db.commit()
-                except Exception:
-                    pass
         elif action == "set_disabled_apps":
             email = (request.form.get("email") or "").strip().lower()
             apps = (request.form.get("apps") or "").strip()
             disabled_apps = [a.strip() for a in apps.split(",") if a.strip()]
             if email:
                 cur.execute("UPDATE users SET disabled_apps=? WHERE email=?", (json.dumps(disabled_apps), email))
-                db.commit()
-        elif action == "edit_user":
-            email = (request.form.get("email") or "").strip().lower()
-            name = (request.form.get("name") or "").strip()
-            country = (request.form.get("country") or "").strip()
-            location = (request.form.get("location") or "").strip()
-            if email:
-                cur.execute("UPDATE users SET name=?, country=?, location=? WHERE email=?", (name, country, location, email))
-                db.commit()
-        elif action == "delete_user":
-            email = (request.form.get("email") or "").strip().lower()
-            if email:
-                cur.execute("DELETE FROM users WHERE email=?", (email,))
                 db.commit()
         elif action == "create_message":
             title = (request.form.get("title") or "").strip()
@@ -516,24 +491,14 @@ def admin_dashboard():
             if mid.isdigit():
                 cur.execute("UPDATE messages SET active=0 WHERE id=?", (int(mid),))
                 db.commit()
-        elif action == "export_users":
-            # handled below as GET redirect
-            pass
         return redirect(url_for("admin_dashboard"))
 
-    # GET: optional search/filter
-    q = (request.args.get("q") or "").strip()
-    if q:
-        like = f"%{q}%"
-        cur.execute("SELECT * FROM users WHERE email LIKE ? OR name LIKE ? ORDER BY last_seen DESC", (like, like))
-    else:
-        cur.execute("SELECT * FROM users ORDER BY last_seen DESC")
+    # GET: render admin page (simple)
+    cur.execute("SELECT * FROM users ORDER BY last_seen DESC")
     users = cur.fetchall()
-
     cur.execute("SELECT * FROM messages ORDER BY id DESC LIMIT 30")
     msgs = cur.fetchall()
 
-    # build rows
     users_rows = ""
     for u in users:
         enabled = "✅" if u["enabled"] == 1 else "⛔"
@@ -552,15 +517,6 @@ def admin_dashboard():
               <input type="hidden" name="action" value="toggle_user">
               <input type="hidden" name="email" value="{u["email"]}">
               <button class="btn small" type="submit">Toggle</button>
-            </form>
-            <form method="post" style="display:inline;margin-left:6px">
-              <input type="hidden" name="action" value="delete_user">
-              <input type="hidden" name="email" value="{u["email"]}">
-              <button class="btn small danger" type="submit" onclick="return confirm('Delete user? This is permanent')">Delete</button>
-            </form>
-            <form method="get" action="" style="display:inline;margin-left:6px">
-              <input type="hidden" name="q" value="{u["email"]}">
-              <button class="btn small" type="submit">View</button>
             </form>
           </td>
         </tr>
@@ -587,7 +543,6 @@ def admin_dashboard():
         </tr>
         """
 
-    # admin HTML (adds search, export)
     html = f"""<!doctype html>
 <html>
 <head>
@@ -611,36 +566,18 @@ def admin_dashboard():
     .row{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
     .muted{{opacity:.8;font-size:12px}}
     .chip{{display:inline-block;padding:6px 10px;border:1px solid rgba(255,255,255,.15);border-radius:999px;font-size:12px;opacity:.9}}
-    .tools{display:flex;gap:8px;align-items:center}
   </style>
 </head>
 <body>
   <header>
     <h1>Tomorrow Admin</h1>
-    <div style="margin-left:auto" class="chip">Admin path: /{ADMIN_PATH}</div>
+    <div style="margin-left:auto" class="chip">LAN-only • /{ADMIN_PATH}</div>
   </header>
 
   <div class="wrap">
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <h3 style="margin:0 0 8px 0">Send announcement</h3>
-          <div class="muted">Clients must be online to fetch messages. Users can dismiss messages on device.</div>
-        </div>
-        <div class="tools">
-          <form method="get" action="" style="margin:0;display:flex;gap:8px;align-items:center">
-            <input name="q" placeholder="search email or name" value="{q}">
-            <button class="btn" type="submit">Search</button>
-          </form>
-          <form method="get" action="/{ADMIN_PATH}/export_users" style="margin:0">
-            <button class="btn" type="submit">Export CSV</button>
-          </form>
-          <form method="get" action="/{ADMIN_PATH}/export_users.json" style="margin:0">
-            <button class="btn" type="submit">Export JSON</button>
-          </form>
-        </div>
-      </div>
-
+      <h3 style="margin:0 0 8px 0">Send announcement</h3>
+      <div class="muted">Clients must be online to fetch messages. Users can dismiss messages on device.</div>
       <form method="post" style="margin-top:10px">
         <input type="hidden" name="action" value="create_message">
         <div class="row">
@@ -686,7 +623,7 @@ def admin_dashboard():
 
     <div class="card">
       <h3 style="margin:0 0 8px 0">Users</h3>
-      <div class="muted">Enable/disable applies when users come online and your client calls /api/status or /api/ping. You can search, export, edit or delete users.</div>
+      <div class="muted">Enable/disable applies when users come online and your client calls /api/status or /api/ping.</div>
       <table>
         <thead>
           <tr>
@@ -707,51 +644,9 @@ def admin_dashboard():
     </div>
   </div>
 </body>
-</html>"""
-
+</html>
+"""
     return html
-
-# -----------------------
-# Admin: export users (CSV) and JSON
-# -----------------------
-@app.route(f"/{ADMIN_PATH}/export_users", methods=["GET"])
-def admin_export_users_csv():
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("SELECT * FROM users ORDER BY last_seen DESC")
-    rows = cur.fetchall()
-
-    output = io.StringIO()
-    writer = csv.writer(output)
-    writer.writerow(["email", "name", "country", "location", "created_at", "last_seen", "enabled", "disabled_apps", "meta"])
-    for r in rows:
-        writer.writerow([
-            r["email"], r["name"], r["country"], r["location"], r["created_at"], r["last_seen"], r["enabled"], r["disabled_apps"], r["meta"]
-        ])
-    csv_bytes = output.getvalue().encode("utf-8")
-    return Response(csv_bytes, mimetype="text/csv", headers={"Content-Disposition": "attachment; filename=users.csv"})
-
-
-@app.route(f"/{ADMIN_PATH}/export_users.json", methods=["GET"])
-def admin_export_users_json():
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("SELECT * FROM users ORDER BY last_seen DESC")
-    rows = cur.fetchall()
-    out = [row_to_user_dict(r) for r in rows]
-    return jsonify({"ok": True, "users": out})
-
-# -----------------------
-# Admin API: users JSON (unprotected)
-# -----------------------
-@app.route(f"/{ADMIN_PATH}/users.json", methods=["GET"])
-def admin_users_json():
-    db = get_db()
-    cur = db.cursor()
-    cur.execute("SELECT * FROM users ORDER BY last_seen DESC")
-    rows = cur.fetchall()
-    out = [row_to_user_dict(r) for r in rows]
-    return jsonify({"ok": True, "users": out})
 
 # -----------------------
 # Health
@@ -761,7 +656,7 @@ def api_health():
     return jsonify({"ok": True, "time": now_iso()}), 200
 
 # -----------------------
-# babra keepalive page + pixel (unchanged)
+# babra keepalive page + pixel
 # -----------------------
 @app.route("/babra.html")
 def babra_page():
@@ -818,14 +713,16 @@ def babra_page():
 
   async function doPing(){
     try{
+      // use no-store and a random query param to defeat caches
       const url = '/api/health?_=' + Date.now();
       const res = await fetch(url, { cache: 'no-store', mode: 'same-origin' });
       const json = await res.json().catch(()=>({ ok:false }));
-      lastPing.textContent = new Date().toISOString() + '  |  status: ' + (res.status || 'n/a') + '\n' + JSON.stringify(json);
+      lastPing.textContent = new Date().toISOString() + '  |  status: ' + (res.status || 'n/a') + '\\n' + JSON.stringify(json);
     }catch(e){
       lastPing.textContent = new Date().toISOString() + '  |  ERROR: ' + String(e);
     }
 
+    // optional: update keepalive_status so you can see server-side DB touch
     try{
       const ku = await fetch('/api/keepalive_status?_=' + Date.now(), { cache: 'no-store' });
       const kjson = await ku.json().catch(()=>null);
@@ -836,10 +733,13 @@ def babra_page():
   }
 
   function start(){
-    stop();
+    stop(); // clear existing
     const secs = Math.max(10, Number(intervalEl.value) || 180);
+    // first immediate ping
     doPing();
+    // set periodic pings
     timer = setInterval(() => {
+      // add a lightweight image request too (bypass some caches)
       const img = new Image();
       img.src = '/babra-pixel?_=' + Date.now();
       doPing();
@@ -856,6 +756,7 @@ def babra_page():
   startBtn.addEventListener('click', start);
   stopBtn.addEventListener('click', stop);
 
+  // start automatically if page opened with ?autostart=1
   if(new URLSearchParams(location.search).get('autostart') === '1') start();
 })();
 </script>
@@ -863,9 +764,9 @@ def babra_page():
 </html>"""
     return html, 200, {"Content-Type": "text/html; charset=utf-8"}
 
-
 @app.route("/babra-pixel")
 def babra_pixel():
+    # 1x1 transparent GIF (base64)
     gif_b64 = b"R0lGODlhAQABAPAAAP///wAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw=="
     gif = base64.b64decode(gif_b64)
     return (gif, 200, {"Content-Type":"image/gif", "Cache-Control":"no-store"})
@@ -885,12 +786,14 @@ def start_keepalive_thread():
 # CLI run
 # -----------------------
 if __name__ == "__main__":
+    # ensure DB and tables exist
     with app.app_context():
         init_db()
     logger.info("Starting Tomorrow backend on http://%s:%s", APP_HOST, APP_PORT)
-    logger.info("Admin: http://%s:%s/%s", APP_HOST, APP_PORT, ADMIN_PATH)
+    logger.info("Admin (LAN-only): http://%s:%s/%s", APP_HOST, APP_PORT, ADMIN_PATH)
+    # start background keepalive thread before running server
     if KEEPALIVE_ENABLE:
         start_keepalive_thread()
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
+    # Note: for production, run behind a process manager (systemd, supervisor) or use gunicorn.
     app.run(host=APP_HOST, port=APP_PORT, debug=debug_mode)
-

@@ -28,7 +28,7 @@
     .hub-icon{width:var(--hub-icon-size);height:var(--hub-icon-size);border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white;font-size:18px;flex:0 0 var(--hub-icon-size)}
     .hub-label{font-weight:700;margin-top:8px;font-size:calc(var(--base-font-size) * 0.95);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
     .hub-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .app-disable-btn{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:6px;border-radius:8px}
+    .app-disable-btn{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:6px;border-radius:8px}
     .app-disable-btn:hover{color:#fff;background:rgba(0,0,0,0.12)}
     .btn{padding:var(--btn-padding);border-radius:var(--btn-radius);border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:var(--btn-shadow);transition:transform .12s,box-shadow .12s}
     .btn:hover{transform:translateY(-4px);box-shadow:0 18px 40px rgba(15,23,42,0.12)}
@@ -59,6 +59,33 @@
     .welcome-slide.visible{opacity:1}
     .admin-notif-wrap{position:fixed;left:12px;bottom:12px;z-index:99999;display:flex;flex-direction:column;gap:8px;max-width:360px}
     .admin-notif{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;padding:12px;border-radius:12px;box-shadow:0 8px 30px rgba(2,6,23,0.22);display:flex;gap:8px;align-items:flex-start}
+
+    /* Floating thin ring with inner 'T' and animations */
+    .ai-float{position:fixed;right:18px;bottom:18px;width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:20000;border:0;background:transparent;cursor:pointer;outline:none}
+    .ai-ring{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative}
+    .ai-ring::before{content:'';position:absolute;inset:0;border-radius:50%;padding:4px;background:conic-gradient(from 0deg, #06b6d4, #3b82f6, #a78bfa, #fb7185, #06b6d4); -webkit-mask: radial-gradient(farthest-side, transparent calc(50% - 6px), black calc(50% - 5px)); mask: radial-gradient(farthest-side, transparent calc(50% - 6px), black calc(50% - 5px));}
+    .ai-core{width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:center;position:relative;z-index:3;backdrop-filter: blur(4px);}
+    .ai-core .letter{font-weight:800;font-size:20px;color:white;mix-blend-mode:screen;}
+    .ai-ring{animation:ring-rot 12s linear infinite}
+    @keyframes ring-rot{to{transform:rotate(360deg)}}
+    .ai-core .letter{position:relative;display:inline-block;animation:letter-orbit 10s ease-in-out infinite}
+    @keyframes letter-orbit{
+      0%{transform:translate(0,0)}
+      12.5%{transform:translate(10px,-10px)}
+      25%{transform:translate(18px,0)}
+      37.5%{transform:translate(10px,10px)}
+      50%{transform:translate(0,18px)}
+      62.5%{transform:translate(-10px,10px)}
+      75%{transform:translate(-18px,0)}
+      87.5%{transform:translate(-10px,-10px)}
+      100%{transform:translate(0,0)}
+    }
+    .frag{position:absolute;width:6px;height:6px;border-radius:2px;background:white;opacity:0;pointer-events:none}
+    .leave-confirm{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--surface);border-radius:12px;padding:16px;box-shadow:0 20px 60px rgba(2,6,23,0.24);z-index:25000;display:none}
+    .leave-confirm.visible{display:block}
+    .leave-actions{display:flex;gap:12px;justify-content:center;margin-top:12px}
+    .leave-no{background:#10b981;color:white;padding:10px 18px;border-radius:10px;border:0;cursor:pointer}
+    .leave-yes{background:#ef4444;color:white;padding:10px 18px;border-radius:10px;border:0;cursor:pointer}
   </style>
 </head>
 <body>
@@ -219,14 +246,29 @@
     </div>
   </div>
 
+  <!-- Floating AI button (thin ring + inner T) -->
+  <button id="aiFloatBtn" class="ai-float" aria-label="Smart action">
+    <div class="ai-ring" aria-hidden="true">
+      <div class="ai-core"><span class="letter">T</span></div>
+    </div>
+  </button>
+
+  <!-- Leave confirm modal -->
+  <div id="leaveConfirm" class="leave-confirm" role="dialog" aria-modal="true">
+    <div><strong>Do you want to leave?</strong></div>
+    <div class="leave-actions">
+      <button id="leaveNo" class="leave-no">No</button>
+      <button id="leaveYes" class="leave-yes">Yes</button>
+    </div>
+  </div>
+
   <script>
 /* =========================
-   Auth-first single-file app
-   - IndexedDB storage
-   - PIN & security answer hashed with SHA-256 (Web Crypto)
-   - Offline-first; server calls are best-effort (/api/register, /api/ping, /api/status)
-   - On first-run (no users) the Register tab is shown by default
-   - After successful sign-in, welcome slide shows then hub renders
+   Upgraded index.html script
+   - Rotating ring + T with explode + shake
+   - Auth: unlock, register, forgot PIN (lookup & reset)
+   - sessionStorage restore so back -> index won't ask for PIN if session active
+   - Leave-confirm intercept on home back
    ========================= */
 
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
@@ -255,9 +297,7 @@ async function idbDelete(store, key){ const db = await openDB(); return new Prom
 /* Simple SHA-256 hex helper */
 async function hashString(str){
   if(!window.crypto || !crypto.subtle) {
-    // fallback naive (not secure) — only if crypto unavailable
-    let h = 0;
-    for(let i=0;i<str.length;i++) h = ((h<<5)-h)+str.charCodeAt(i);
+    let h = 0; for(let i=0;i<str.length;i++) h = ((h<<5)-h)+str.charCodeAt(i);
     return String(h);
   }
   const enc = new TextEncoder();
@@ -267,17 +307,38 @@ async function hashString(str){
   return arr.map(b => b.toString(16).padStart(2,'0')).join('');
 }
 
-/* state */
+/* SETTINGS & STATE */
 let state = { settings: {} };
-
-/* apply settings minimal */
 async function loadSettingsToState(){ const sets = await idbGetAll('settings'); state.settings = {}; sets.forEach(s=>state.settings[s.key]=s.value); applySettings(state.settings); }
 function applySettings(settings = {}){ document.documentElement.style.setProperty('--base-font-size', (settings.fontSize || 15) + 'px'); if(settings.profileName) document.getElementById('appTitle').textContent = `Tomorrow Personal App — ${settings.profileName}`; }
 
-/* store current auth (email & name) */
+/* SESSION helpers (per-tab by default) */
+const USE_SESSION_STORAGE = true;
+function writeSessionAuth(obj){ try{ if(USE_SESSION_STORAGE) sessionStorage.setItem('sessionAuth', JSON.stringify(obj)); else localStorage.setItem('sessionAuth', JSON.stringify(obj)); }catch(e){} }
+function clearSessionAuth(){ try{ if(USE_SESSION_STORAGE) sessionStorage.removeItem('sessionAuth'); else localStorage.removeItem('sessionAuth'); }catch(e){} }
+function readSessionAuth(){ try{ const v = USE_SESSION_STORAGE ? sessionStorage.getItem('sessionAuth') : localStorage.getItem('sessionAuth'); return v ? JSON.parse(v) : null; }catch(e){ return null; } }
+
+/* status polling (server enable/disable) */
+let statusPollHandle = null;
+function startStatusPolling(email, intervalSec = 15){
+  stopStatusPolling();
+  if(!email) return;
+  statusPollHandle = setInterval(()=> { fetchServerStatusAndApply(email).catch(()=>{}); }, Math.max(5, intervalSec) * 1000);
+  fetchServerStatusAndApply(email).catch(()=>{});
+}
+function stopStatusPolling(){ if(statusPollHandle) { clearInterval(statusPollHandle); statusPollHandle = null; } }
+
+/* set current auth in idb + session snapshot */
 async function setCurrentAuth(email, name){
-  if(!email) return idbDelete('auth','current');
+  if(!email){
+    try{ await idbDelete('auth','current'); }catch(e){}
+    clearSessionAuth();
+    stopStatusPolling();
+    return;
+  }
   await idbPut('auth', { key:'current', value:{ email, name } });
+  writeSessionAuth({ email, name, ts: Date.now() });
+  await idbPut('settings', { key:'lastEmail', value: email });
 }
 
 /* user helpers */
@@ -310,28 +371,14 @@ async function getUserByEmail(email){
   return u;
 }
 
-/* send registration info to server (best-effort) */
+/* server helpers (best-effort) */
 async function sendRegisterToServer(user){
   try{
-    await fetch('/api/register', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email: user.email, name: user.name, location: user.location, country: user.country, meta: user.meta || {} })
-    });
-  }catch(e){
-    // offline — ignore
-  }
-}
-
-/* update ping on sign-in */
-async function pingServer(email){
-  try{
-    await fetch('/api/ping', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ email })
-    });
+    await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: user.email, name: user.name, location: user.location, country: user.country, meta: user.meta || {} }) });
   }catch(e){}
+}
+async function pingServer(email){
+  try{ await fetch('/api/ping', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email }) }); }catch(e){}
 }
 async function fetchServerStatusAndApply(email){
   if(!email) return null;
@@ -339,28 +386,31 @@ async function fetchServerStatusAndApply(email){
     const res = await fetch(`/api/status?email=${encodeURIComponent(email)}`, { method:'GET', headers:{ 'Accept':'application/json' }});
     if(!res.ok) return null;
     const data = await res.json();
-    // apply authoritative values if present
-    if(data && (typeof data.enabled === 'boolean' || Array.isArray(data.disabledApps))){
-      const user = await getUserByEmail(email) || {};
-      if(typeof data.enabled === 'boolean') user.enabled = data.enabled;
-      if(Array.isArray(data.disabledApps)) user.disabledApps = data.disabledApps;
-      user.lastSeen = new Date().toISOString();
-      await idbPut('users', user);
-      if(user.enabled === false){
-        alert('Your account has been disabled by admin. The app will be locked.');
+    if(!data) return null;
+    const user = await getUserByEmail(email) || {};
+    let changed = false;
+    if(typeof data.enabled === 'boolean' && user.enabled !== data.enabled){ user.enabled = data.enabled; changed = true; }
+    if(Array.isArray(data.disabledApps)){ user.disabledApps = data.disabledApps; changed = true; }
+    if(changed){ user.lastSeen = new Date().toISOString(); await idbPut('users', user); }
+    if(user.enabled === false){
+      const current = await idbGet('auth','current');
+      if(current && current.value && current.value.email === email){
+        alert('Your account has been disabled by admin. You will be locked out.');
         await setCurrentAuth(null);
-        showLockOverlay(); // ensure lock
+        showLockOverlay();
       }
+    } else {
+      // if unlocked externally, we optionally auto-restore (not enabled by default)
+      // we leave UI to show sign-in if user isn't signed in
     }
     return data;
   }catch(e){
-    // offline tolerant
     document.getElementById('offlineNote').style.display = 'block';
     return null;
   }
 }
 
-/* Hub items (same as before) */
+/* HUB items (unchanged content) */
 const hubItems = [
   { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M12 1v22M5 7h14" stroke-linecap="round"/></svg>` },
   { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
@@ -372,16 +422,21 @@ const hubItems = [
   { id:'export', label:'Export / Import', sub:'Backup & restore', href:'export.html', icon:`<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5-5 5 5"/><path d="M12 5v12"/></svg>` }
 ];
 
+let allowInternalNav = false;
+function markInternalNav(){ allowInternalNav = true; setTimeout(()=> allowInternalNav = false, 900); }
+
+/* Render hub grid — changed to use text Enable/Disable */
 async function renderHubGrid(){
-  const grid = document.getElementById('hubGrid'); grid.innerHTML = '';
+  const grid = document.getElementById('hubGrid'); if(!grid) return; grid.innerHTML = '';
+  const sessionAuth = readSessionAuth();
   const currentAuth = await idbGet('auth','current');
-  const currentUser = currentAuth?.value ? await getUserByEmail(currentAuth.value.email) : null;
+  const email = sessionAuth?.email || currentAuth?.value?.email;
+  const currentUser = email ? await getUserByEmail(email) : null;
 
   hubItems.forEach(it => {
     const btn = document.createElement('div'); btn.className='hub-btn';
     const disabledForUser = currentUser && Array.isArray(currentUser.disabledApps) && currentUser.disabledApps.includes(it.id);
-
-    const disableButtonHtml = currentUser ? `<button class="app-disable-btn" data-app="${it.id}" title="${disabledForUser ? 'Enable this section' : 'Disable this section'}">${disabledForUser ? '🔓' : '🔒'}</button>` : '';
+    const disableButtonHtml = currentUser ? `<button class="app-disable-btn" data-app="${it.id}" title="${disabledForUser ? 'Enable this section' : 'Disable this section'}">${disabledForUser ? 'Enable' : 'Disable'}</button>` : '';
 
     btn.innerHTML = `
       ${disableButtonHtml}
@@ -397,6 +452,7 @@ async function renderHubGrid(){
         showToast('This section is disabled for your account.');
         return;
       }
+      markInternalNav();
       location.href = it.href;
     });
 
@@ -417,7 +473,6 @@ async function renderHubGrid(){
     grid.appendChild(btn);
   });
 }
-
 async function toggleAppDisabledForCurrentUser(appId){
   const currentAuth = await idbGet('auth','current');
   if(!currentAuth || !currentAuth.value) { showToast('Sign in to toggle'); return; }
@@ -426,8 +481,7 @@ async function toggleAppDisabledForCurrentUser(appId){
   if(!user){ showToast('User record missing'); return; }
   user.disabledApps = user.disabledApps || [];
   const idx = user.disabledApps.indexOf(appId);
-  if(idx === -1) user.disabledApps.push(appId);
-  else user.disabledApps.splice(idx,1);
+  if(idx === -1) user.disabledApps.push(appId); else user.disabledApps.splice(idx,1);
   await idbPut('users', user);
   showToast(idx === -1 ? 'Section disabled for your account' : 'Section enabled for your account');
 }
@@ -442,16 +496,14 @@ function showToast(msg,ms=2200){
   setTimeout(()=> el.remove(), ms);
 }
 
-/* Lock overlay controls (tabs) */
+/* Lock overlay tabs */
 const tabSignIn = document.getElementById('tabSignIn');
 const tabRegister = document.getElementById('tabRegister');
 const signinBox = document.getElementById('signinBox');
 const registerBox = document.getElementById('registerBox');
 const recoveryBox = document.getElementById('recoveryBox');
-
 tabSignIn.addEventListener('click', ()=>{ showTab('signin'); });
 tabRegister.addEventListener('click', ()=>{ showTab('register'); });
-
 function showTab(t){
   if(t === 'signin'){
     tabSignIn.classList.add('active'); tabSignIn.setAttribute('aria-selected','true');
@@ -467,32 +519,43 @@ function showTab(t){
   }
 }
 
-/* Show/hide overlay explicitly */
-function showLockOverlay(){
-  document.getElementById('lockOverlay').style.display = 'flex';
-  document.getElementById('lockOverlay').setAttribute('aria-hidden','false');
-}
-function hideLockOverlay(){
-  document.getElementById('lockOverlay').style.display = 'none';
-  document.getElementById('lockOverlay').setAttribute('aria-hidden','true');
-}
+/* Show/hide overlay */
+function showLockOverlay(){ document.getElementById('lockOverlay').style.display = 'flex'; document.getElementById('lockOverlay').setAttribute('aria-hidden','false'); }
+function hideLockOverlay(){ document.getElementById('lockOverlay').style.display = 'none'; document.getElementById('lockOverlay').setAttribute('aria-hidden','true'); }
 
-/* Sign-in logic */
+/* inactivity / session timeout */
+let lastActivity = Date.now();
+function updateLastActivity(){ lastActivity = Date.now(); try{ sessionStorage.setItem('lastActivity', String(lastActivity)); }catch(e){} }
+function throttle(fn, wait){ let last=0; return function(...args){ const now = Date.now(); if(now - last > wait){ last = now; fn.apply(this,args); } }; }
+['click','keydown','mousemove','touchstart'].forEach(ev => window.addEventListener(ev, throttle(updateLastActivity, 800), {passive:true}));
+window.addEventListener('storage', (e) => { if(e.key === 'lastActivity' && e.newValue) lastActivity = Math.max(lastActivity, parseInt(e.newValue,10)); });
+function handleSessionTimeout(){
+  const session = readSessionAuth();
+  if(session && session.email){
+    showToast('Session timed out — locked for security', 3000);
+    setCurrentAuth(null);
+    showLockOverlay();
+    stopStatusPolling();
+  }
+}
+const SESSION_TIMEOUT_SEC = 300;
+setInterval(()=>{ try{ const stored = parseInt(sessionStorage.getItem('lastActivity')||'0',10); if(stored) lastActivity = Math.max(lastActivity, stored); const idle = Date.now() - lastActivity; if(idle > SESSION_TIMEOUT_SEC * 1000){ handleSessionTimeout(); } }catch(e){} }, 1000);
+
+/* Sign-in */
 document.getElementById('unlockBtn').addEventListener('click', async ()=>{
-  const p = document.getElementById('lockPin').value.trim();
+  const p = (document.getElementById('lockPin')?.value || '').trim();
   if(!/^\d{4,8}$/.test(p)){ alert('PIN must be 4-8 digits'); return; }
   const users = await idbGetAll('users');
-  // try hashed match first
   const pHash = await hashString(p);
   let found = users.find(u => u.passHash && u.passHash === pHash);
-  // fallback: accept legacy plain 'pass' field if present
   if(!found) found = users.find(u => u.pass && String(u.pass) === p);
   if(found){
     if(found.enabled === false){ alert('Your account has been disabled by admin.'); return; }
     await setCurrentAuth(found.email, found.name);
-    // ping server and request status
+    await idbPut('settings', { key:'lastEmail', value: found.email });
+    updateLastActivity();
+    startStatusPolling(found.email, 15);
     try{ await pingServer(found.email); await fetchServerStatusAndApply(found.email); }catch(e){}
-    // hide overlay and show welcome, then render hub
     hideLockOverlay();
     showWelcome(found.name);
     await renderHubGrid();
@@ -502,16 +565,16 @@ document.getElementById('unlockBtn').addEventListener('click', async ()=>{
   }
 });
 
-/* Register logic */
+/* Register */
 document.getElementById('registerBtn').addEventListener('click', async ()=>{
-  const pin = document.getElementById('regPin').value.trim();
-  const pin2 = document.getElementById('regPinConfirm').value.trim();
-  const secQ = document.getElementById('secQuestion').value.trim();
-  const secA = document.getElementById('secAnswer').value.trim();
-  const email = (document.getElementById('regEmail').value || '').trim().toLowerCase();
-  const name = (document.getElementById('regName').value || '').trim();
-  const country = (document.getElementById('regCountry').value || '').trim();
-  const location = (document.getElementById('regLocation').value || '').trim();
+  const pin = (document.getElementById('regPin')?.value || '').trim();
+  const pin2 = (document.getElementById('regPinConfirm')?.value || '').trim();
+  const secQ = (document.getElementById('secQuestion')?.value || '').trim();
+  const secA = (document.getElementById('secAnswer')?.value || '').trim();
+  const email = (document.getElementById('regEmail')?.value || '').trim().toLowerCase();
+  const name = (document.getElementById('regName')?.value || '').trim();
+  const country = (document.getElementById('regCountry')?.value || '').trim();
+  const location = (document.getElementById('regLocation')?.value || '').trim();
 
   if(!/^\d{4,8}$/.test(pin)){ alert('PIN must be 4-8 digits'); return; }
   if(pin !== pin2){ alert('PINs do not match'); return; }
@@ -521,27 +584,21 @@ document.getElementById('registerBtn').addEventListener('click', async ()=>{
   const passHash = await hashString(pin);
   const secAnswerHash = await hashString(secA.toLowerCase().trim());
   const user = await createOrUpdateUserLocal({ email, passHash, name, location, country, secQuestion:secQ, secAnswerHash });
-  // record auth
   await setCurrentAuth(user.email, user.name);
-  // attempt to send to server (best-effort), do not block on failure
+  await idbPut('settings', { key:'lastEmail', value: user.email });
+  updateLastActivity();
+  startStatusPolling(user.email, 15);
   try{ await sendRegisterToServer(user); await pingServer(user.email); await fetchServerStatusAndApply(user.email); }catch(e){}
   hideLockOverlay();
   showWelcome(user.name);
   await renderHubGrid();
 });
+document.getElementById('registerLaterBtn').addEventListener('click', ()=>{ showTab('signin'); });
 
-/* Register cancel */
-document.getElementById('registerLaterBtn').addEventListener('click', ()=>{
-  // Keep overlay visible but go to sign-in
-  showTab('signin');
-});
-
-/* Forgot PIN flow */
-document.getElementById('forgotPinBtn').addEventListener('click', ()=>{
-  showTab('recovery');
-});
+/* Forgot PIN: lookup and reset */
+document.getElementById('forgotPinBtn').addEventListener('click', ()=>{ showTab('recovery'); });
 document.getElementById('recLookupBtn').addEventListener('click', async ()=>{
-  const email = (document.getElementById('recEmail').value || '').trim().toLowerCase();
+  const email = (document.getElementById('recEmail')?.value || '').trim().toLowerCase();
   if(!email){ alert('Enter your email'); return; }
   const u = await getUserByEmail(email);
   if(!u){ alert('No such account locally'); return; }
@@ -550,9 +607,9 @@ document.getElementById('recLookupBtn').addEventListener('click', async ()=>{
   document.getElementById('recQuestionWrap').classList.remove('hidden');
 });
 document.getElementById('recResetBtn').addEventListener('click', async ()=>{
-  const email = (document.getElementById('recEmail').value || '').trim().toLowerCase();
-  const ans = (document.getElementById('recAnswer').value || '').trim();
-  const newPin = (document.getElementById('recNewPin').value || '').trim();
+  const email = (document.getElementById('recEmail')?.value || '').trim().toLowerCase();
+  const ans = (document.getElementById('recAnswer')?.value || '').trim();
+  const newPin = (document.getElementById('recNewPin')?.value || '').trim();
   if(!ans || !newPin || !/^\d{4,8}$/.test(newPin)){ alert('Provide answer and a valid new PIN'); return; }
   const u = await getUserByEmail(email);
   if(!u){ alert('No such account'); return; }
@@ -570,7 +627,7 @@ document.getElementById('recResetBtn').addEventListener('click', async ()=>{
 document.getElementById('recCancelBtn').addEventListener('click', ()=>{ showTab('signin'); });
 document.getElementById('recCancelBtn2').addEventListener('click', ()=>{ showTab('signin'); });
 
-/* Small welcome slide */
+/* welcome */
 function showWelcome(name){
   const el = document.getElementById('welcomeSlide');
   el.textContent = `Welcome, ${name || 'friend'} — glad you're back`;
@@ -578,35 +635,45 @@ function showWelcome(name){
   setTimeout(()=> { el.classList.remove('visible'); }, 2400);
 }
 
-/* Boot sequence - auth-first */
+/* Boot */
 async function boot(){
   try{ await loadSettingsToState(); }catch(e){}
-  // If there are no users, show register immediately
   const users = await idbGetAll('users');
-  const current = await idbGet('auth','current');
+  let current = await idbGet('auth','current');
+  const sessionAuth = readSessionAuth();
+  if(sessionAuth && (!current || !current.value || current.value.email !== sessionAuth.email)){
+    try{ await idbPut('auth', { key:'current', value:{ email: sessionAuth.email, name: sessionAuth.name } }); current = await idbGet('auth','current'); }catch(e){}
+  }
+
+  const lastEmailRec = await idbGet('settings','lastEmail');
 
   if(!current || !current.value){
-    // no current auth -> require sign-in/register
     showLockOverlay();
-    if(!users || users.length === 0){
-      showTab('register');
-    } else {
-      showTab('signin');
-    }
-    // ensure hub not rendered until signed in; we'll render after sign-in
+    if(!users || users.length === 0) showTab('register'); else showTab('signin');
     document.getElementById('hubGrid').innerHTML = '';
+    if(lastEmailRec && lastEmailRec.value) startStatusPolling(lastEmailRec.value, 15);
   } else {
-    // we have a signed-in user, validate and sync
     const email = current.value.email;
-    // ensure we show welcome and render hub
+    startStatusPolling(email, 15);
     try{ await pingServer(email); await fetchServerStatusAndApply(email); }catch(e){}
+    updateLastActivity();
     showWelcome(current.value.name);
     await renderHubGrid();
   }
+
+  // On home page push a spacer state to intercept back press and show our own leave confirm
+  try{
+    const pathname = (location.pathname || '/').split('/').pop() || '';
+    const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/';
+    if(isIndex){
+      history.replaceState({ home: true }, '');
+      history.pushState({ home: true, spacer: true }, '');
+    }
+  }catch(e){}
 }
 boot();
 
-/* keep previous service worker & utilities intact but resilient */
+/* service worker registration (unchanged) */
 if('serviceWorker' in navigator){
   navigator.serviceWorker.register('/sw.js').then(reg => {
     if(reg.waiting){ /* optionally notify update */ }
@@ -621,7 +688,7 @@ if('serviceWorker' in navigator){
   }).catch(e => console.warn('sw register failed', e));
 }
 
-/* simple settings & export wiring (kept lightweight) */
+/* settings & export wiring (unchanged) */
 document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{ await loadSettingsToState(); document.getElementById('settingsModal').classList.add('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','false'); });
 document.getElementById('settingsCancelX').addEventListener('click', ()=>{ document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true'); });
 document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
@@ -638,8 +705,6 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
   await loadSettingsToState();
   document.getElementById('settingsModal').classList.remove('visible');
 });
-
-/* export */
 document.getElementById('openExportBtn').addEventListener('click', async ()=>{
   const settings = await idbGetAll('settings');
   const users = await idbGetAll('users');
@@ -651,7 +716,7 @@ document.getElementById('openExportBtn').addEventListener('click', async ()=>{
   const a = document.createElement('a'); a.href = url; a.download = 'tomorrow-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
 });
 
-/* clear caches / remove data buttons (kept) */
+/* offline & share buttons */
 document.getElementById('downloadOfflineBtn').addEventListener('click', async ()=>{
   if(navigator.serviceWorker && navigator.serviceWorker.controller){
     navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' });
@@ -664,6 +729,119 @@ document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
   else { try{ await navigator.clipboard.writeText(shareData.url); showToast('Link copied'); }catch(e){ showToast('Cannot copy link'); } }
 });
 
+/* Floating ring behavior: explode fragments on tap, react to device shake */
+(function bindFloat(){
+  const btn = document.getElementById('aiFloatBtn'); if(!btn) return;
+  const ring = btn.querySelector('.ai-ring');
+  const core = btn.querySelector('.ai-core');
+  let busy = false;
+
+  function createFragments(){
+    for(let i=0;i<12;i++){
+      const f = document.createElement('div'); f.className='frag';
+      // attach to btn for simple coordinate flow
+      const rect = btn.getBoundingClientRect();
+      f.style.left = (rect.left + rect.width/2 - 3) + 'px';
+      f.style.top = (rect.top + rect.height/2 - 3) + 'px';
+      document.body.appendChild(f);
+      const angle = Math.random()*Math.PI*2; const dist = 36 + Math.random()*36;
+      const dx = Math.cos(angle)*dist; const dy = Math.sin(angle)*dist;
+      requestAnimationFrame(()=>{ f.style.transition = 'transform 600ms cubic-bezier(.2,.8,.2,1), opacity 600ms'; f.style.transform = `translate(${dx}px,${dy}px) scale(${0.8+Math.random()*0.8})`; f.style.opacity = '0'; });
+      setTimeout(()=> f.remove(), 700);
+    }
+  }
+
+  btn.addEventListener('click', async (e)=>{
+    if(busy) { showToast('Processing...'); return; }
+    busy = true;
+    ring.style.transform = 'scale(0.86)';
+    core.style.transform = 'scale(0.72)';
+    createFragments();
+    // short delay to simulate action
+    await new Promise(r=>setTimeout(r, 300));
+    ring.style.transition = 'transform 420ms cubic-bezier(.2,.8,.2,1)';
+    core.style.transition = 'transform 420ms';
+    ring.style.transform = 'scale(1)';
+    core.style.transform = 'scale(1)';
+    showToast('Smart action — done');
+    setTimeout(()=>{ busy = false; ring.style.transition=''; core.style.transition=''; }, 520);
+  });
+
+  // device motion shake -> nudge ring + core
+  if('DeviceMotionEvent' in window){
+    let last = { x: null, y: null, z: null, t: Date.now() };
+    window.addEventListener('devicemotion', (ev)=>{
+      try{
+        const a = ev.accelerationIncludingGravity || ev.acceleration || {};
+        if(a.x == null || a.y == null || a.z == null) return;
+        const now = Date.now();
+        if(last.x !== null){
+          const dx = Math.abs(a.x - last.x); const dy = Math.abs(a.y - last.y); const dz = Math.abs(a.z - last.z);
+          const delta = dx + dy + dz;
+          if(delta > 18 && (now - last.t) > 300){
+            ring.style.transition = 'transform 220ms cubic-bezier(.2,.8,.2,1)';
+            ring.style.transform = 'translateX(6px) scale(1.02)';
+            core.style.transition = 'transform 220ms';
+            core.style.transform = 'translateX(10px)';
+            setTimeout(()=>{ ring.style.transform=''; core.style.transform=''; }, 260);
+            last.t = now;
+          }
+        }
+        last.x = a.x; last.y = a.y; last.z = a.z;
+      }catch(e){}
+    }, { passive:true });
+  }
+})();
+
+/* Intercept popstate on home to show leave-confirm modal */
+(function setupLeaveConfirm(){
+  const leaveModal = document.getElementById('leaveConfirm');
+  const leaveNo = document.getElementById('leaveNo');
+  const leaveYes = document.getElementById('leaveYes');
+
+  window.addEventListener('popstate', (ev) => {
+    // If state indicates our spacer, show modal and push state back so user stays until they confirm
+    if(ev.state && ev.state.spacer){
+      // show modal
+      leaveModal.classList.add('visible');
+      leaveModal.style.display = 'block';
+      // push state back to keep user in place until they choose
+      history.pushState({ home:true, spacer:true }, '');
+    }
+  });
+
+  leaveNo.addEventListener('click', () => {
+    const leaveModal = document.getElementById('leaveConfirm');
+    leaveModal.classList.remove('visible');
+    leaveModal.style.display = 'none';
+    // ensure we're on the spacer state
+    try{ history.pushState({ home:true, spacer:true }, ''); }catch(e){}
+  });
+
+  leaveYes.addEventListener('click', () => {
+    const leaveModal = document.getElementById('leaveConfirm');
+    leaveModal.classList.remove('visible');
+    leaveModal.style.display = 'none';
+    // Remove spacer and go back (actual navigation)
+    try{
+      // Replace current state so the next back goes out of app
+      history.replaceState({}, '');
+      history.back();
+    }catch(e){
+      // Fallback: allow default
+      window.history.back();
+    }
+  });
+})();
+
+/* beforeunload: avoid accidental prompt on internal navigations */
+let unsavedChanges = false;
+window.addEventListener('beforeunload', (e)=>{
+  if(unsavedChanges && !allowInternalNav){
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
   </script>
 </body>
 </html>

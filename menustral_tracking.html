@@ -85,6 +85,9 @@
   .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
   .fab-home svg{width:22px;height:22px;fill:white}
 
+  /* minor offline banner */
+  .offline-banner{background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px;display:none}
+
   /* responsive */
   @media (max-width:520px){
     .cell{min-height:74px}
@@ -100,6 +103,9 @@
         <div class="sub">Calendar • Ovulation • Fertile window — informational only</div>
       </div>
     </header>
+
+    <!-- Offline banner -->
+    <div id="offlineBanner" class="offline-banner">Offline — core functionality still works. If this page wasn't cached yet, open Home and tap "Download for offline".</div>
 
     <!-- Inputs -->
     <div class="card">
@@ -262,7 +268,85 @@
   </div>
 
 <script>
-/* ========== IndexedDB helpers ========== */
+/* ====== Offline helpers (added) ======
+   - Inject Google Fonts only when online
+   - Register service worker and request DOWNLOAD_OFFLINE if this page not cached
+   - Show offline banner & handle SW messages
+*/
+
+(function offlineInit(){
+  // Inject Google Fonts only when online to avoid blocking offline loads
+  if(navigator.onLine){
+    const f = document.createElement('link');
+    f.rel = 'stylesheet';
+    f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap';
+    document.head.appendChild(f);
+  }
+
+  // update offline banner visibility
+  const offlineBanner = document.getElementById('offlineBanner');
+  function updateOfflineBanner(){ if(!offlineBanner) return; offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
+  window.addEventListener('online', updateOfflineBanner);
+  window.addEventListener('offline', updateOfflineBanner);
+  updateOfflineBanner();
+
+  // register SW and ensure this page is cached in shell
+  async function registerSWAndEnsureCached(){
+    if(!('serviceWorker' in navigator)) return;
+    try{
+      // register (harmless if already registered)
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+
+      // check caches for this page; if missing ask SW to DOWNLOAD_OFFLINE
+      if('caches' in window){
+        try{
+          const cacheNames = await caches.keys();
+          const shellName = cacheNames.find(k => k.startsWith('tomorrow-shell-')) || null;
+          if(shellName){
+            const cache = await caches.open(shellName);
+            const match = await cache.match(location.pathname) || await cache.match('/menustral_tracking.html') || await cache.match('/index.html');
+            if(!match){
+              // request SW to cache ASSETS_TO_CACHE (background)
+              if(navigator.serviceWorker.controller){
+                navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
+                showToast('Caching pages for offline (background)...');
+              } else {
+                // wait until ready then message
+                navigator.serviceWorker.ready.then(reg => {
+                  try{ if(reg.active) reg.active.postMessage({ type: 'DOWNLOAD_OFFLINE' }); }catch(e){ console.warn(e); }
+                });
+              }
+            }
+          } else {
+            // no shell cache yet; still request SW to cache
+            if(navigator.serviceWorker.controller){
+              navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
+              showToast('Caching pages for offline (background)...');
+            }
+          }
+        }catch(e){ console.warn('cache check failed', e); }
+      }
+
+      // SW message listener
+      navigator.serviceWorker.addEventListener('message', evt => {
+        const data = evt.data || {};
+        if(!data || !data.type) return;
+        if(data.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Pages cached for offline');
+        else if(data.type === 'CLEAR_CACHES_DONE') showToast('Caches cleared');
+        else if(data.type === 'SW_UPDATED'){
+          showToast('New version available — reloading...');
+          setTimeout(()=> location.reload(), 700);
+        }
+      });
+    }catch(e){
+      console.warn('SW register failed', e);
+    }
+  }
+
+  registerSWAndEnsureCached();
+})();
+
+/* ====== IndexedDB helpers (unchanged) ====== */
 const DB_NAME='tomorrowai-db', DB_VER=2;
 function openDB(){ return new Promise((resolve,reject)=>{ const req=indexedDB.open(DB_NAME,DB_VER); req.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'}); if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'}); if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'}); if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'}); }; req.onsuccess=e=>resolve(e.target.result); req.onerror=e=>reject(e.target.error); }); }
 async function idbPut(store, val){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).put(val); tx.oncomplete=()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
@@ -270,15 +354,15 @@ async function idbGet(store,key){ const db=await openDB(); return new Promise((r
 async function idbGetAll(store){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readonly'); const r=tx.objectStore(store).getAll(); r.onsuccess=e=>res(e.target.result||[]); r.onerror=e=>rej(e.target.error); }); }
 async function idbDelete(store,key){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete=()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
 
-/* ========== Date helpers ========== */
+/* ====== the rest of your menstrual logic (unchanged) ====== */
+/* Date helpers, sha256, themes, UI, calendar rendering, manual marks, chart,
+   security modal, reminders, export — kept exactly as you wrote previously. */
+
 function toISODate(d){ const y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2); return `${y}-${m}-${day}`; }
 function parseDateInput(v){ if(!v) return null; const d=new Date(v+'T00:00:00'); return isNaN(d.getTime())?null:d; }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); x.setHours(0,0,0,0); return x; }
-
-/* ========== SHA-256 helper for security answer hashing ========== */
 async function sha256hex(text){ const enc=new TextEncoder().encode(text); const buf=await crypto.subtle.digest('SHA-256',enc); const arr=Array.from(new Uint8Array(buf)); return arr.map(b=>b.toString(16).padStart(2,'0')).join(''); }
 
-/* ========== Theme presets ========== */
 const THEMES = {
   blossom: {
     '--bg':'#FFF7FB','--card':'#FFFFFF','--muted':'#6B7280','--text':'#0f172a',
@@ -296,23 +380,24 @@ const THEMES = {
 async function applyTheme(name){
   const t = THEMES[name] || THEMES.blossom;
   for(const k in t) document.documentElement.style.setProperty(k, t[k]);
-  // persist
   await idbPut('settings', { key:'menstrual.theme', value: name });
 }
 
-/* ========== Menstrual logic & UI glue ========== */
+/* load/save settings, predictCycles, renderCalendar, makeCell, toggleManualMark, clearManualMarks,
+   drawCycleChart, security UI, reminders, export — same code as you provided earlier.
+   To keep this file compact I reuse the exact functions and flow from your original page.
+*/
+
 let settings = {};
 async function loadSettings(){
   const s = await idbGet('settings','menstrual.settings');
   settings = (s && s.value) ? s.value : {};
-  // fill inputs
   if(settings.lastPeriod) document.getElementById('lastPeriod').value = settings.lastPeriod;
   if(settings.cycleLength) document.getElementById('cycleLength').value = settings.cycleLength;
   if(settings.periodLength) document.getElementById('periodLength').value = settings.periodLength;
   if(settings.luteal) document.getElementById('luteal').value = settings.luteal;
   if(settings.monthsAhead) document.getElementById('monthsAhead').value = settings.monthsAhead;
   if(settings.notes) document.getElementById('notes').value = settings.notes;
-  // theme
   const t = await idbGet('settings','menstrual.theme');
   const themeName = (t && t.value) ? t.value : 'blossom';
   document.getElementById('themeSelect').value = themeName;
@@ -329,8 +414,6 @@ async function saveSettings(){
   await idbPut('settings', { key:'menstrual.notes', value: settings.notes });
   showToast('Settings saved');
 }
-
-/* predict cycle starts */
 function predictCycles(startDate, cycleLen, monthsAhead){
   const results=[];
   if(!startDate) return results;
@@ -343,7 +426,7 @@ function predictCycles(startDate, cycleLen, monthsAhead){
   return results;
 }
 
-/* render calendar grid visually */
+/* calendar rendering and other functions (kept identical) */
 const calendarGrid = document.getElementById('calendarGrid');
 const monthTitle = document.getElementById('monthTitle');
 const calFooter = document.getElementById('calFooter');
@@ -361,10 +444,8 @@ async function renderCalendar(year, month){
   const first = new Date(year, month, 1);
   const startDay = first.getDay();
   const daysInMonth = new Date(year, month+1, 0).getDate();
-  // get manual marks
   const allData = await idbGetAll('data');
   const manualMarks = new Set(allData.filter(d=>d.type==='menstrual').map(d=>d.date));
-  // prediction
   const lastPeriod = parseDateInput(document.getElementById('lastPeriod').value);
   const cycleLen = Number(document.getElementById('cycleLength').value) || 28;
   const periodLen = Number(document.getElementById('periodLength').value) || 5;
@@ -382,7 +463,6 @@ async function renderCalendar(year, month){
     }
   }
 
-  // leading prev month
   const prevDays = startDay;
   const prevMonthLast = new Date(year, month, 0).getDate();
   for(let i=prevDays-1;i>=0;i--){
@@ -392,16 +472,12 @@ async function renderCalendar(year, month){
     const el = makeCell(d, iso, true, manualMarks, periodDays, fertileDays, ovulationDays);
     calendarGrid.appendChild(el);
   }
-
-  // days in month
   for(let day=1; day<=daysInMonth; day++){
     const dateObj = new Date(year, month, day);
     const iso = toISODate(dateObj);
     const el = makeCell(day, iso, false, manualMarks, periodDays, fertileDays, ovulationDays);
     calendarGrid.appendChild(el);
   }
-
-  // trailing next month
   const total = prevDays + daysInMonth;
   const nextFiller = (7 - (total % 7)) % 7;
   for(let d=1; d<=nextFiller; d++){
@@ -410,8 +486,6 @@ async function renderCalendar(year, month){
     const el = makeCell(d, iso, true, manualMarks, periodDays, fertileDays, ovulationDays);
     calendarGrid.appendChild(el);
   }
-
-  // footer summary
   if(lastPeriod && cycleStarts.length){
     const nextStart = cycleStarts.find(d => d >= new Date());
     const nextOv = nextStart ? addDays(nextStart, cycleLen - luteal) : null;
@@ -419,8 +493,6 @@ async function renderCalendar(year, month){
   } else {
     calFooter.textContent = 'Enter last period start to get predictions';
   }
-
-  // update chart
   drawCycleChart(cycleStarts);
 }
 
@@ -429,8 +501,6 @@ function makeCell(dayNum, iso, otherMonth, manualMarks, periodDays, fertileDays,
   div.className = 'cell' + (otherMonth ? ' other-month' : '');
   const num = document.createElement('div'); num.className='num'; num.textContent = dayNum;
   div.appendChild(num);
-
-  // priority: manual mark overrides
   if(manualMarks.has(iso)){
     div.classList.add('period');
     const tag = document.createElement('div'); tag.className='tag'; tag.textContent='Manual period';
@@ -450,24 +520,16 @@ function makeCell(dayNum, iso, otherMonth, manualMarks, periodDays, fertileDays,
   } else {
     div.classList.add('safe');
   }
-
-  // click toggles manual mark
-  div.addEventListener('click', async (e)=>{
-    e.stopPropagation();
-    await toggleManualMark(iso);
-  });
-
+  div.addEventListener('click', async (e)=>{ e.stopPropagation(); await toggleManualMark(iso); });
   let titleParts = [];
   if(manualMarks.has(iso)) titleParts.push('Manual period');
   if(periodDays.has(iso)) titleParts.push('Predicted period');
   if(ovulationDays.has(iso)) titleParts.push('Predicted ovulation');
   if(fertileDays.has(iso)) titleParts.push('Predicted fertile window');
   div.title = titleParts.join(' • ') || 'No prediction';
-
   return div;
 }
 
-/* toggle manual mark */
 async function toggleManualMark(dateStr){
   const key = 'men_' + dateStr;
   const existing = await idbGet('data', key);
@@ -478,67 +540,47 @@ async function toggleManualMark(dateStr){
 }
 async function clearManualMarks(){ const all = await idbGetAll('data'); const marks = all.filter(d=>d.type==='menstrual'); for(const m of marks) await idbDelete('data', m.id); showToast('Manual marks cleared'); await renderCalendar(currentYear, currentMonth); }
 
-/* ========== Chart (canvas) - simple line chart showing cycle lengths ========== */
 const canvas = document.getElementById('cycleChart');
 const ctx = canvas.getContext('2d');
 function drawCycleChart(cycleStarts){
-  // compute cycle lengths from consecutive predicted starts
   const lens = [];
   for(let i=1;i<cycleStarts.length;i++){
     const diff = Math.round((cycleStarts[i] - cycleStarts[i-1])/(24*3600*1000));
     lens.push(diff);
   }
-  // adjust canvas size for DPR
   const dpr = window.devicePixelRatio || 1;
   const w = canvas.clientWidth, h = canvas.clientHeight;
   canvas.width = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
   ctx.scale(dpr,dpr);
-  // clear
   ctx.clearRect(0,0,w,h);
-  // draw grid
   ctx.strokeStyle = 'rgba(15,23,42,0.06)'; ctx.lineWidth=1;
   for(let y=0;y<4;y++){ const yy = 10 + (h-20)*y/3; ctx.beginPath(); ctx.moveTo(10, yy); ctx.lineTo(w-10, yy); ctx.stroke(); }
   if(lens.length===0){ document.getElementById('chartNote').textContent = 'No cycle data to chart yet. Compute predictions.'; return; }
-  // scales
   const max = Math.max(...lens) + 2;
   const min = Math.min(...lens) - 2;
   const left = 30, right = w-10, top = 10, bottom = h-30;
   const width = right-left;
   const height = bottom-top;
-  // x step
   const step = width / Math.max(1, lens.length-1);
-  // draw line
   ctx.beginPath();
   ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#F472B6';
   ctx.lineWidth = 2.5;
-  lens.forEach((v,i)=>{
-    const x = left + (i)*step;
-    const y = top + (1 - (v - min) / (max - min)) * height;
-    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  });
+  lens.forEach((v,i)=>{ const x = left + (i)*step; const y = top + (1 - (v - min) / (max - min)) * height; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
   ctx.stroke();
-  // draw points
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#A78BFA';
-  lens.forEach((v,i)=>{
-    const x = left + (i)*step;
-    const y = top + (1 - (v - min) / (max - min)) * height;
-    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
-  });
-  // axes labels
+  lens.forEach((v,i)=>{ const x = left + (i)*step; const y = top + (1 - (v - min) / (max - min)) * height; ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();});
   ctx.fillStyle = 'rgba(15,23,42,0.6)'; ctx.font='12px Inter, system-ui, Arial';
   ctx.fillText('Cycle days', 12, 12);
-  // average line
   const avg = Math.round(lens.reduce((a,b)=>a+b,0)/lens.length);
   ctx.strokeStyle = 'rgba(0,0,0,0.08)'; ctx.setLineDash([4,4]); ctx.beginPath();
   const avgY = top + (1 - (avg - min) / (max - min)) * height;
   ctx.moveTo(left, avgY); ctx.lineTo(right, avgY); ctx.stroke(); ctx.setLineDash([]);
   ctx.fillText('Avg: ' + avg + 'd', right - 60, avgY - 6);
-  // note
   document.getElementById('chartNote').textContent = 'Showing predicted cycle lengths (differences between successive predicted starts). Average shown by dashed line.';
 }
 
-/* ========== Security modal UI + logic (modal not prompt) ========== */
+/* Security modal logic (kept) */
 const securityBackdrop = document.getElementById('securityModalBackdrop');
 const unlockBackdrop = document.getElementById('unlockModalBackdrop');
 document.getElementById('openSecurityBtn').addEventListener('click', async ()=> {
@@ -560,137 +602,41 @@ document.getElementById('closeSecurity').addEventListener('click', ()=> { securi
 document.getElementById('secEnabled').addEventListener('change', (e)=>{ document.getElementById('secForm').style.display = e.target.value === 'yes' ? 'block' : 'none'; });
 document.getElementById('secQuestion').addEventListener('change', (e)=>{ document.getElementById('secCustom').style.display = e.target.value === 'custom' ? 'block' : 'none'; });
 
-document.getElementById('saveSecurity').addEventListener('click', async ()=>{
-  const enabled = document.getElementById('secEnabled').value === 'yes';
-  if(!enabled){
-    await idbPut('settings', { key:'menstrual.security', value: { enabled:false }});
-    showToast('Security disabled');
-    securityBackdrop.classList.remove('visible'); return;
-  }
-  const qKey = document.getElementById('secQuestion').value;
-  const customQ = document.getElementById('secCustom').value.trim();
-  const answer = document.getElementById('secAnswer').value || '';
-  if(!answer){ alert('Provide an answer'); return; }
-  const hashed = await sha256hex(answer);
-  const payload = { enabled:true, questionKey:qKey, customQuestion: customQ, answerHash: hashed };
-  await idbPut('settings', { key:'menstrual.security', value: payload });
-  showToast('Security saved locally');
-  securityBackdrop.classList.remove('visible');
-});
+document.getElementById('saveSecurity').addEventListener('click', async ()=>{ const enabled = document.getElementById('secEnabled').value === 'yes'; if(!enabled){ await idbPut('settings', { key:'menstrual.security', value: { enabled:false }}); showToast('Security disabled'); securityBackdrop.classList.remove('visible'); return; } const qKey = document.getElementById('secQuestion').value; const customQ = document.getElementById('secCustom').value.trim(); const answer = document.getElementById('secAnswer').value || ''; if(!answer){ alert('Provide an answer'); return; } const hashed = await sha256hex(answer); const payload = { enabled:true, questionKey:qKey, customQuestion: customQ, answerHash: hashed }; await idbPut('settings', { key:'menstrual.security', value: payload }); showToast('Security saved locally'); securityBackdrop.classList.remove('visible'); });
 
-document.getElementById('clearSecurity').addEventListener('click', async ()=>{
-  if(!confirm('Remove security question?')) return;
-  await idbPut('settings', { key:'menstrual.security', value: { enabled:false }});
-  showToast('Security removed');
-  securityBackdrop.classList.remove('visible');
-});
+document.getElementById('clearSecurity').addEventListener('click', async ()=>{ if(!confirm('Remove security question?')) return; await idbPut('settings', { key:'menstrual.security', value: { enabled:false }}); showToast('Security removed'); securityBackdrop.classList.remove('visible'); });
 
-/* Unlock modal flow */
-document.getElementById('unlockCancel').addEventListener('click', ()=> {
-  unlockBackdrop.classList.remove('visible');
-  unlockBackdrop.setAttribute('aria-hidden','true');
-  // optionally hide page if they cancel, but we'll just leave it locked visually (they can't interact with calendar until unlocked)
-});
-document.getElementById('unlockSubmit').addEventListener('click', async ()=>{
-  const ans = document.getElementById('unlockAnswer').value || '';
-  const sec = await idbGet('settings','menstrual.security');
-  if(!sec || !sec.value || !sec.value.enabled){ unlockBackdrop.classList.remove('visible'); return; }
-  const hashed = await sha256hex(ans);
-  if(hashed === sec.value.answerHash){
-    showToast('Unlocked');
-    unlockBackdrop.classList.remove('visible'); unlockBackdrop.setAttribute('aria-hidden','true');
-    // proceed to render UI
-    await renderCalendar(currentYear, currentMonth);
-  } else {
-    alert('Incorrect answer');
-  }
-});
+document.getElementById('unlockCancel').addEventListener('click', ()=> { unlockBackdrop.classList.remove('visible'); unlockBackdrop.setAttribute('aria-hidden','true'); });
+document.getElementById('unlockSubmit').addEventListener('click', async ()=>{ const ans = document.getElementById('unlockAnswer').value || ''; const sec = await idbGet('settings','menstrual.security'); if(!sec || !sec.value || !sec.value.enabled){ unlockBackdrop.classList.remove('visible'); return; } const hashed = await sha256hex(ans); if(hashed === sec.value.answerHash){ showToast('Unlocked'); unlockBackdrop.classList.remove('visible'); unlockBackdrop.setAttribute('aria-hidden','true'); await renderCalendar(currentYear, currentMonth); } else { alert('Incorrect answer'); } });
 
-/* enforce security at load */
-async function enforceSecurity(){
-  const sec = await idbGet('settings','menstrual.security');
-  if(sec && sec.value && sec.value.enabled){
-    // show unlock modal
-    unlockBackdrop.classList.add('visible'); unlockBackdrop.setAttribute('aria-hidden','false');
-    // populate question text
-    const key = sec.value.questionKey;
-    const qText = key === 'custom' ? (sec.value.customQuestion || 'Security question') :
-                 (key === 'pet' ? "What was your first pet's name?" :
-                  key === 'city' ? "What city were you born in?" :
-                  "What is your mother's maiden name?");
-    document.getElementById('unlockQuestion').textContent = qText;
-    return false; // blocked until unlock
-  }
-  return true;
-}
+async function enforceSecurity(){ const sec = await idbGet('settings','menstrual.security'); if(sec && sec.value && sec.value.enabled){ unlockBackdrop.classList.add('visible'); unlockBackdrop.setAttribute('aria-hidden','false'); const key = sec.value.questionKey; const qText = key === 'custom' ? (sec.value.customQuestion || 'Security question') : (key === 'pet' ? "What was your first pet's name?" : key === 'city' ? "What city were you born in?" : "What is your mother's maiden name?"); document.getElementById('unlockQuestion').textContent = qText; return false; } return true; }
 
-/* ========== Reminders (session-limited best-effort) ========== */
-document.getElementById('reminderBtn').addEventListener('click', async ()=>{
-  const ok = await requestNotificationPermission();
-  if(!ok) return alert('Notifications permission denied');
-  const lastPeriod = parseDateInput(document.getElementById('lastPeriod').value);
-  if(!lastPeriod) return alert('Set last period start date first');
-  // compute next predicted start and schedule a "demo" reminder in 10 seconds (session-only)
-  const cycleLen = Number(document.getElementById('cycleLength').value)||28;
-  const nextStart = addDays(lastPeriod, cycleLen);
-  notifyAndSound('Reminder scheduled (demo)', `Next predicted period: ${toISODate(nextStart)} — demo notification in 10s`);
-  // demo timeout
-  setTimeout(async ()=> {
-    await showNotification('Predicted period', `Estimated start: ${toISODate(nextStart)}`);
-    playBeep();
-  }, 10000);
-});
+/* Reminders (session demo) */
+document.getElementById('reminderBtn').addEventListener('click', async ()=>{ const ok = await requestNotificationPermission(); if(!ok) return alert('Notifications permission denied'); const lastPeriod = parseDateInput(document.getElementById('lastPeriod').value); if(!lastPeriod) return alert('Set last period start date first'); const cycleLen = Number(document.getElementById('cycleLength').value)||28; const nextStart = addDays(lastPeriod, cycleLen); notifyAndSound('Reminder scheduled (demo)', `Next predicted period: ${toISODate(nextStart)} — demo notification in 10s`); setTimeout(async ()=> { await showNotification('Predicted period', `Estimated start: ${toISODate(nextStart)}`); playBeep(); }, 10000); });
 
-/* Notification helpers */
-async function requestNotificationPermission(){
-  if(!('Notification' in window)) return false;
-  if(Notification.permission === 'granted') return true;
-  const p = await Notification.requestPermission();
-  return p === 'granted';
-}
-async function showNotification(title, body){
-  const ok = await requestNotificationPermission();
-  if(!ok) return;
-  if(navigator.serviceWorker && navigator.serviceWorker.ready){
-    const reg = await navigator.serviceWorker.ready;
-    reg.showNotification(title, { body, tag:'menstrual-notif' });
-  } else {
-    new Notification(title, { body });
-  }
-}
+async function requestNotificationPermission(){ if(!('Notification' in window)) return false; if(Notification.permission === 'granted') return true; const p = await Notification.requestPermission(); return p === 'granted'; }
+async function showNotification(title, body){ const ok = await requestNotificationPermission(); if(!ok) return; if(navigator.serviceWorker && navigator.serviceWorker.ready){ const reg = await navigator.serviceWorker.ready; reg.showNotification(title, { body, tag:'menstrual-notif' }); } else { new Notification(title, { body }); } }
 function playBeep(duration=0.12, freq=880){ try{ const ctx=new (window.AudioContext||window.webkitAudioContext)(); const o=ctx.createOscillator(); const g=ctx.createGain(); o.type='sine'; o.frequency.value=freq; o.connect(g); g.connect(ctx.destination); o.start(); g.gain.setValueAtTime(0.0001,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.2,ctx.currentTime+0.01); g.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+duration); setTimeout(()=>{ o.stop(); ctx.close(); }, (duration+0.05)*1000); }catch(e){ console.warn('audio err', e); } }
 function notifyAndSound(t,b){ playBeep(); showNotification(t,b); }
 
-/* ========== Save / export notes ========= */
+/* Save/export notes */
 document.getElementById('saveNotes').addEventListener('click', async ()=>{ settings.notes = document.getElementById('notes').value || ''; await idbPut('settings', { key:'menstrual.notes', value: settings.notes }); showToast('Notes saved'); });
-document.getElementById('exportData').addEventListener('click', async ()=> {
-  const settingsArr = await idbGetAll('settings');
-  const dataArr = await idbGetAll('data');
-  const payload = { exportedAt: new Date().toISOString(), settings: settingsArr, data: dataArr };
-  const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href = url; a.download = 'menstrual-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
-});
+document.getElementById('exportData').addEventListener('click', async ()=> { const settingsArr = await idbGetAll('settings'); const dataArr = await idbGetAll('data'); const payload = { exportedAt: new Date().toISOString(), settings: settingsArr, data: dataArr }; const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'menstrual-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url); });
 
-/* ========== Theme select handler ========= */
+/* Theme handler */
 document.getElementById('themeSelect').addEventListener('change', async (e)=>{ const name=e.target.value; await applyTheme(name); showToast('Theme applied'); });
 
-/* ========== Compute & boot ========= */
+/* Compute & boot */
 document.getElementById('computeBtn').addEventListener('click', async ()=>{ await saveSettings(); await renderCalendar(currentYear, currentMonth); });
-
 document.getElementById('saveBtn').addEventListener('click', async ()=>{ await saveSettings(); showToast('Saved'); });
 document.getElementById('clearMarks').addEventListener('click', async ()=>{ if(!confirm('Clear manual marks?')) return; await clearManualMarks(); });
 
 document.getElementById('homeBtn').addEventListener('click', ()=> location.href = 'index.html');
 
-/* initial */
 (async function init(){
   await loadSettings();
-  // security enforced via modal:
   const unlocked = await enforceSecurity();
-  // if unlocked (or no security) continue to render
   if(unlocked){
-    // initial render
     const now = new Date();
     currentMonth = now.getMonth(); currentYear = now.getFullYear();
     renderCalendar(currentYear, currentMonth);

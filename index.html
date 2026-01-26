@@ -44,7 +44,6 @@
     .muted{font-size:13px;color:var(--muted)}
     .hidden{display:none !important}
     .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1e293b;font-size:12px}
-    /* Floating 'T' bottom-right */
     .ai-float{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:20000;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:0 12px 30px rgba(11,22,60,0.12)}
     .ai-float .letter{font-weight:900;font-size:20px}
     .profile-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -212,7 +211,6 @@ async function idbPut(store, value){
     console.warn('idbPut failed — falling back to localStorage', store, e);
     try{
       if(store === 'settings' && value && (value.key !== undefined)){
-        // store value.value if provided, else value
         const v = (value && value.value !== undefined) ? value.value : value;
         localStorage.setItem('tomorrow:settings:' + value.key, JSON.stringify(v));
         return true;
@@ -234,7 +232,6 @@ async function idbPut(store, value){
         localStorage.setItem('tomorrow:data', JSON.stringify(arr));
         return true;
       }
-      // unknown store fallback
       localStorage.setItem(`tomorrow:${store}:${Date.now()}`, JSON.stringify(value));
       return true;
     }catch(err){
@@ -260,7 +257,6 @@ async function idbGet(store, key){
       if(store === 'settings'){
         const raw = localStorage.getItem('tomorrow:settings:' + key);
         if(!raw) return null;
-        // mimic IDB stored object shape { key, value } in some code paths
         return { key: key, value: JSON.parse(raw) };
       }
       if(store === 'users'){
@@ -274,9 +270,8 @@ async function idbGet(store, key){
       }
       if(store === 'data'){
         const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
-        return arr; // returns array
+        return arr;
       }
-      // generic fallback: try namespaced key
       const raw = localStorage.getItem(`tomorrow:${store}:${key}`);
       return raw ? JSON.parse(raw) : null;
     }catch(err){
@@ -300,7 +295,6 @@ async function idbGetAll(store){
     console.warn('idbGetAll failed — falling back to localStorage', store, e);
     try{
       if(store === 'settings'){
-        // iterate localStorage keys that match prefix
         const out = [];
         for(const k of Object.keys(localStorage)){
           if(k.startsWith('tomorrow:settings:')){
@@ -326,7 +320,6 @@ async function idbGetAll(store){
       if(store === 'data'){
         return JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
       }
-      // generic: collect keys with prefix
       const out = [];
       for(const k of Object.keys(localStorage)){
         if(k.startsWith(`tomorrow:${store}:`)){
@@ -345,7 +338,6 @@ async function idbGetAll(store){
 async function getProfileRecord(){
   const raw = await idbGet('settings','profile');
   if(!raw) return null;
-  // raw might be { key, value } or might already be stored as value object
   return raw.value ? raw.value : raw;
 }
 
@@ -526,14 +518,12 @@ saveProfileBtn.addEventListener('click', async ()=>{
     showToast('Profile saved locally on device');
   }catch(e){
     console.error('Save profile failed', e);
-    // show helpful message with fallback instruction
     showToast('Failed to save profile (see console). If this repeats, allow storage permissions or try a different browser.');
   }
 });
 
 function showProfileModal(){
   const m = document.getElementById('profileModal'); m.classList.add('visible'); m.setAttribute('aria-hidden','false');
-  // prevent closing by click outside or escape
   document.addEventListener('keydown', blockEscape, { passive: false });
   document.body.style.overflow = 'hidden';
   const card = m.querySelector('.modal-card');
@@ -618,6 +608,15 @@ async function registerServiceWorker(){
     try{ const pre = await fetch('/sw.js', { method:'GET', cache:'no-store', mode:'same-origin' }); if(!pre.ok && pre.type !== 'opaque') console.warn('sw.js fetch returned', pre.status); }catch(e){}
     const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     console.log('SW registered', reg);
+
+    // automatically warm the cache: ask active worker to download offline assets
+    if (navigator.serviceWorker.controller) {
+      try { navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' }); } catch(e){}
+    } else {
+      // wait until worker becomes ready/active, then request download
+      navigator.serviceWorker.ready.then(r => { if(r.active) try { r.active.postMessage({ type: 'DOWNLOAD_OFFLINE' }); } catch(e){} });
+    }
+
     navigator.serviceWorker.addEventListener('message', (evt) => {
       const data = evt.data || {};
       if (data.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Offline download complete.');

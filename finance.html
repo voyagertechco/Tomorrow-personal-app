@@ -3,7 +3,6 @@
 <head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Finance — Tomorrow</title>
 <link rel="manifest" href="/manifest.json"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#FFFDF8;
@@ -16,7 +15,7 @@
     --radius:12px;
     --shadow:0 10px 30px rgba(10,12,12,0.06);
     --line:rgba(10,12,12,0.06);
-    --font: "Inter", system-ui, Arial, sans-serif;
+    --font: system-ui, Inter, Arial, sans-serif;
     --max-width:920px;
     --base-font-size:15px;
   }
@@ -45,6 +44,8 @@
   .modal-backdrop.visible{visibility:visible;opacity:1}
   .modal{background:var(--card);padding:14px;border-radius:12px;max-width:720px;width:92%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
   .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
+  .offline-banner{background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px;display:none}
+  @media(max-width:520px){ .cell{min-height:74px} .modal{width:98%} }
 </style>
 </head>
 <body>
@@ -62,6 +63,9 @@
         <button id="settingsBtn" class="btn ghost">Settings</button>
       </div>
     </header>
+
+    <!-- Offline banner -->
+    <div id="offlineBanner" class="offline-banner">Offline — core functionality available. If this page doesn't open from the hub, open Home and tap "Download for offline".</div>
 
     <main>
       <div class="card">
@@ -212,40 +216,100 @@
   </div>
 
 <script>
-/* ===========================
+/* Offline helpers (added)
+   - inject Google Fonts only when online
+   - register service worker and request DOWNLOAD_OFFLINE if this page is not cached
+   - show offline banner and respond to SW messages
+*/
+(function offlineInit(){
+  // fonts only when online
+  if(navigator.onLine){
+    const f = document.createElement('link');
+    f.rel = 'stylesheet';
+    f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap';
+    document.head.appendChild(f);
+  }
+
+  const offlineBanner = document.getElementById('offlineBanner');
+  function updateOfflineBanner(){ if(!offlineBanner) return; offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
+  window.addEventListener('online', updateOfflineBanner);
+  window.addEventListener('offline', updateOfflineBanner);
+  updateOfflineBanner();
+
+  async function registerSWAndEnsureCached(){
+    if(!('serviceWorker' in navigator)) return;
+    try{
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      // check if shell cache contains this path; if not ask SW to DOWNLOAD_OFFLINE
+      if('caches' in window){
+        try{
+          const keys = await caches.keys();
+          const shellName = keys.find(k => k.startsWith('tomorrow-shell-')) || null;
+          if(shellName){
+            const cache = await caches.open(shellName);
+            const match = await cache.match(location.pathname) || await cache.match('/finance.html') || await cache.match('/index.html');
+            if(!match){
+              if(navigator.serviceWorker.controller){
+                navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
+                showToast('Caching pages for offline (background)...');
+              } else {
+                navigator.serviceWorker.ready.then(reg => { try{ if(reg.active) reg.active.postMessage({ type: 'DOWNLOAD_OFFLINE' }); }catch(e){} });
+              }
+            }
+          } else {
+            if(navigator.serviceWorker.controller){
+              navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
+              showToast('Caching pages for offline (background)...');
+            }
+          }
+        }catch(e){ console.warn('cache check failed', e); }
+      }
+
+      navigator.serviceWorker.addEventListener('message', evt => {
+        const data = evt.data || {};
+        if(!data || !data.type) return;
+        if(data.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Pages cached for offline');
+        else if(data.type === 'CLEAR_CACHES_DONE') showToast('Caches cleared');
+        else if(data.type === 'SW_UPDATED'){ showToast('New version available — reloading...'); setTimeout(()=> location.reload(), 700); }
+      });
+    }catch(e){ console.warn('SW register failed', e); }
+  }
+  registerSWAndEnsureCached();
+})();
+
+/* =========================
    IndexedDB setup & helpers
-   =========================== */
+   ========================= */
 const DB_NAME='tomorrowai-db', DB_VER=2;
-function openDB(){ return new Promise((res,rej)=>{ const req=indexedDB.open(DB_NAME, DB_VER); req.onupgradeneeded = e => { const db=e.target.result; if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'}); if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'}); }; req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error); });}
+function openDB(){ return new Promise((res,rej)=>{ const req=indexedDB.open(DB_NAME, DB_VER); req.onupgradeneeded = e => { const db = e.target.result; if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'}); if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'}); }; req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error); });}
 async function idbPut(store,val){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).put(val); tx.oncomplete = ()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
 async function idbGet(store,key){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readonly'); const r=tx.objectStore(store).get(key); r.onsuccess=e=>res(e.target.result); r.onerror=e=>rej(e.target.error); }); }
 async function idbGetAll(store){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readonly'); const r=tx.objectStore(store).getAll(); r.onsuccess=e=>res(e.target.result||[]); r.onerror=e=>rej(e.target.error); }); }
 async function idbDelete(store,key){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete = ()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
 
-/* ===========================
+/* =========================
    Hash helper
-   =========================== */
+   ========================= */
 async function sha256hex(text){ const enc = new TextEncoder().encode(text); const buf = await crypto.subtle.digest('SHA-256', enc); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
 
-/* ===========================
+/* =========================
    Utilities
-   =========================== */
+   ========================= */
 function uid(pref='f'){ return pref + '_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
 function fmt(n){ return Number(n||0).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }); }
 function nowDateISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
 function showToast(msg,ms=1600){ const el=document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
 
-/* ===========================
+/* =========================
    App state
-   =========================== */
+   ========================= */
 let state = {
-  pages: [],         // { id, name, type: 'personal'|'parents'|'salary'|'business', color }
-  txns: [],          // transaction objects { id, pageId, type:'in'|'out', amount, category, note, date, ts }
+  pages: [],
+  txns: [],
   currentPageId: null,
   locked: false
 };
 
-/* default pages */
 const DEFAULT_PAGES = [
   { id: 'page_personal', name:'Personal', type:'personal' },
   { id: 'page_parents', name:'Parents', type:'parents' },
@@ -296,13 +360,7 @@ function renderPages(){
 /* ---------------------------
    Add page dialog
    --------------------------- */
-document.getElementById('addPageBtn').addEventListener('click', async ()=>{
-  const name = prompt('Page name (e.g., Travel, Personal):','New Page');
-  if(!name) return;
-  const id = uid('page'); const p = { id, name, type:'personal' , createdAt: Date.now(), _kind:'finance.page' };
-  await savePage(p);
-  await loadAll(); renderPages(); renderPage();
-});
+document.getElementById('addPageBtn').addEventListener('click', async ()=>{ const name = prompt('Page name (e.g., Travel, Personal):','New Page'); if(!name) return; const id = uid('page'); const p = { id, name, type:'personal' , createdAt: Date.now(), _kind:'finance.page' }; await savePage(p); await loadAll(); renderPages(); renderPage(); });
 
 /* ---------------------------
    Render current page card & transactions
@@ -312,7 +370,6 @@ async function renderPage(){
   if(!page){ document.getElementById('pageCard').style.display='none'; return; }
   document.getElementById('pageCard').style.display='block';
   document.getElementById('pageTitle').textContent = page.name;
-  // compute balance and summary for this page
   const txns = state.txns.filter(t => t.pageId === page.id).sort((a,b)=>b.ts - a.ts);
   let balance = 0, totalIn=0, totalOut=0;
   const byCat = {};
@@ -323,13 +380,11 @@ async function renderPage(){
   document.getElementById('pageBalance').textContent = `KES ${fmt(balance)}`;
   document.getElementById('balanceVal').textContent = `KES ${fmt(balance)}`;
   document.getElementById('cumulation').textContent = `Total in: KES ${fmt(totalIn)} • Total out: KES ${fmt(totalOut)}`;
-  // top categories
   const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,4);
   const topEl = document.getElementById('topCats'); topEl.innerHTML = '';
   cats.forEach(([k,v])=>{ const d = document.createElement('div'); d.className='pill'; d.style.marginRight='6px'; d.textContent = `${k} • KES ${fmt(v)}`; topEl.appendChild(d); });
   if(cats.length===0) topEl.innerHTML = '<div class="muted">No expenses yet</div>';
 
-  // render txn list
   const txList = document.getElementById('txList'); txList.innerHTML = '';
   const search = (document.getElementById('txSearch').value||'').toLowerCase();
   const filter = document.getElementById('txFilter').value;
@@ -349,19 +404,14 @@ async function renderPage(){
     const amt = document.createElement('div'); amt.className='amount'; amt.textContent = (t.type==='in' ? '+' : '−') + ' KES ' + fmt(t.amount);
     const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='8px';
     const edit = document.createElement('button'); edit.className='btn ghost'; edit.textContent='Edit'; edit.addEventListener('click', ()=> openTxnModal(t));
-    const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Delete'; del.addEventListener('click', async ()=>{
-      if(!confirm('Delete transaction?')) return;
-      await deleteTxn(t.id); await loadAll(); renderPage(); showToast('Transaction deleted');
-    });
+    const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Delete'; del.addEventListener('click', async ()=>{ if(!confirm('Delete transaction?')) return; await deleteTxn(t.id); await loadAll(); renderPage(); showToast('Transaction deleted'); });
     actions.appendChild(edit); actions.appendChild(del);
     right.appendChild(amt); right.appendChild(actions);
     el.appendChild(left); el.appendChild(right); txList.appendChild(el);
   });
 
-  // prepare txn modal page select options
   const sel = document.getElementById('txnPage'); sel.innerHTML = ''; state.pages.forEach(p=> { const o = document.createElement('option'); o.value=p.id; o.textContent=p.name; if(p.id===page.id) o.selected=true; sel.appendChild(o); });
 
-  // draw balance over time chart & pie
   drawBalanceChart(page.id);
   drawCategoryPie(page.id);
 }
@@ -380,34 +430,12 @@ function openTxnModal(txn=null){
   document.getElementById('txnModal').classList.add('visible'); document.getElementById('txnModal').style.visibility='visible'; document.getElementById('txnModal').style.opacity=1; document.getElementById('txnModal').setAttribute('aria-hidden','false');
   document.getElementById('txnModalTitle').textContent = txn ? 'Edit transaction' : 'Add transaction';
   document.getElementById('delTxn').style.display = txn ? 'inline-flex' : 'none';
-  // populate if editing
   const sel = document.getElementById('txnPage');
   if(txn){ document.getElementById('txnPage').value = txn.pageId; document.getElementById('txnType').value = txn.type; document.getElementById('txnAmount').value = txn.amount; document.getElementById('txnDate').value = txn.date; document.getElementById('txnCat').value = txn.category || ''; document.getElementById('txnNote').value = txn.note || ''; }
   else { document.getElementById('txnPage').value = state.currentPageId; document.getElementById('txnType').value = 'out'; document.getElementById('txnAmount').value=''; document.getElementById('txnDate').value = nowDateISO(); document.getElementById('txnCat').value=''; document.getElementById('txnNote').value=''; }
 }
-document.getElementById('delTxn').addEventListener('click', async ()=>{
-  if(!editingTxn) return;
-  if(!confirm('Delete this transaction?')) return;
-  await deleteTxn(editingTxn.id); closeTxnModal(); await loadAll(); renderPage(); showToast('Deleted');
-});
-document.getElementById('saveTxn').addEventListener('click', async ()=>{
-  const pageId = document.getElementById('txnPage').value;
-  const type = document.getElementById('txnType').value;
-  const amount = Number(document.getElementById('txnAmount').value) || 0;
-  const date = document.getElementById('txnDate').value || nowDateISO();
-  const cat = document.getElementById('txnCat').value.trim() || (type==='in' ? 'Income' : 'General');
-  const note = document.getElementById('txnNote').value.trim();
-  if(amount <= 0){ alert('Amount must be > 0'); return; }
-  if(editingTxn){
-    editingTxn.pageId = pageId; editingTxn.type = type; editingTxn.amount = amount; editingTxn.date = date; editingTxn.category = cat; editingTxn.note = note; editingTxn.ts = Date.now();
-    await saveTxn(editingTxn);
-    showToast('Updated');
-  } else {
-    const t = { id: uid('txn'), _kind:'finance.txn', pageId, type, amount, date, category:cat, note, ts: Date.now() };
-    await saveTxn(t); showToast('Saved');
-  }
-  closeTxnModal(); await loadAll(); renderPage();
-});
+document.getElementById('delTxn').addEventListener('click', async ()=>{ if(!editingTxn) return; if(!confirm('Delete this transaction?')) return; await deleteTxn(editingTxn.id); closeTxnModal(); await loadAll(); renderPage(); showToast('Deleted'); });
+document.getElementById('saveTxn').addEventListener('click', async ()=>{ const pageId = document.getElementById('txnPage').value; const type = document.getElementById('txnType').value; const amount = Number(document.getElementById('txnAmount').value) || 0; const date = document.getElementById('txnDate').value || nowDateISO(); const cat = document.getElementById('txnCat').value.trim() || (type==='in' ? 'Income' : 'General'); const note = document.getElementById('txnNote').value.trim(); if(amount <= 0){ alert('Amount must be > 0'); return; } if(editingTxn){ editingTxn.pageId = pageId; editingTxn.type = type; editingTxn.amount = amount; editingTxn.date = date; editingTxn.category = cat; editingTxn.note = note; editingTxn.ts = Date.now(); await saveTxn(editingTxn); showToast('Updated'); } else { const t = { id: uid('txn'), _kind:'finance.txn', pageId, type, amount, date, category:cat, note, ts: Date.now() }; await saveTxn(t); showToast('Saved'); } closeTxnModal(); await loadAll(); renderPage(); });
 function closeTxnModal(){ editingTxn = null; document.getElementById('txnModal').classList.remove('visible'); document.getElementById('txnModal').style.visibility='hidden'; document.getElementById('txnModal').style.opacity=0; document.getElementById('txnModal').setAttribute('aria-hidden','true'); }
 
 /* ---------------------------
@@ -420,7 +448,6 @@ function drawBalanceChart(pageId){
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(h * dpr); ctx.scale(dpr,dpr);
   ctx.clearRect(0,0,w,h);
-  // collect transactions for page chronologically
   const txns = state.txns.filter(t => t.pageId === pageId).sort((a,b)=> a.ts - b.ts);
   let balance = 0; const points = [];
   txns.forEach(t => {
@@ -435,18 +462,15 @@ function drawBalanceChart(pageId){
   ctx.beginPath(); ctx.lineWidth = 2; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#69A6A5';
   points.forEach((p,i)=>{ const x = left + (i/(points.length-1))*width; const y = top + (1 - (p.value - min)/(max-min || 1))*height; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
   ctx.stroke();
-  // dots
   ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#9cc4bf';
   points.forEach((p,i)=>{ const x = left + (i/(points.length-1))*width; const y = top + (1 - (p.value - min)/(max-min || 1))*height; ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();});
 }
 
 /* ---------------------------
-   Draw category pie (top 6)
+   Draw category pie (simple placeholder)
    --------------------------- */
 function drawCategoryPie(pageId){
-  // simple DOM pie representation (we'll append small inline labels)
   const topEl = document.getElementById('topCats'); // already updated earlier
-  // (Optionally add an SVG pie — for clarity we show top categories list)
 }
 
 /* ---------------------------
@@ -458,46 +482,17 @@ document.getElementById('txFilter').addEventListener('change', ()=> renderPage()
 /* ---------------------------
    Export/import/clear
    --------------------------- */
-document.getElementById('exportBtn').addEventListener('click', async ()=>{
-  const all = await idbGetAll('data'); const settings = await idbGetAll('settings');
-  const payload = { exportedAt:new Date().toISOString(), data: all, settings };
-  const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='finance-export-'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(url);
-});
-document.getElementById('importBtn').addEventListener('click', ()=> {
-  const input = document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange = async e => {
-    const f = e.target.files[0]; if(!f) return;
-    try{
-      const txt = await f.text(); const obj = JSON.parse(txt);
-      if(obj.data && Array.isArray(obj.data)){
-        for(const item of obj.data){
-          const exists = await idbGet('data', item.id);
-          if(!exists) await idbPut('data', item);
-        }
-        await loadAll(); renderPages(); renderPage(); showToast('Import complete');
-      } else alert('Invalid import');
-    }catch(err){ alert('Import failed: '+err.message); }
-  }; input.click();
-});
+document.getElementById('exportBtn').addEventListener('click', async ()=>{ const all = await idbGetAll('data'); const settings = await idbGetAll('settings'); const payload = { exportedAt:new Date().toISOString(), data: all, settings }; const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='finance-export-'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(url); });
+document.getElementById('importBtn').addEventListener('click', ()=> { const input = document.createElement('input'); input.type='file'; input.accept='application/json'; input.onchange = async e => { const f = e.target.files[0]; if(!f) return; try{ const txt = await f.text(); const obj = JSON.parse(txt); if(obj.data && Array.isArray(obj.data)){ for(const item of obj.data){ const exists = await idbGet('data', item.id); if(!exists) await idbPut('data', item); } await loadAll(); renderPages(); renderPage(); showToast('Import complete'); } else alert('Invalid import'); }catch(err){ alert('Import failed: '+err.message); } }; input.click(); });
 document.getElementById('exportAll').addEventListener('click', ()=> document.getElementById('exportBtn').click());
 document.getElementById('importAll').addEventListener('click', ()=> document.getElementById('importBtn').click());
-document.getElementById('clearFinance').addEventListener('click', async ()=> {
-  if(!confirm('Clear all finance data? This removes pages and transactions.')) return;
-  const all = await idbGetAll('data'); for(const it of all) await idbDelete('data', it.id);
-  await idbPut('settings', { key:'finance.currentPage', value: null });
-  await loadAll(); renderPages(); renderPage(); showToast('Cleared finance data');
-});
+document.getElementById('clearFinance').addEventListener('click', async ()=> { if(!confirm('Clear all finance data? This removes pages and transactions.')) return; const all = await idbGetAll('data'); for(const it of all) await idbDelete('data', it.id); await idbPut('settings', { key:'finance.currentPage', value: null }); await loadAll(); renderPages(); renderPage(); showToast('Cleared finance data'); });
 
 /* ---------------------------
    Settings modal: pages manage
    --------------------------- */
-document.getElementById('settingsBtn').addEventListener('click', async ()=>{
-  const settingsModal = document.getElementById('settingsModal'); settingsModal.classList.add('visible'); settingsModal.style.visibility='visible'; settingsModal.style.opacity=1; settingsModal.setAttribute('aria-hidden','false');
-  renderPagesManage();
-});
-document.getElementById('closeSettings').addEventListener('click', ()=> {
-  const settingsModal = document.getElementById('settingsModal'); settingsModal.classList.remove('visible'); settingsModal.style.visibility='hidden'; settingsModal.style.opacity=0; settingsModal.setAttribute('aria-hidden','true');
-});
+document.getElementById('settingsBtn').addEventListener('click', async ()=>{ const settingsModal = document.getElementById('settingsModal'); settingsModal.classList.add('visible'); settingsModal.style.visibility='visible'; settingsModal.style.opacity=1; settingsModal.setAttribute('aria-hidden','false'); renderPagesManage(); });
+document.getElementById('closeSettings').addEventListener('click', ()=> { const settingsModal = document.getElementById('settingsModal'); settingsModal.classList.remove('visible'); settingsModal.style.visibility='hidden'; settingsModal.style.opacity=0; settingsModal.setAttribute('aria-hidden','true'); });
 
 async function renderPagesManage(){
   const wrap = document.getElementById('pagesManage'); wrap.innerHTML = '';
@@ -505,17 +500,8 @@ async function renderPagesManage(){
     const el = document.createElement('div'); el.style.display='flex'; el.style.justifyContent='space-between'; el.style.alignItems='center'; el.style.padding='8px 0';
     el.innerHTML = `<div><strong>${p.name}</strong><div class="muted">${p.type}</div></div>`;
     const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px';
-    const rename = document.createElement('button'); rename.className='btn ghost'; rename.textContent='Rename'; rename.addEventListener('click', async ()=> {
-      const n = prompt('New name', p.name); if(!n) return; p.name = n; await savePage(p); await loadAll(); renderPages(); renderPage(); renderPagesManage(); showToast('Renamed');
-    });
-    const del = document.createElement('button'); del.className='btn danger'; del.textContent='Delete'; del.addEventListener('click', async ()=> {
-      if(!confirm('Delete page and its transactions?')) return;
-      // delete page record and its txns
-      await idbDelete('data', p.id);
-      const txns = state.txns.filter(t=>t.pageId === p.id);
-      for(const t of txns) await idbDelete('data', t.id);
-      await loadAll(); renderPages(); renderPage(); renderPagesManage(); showToast('Page removed');
-    });
+    const rename = document.createElement('button'); rename.className='btn ghost'; rename.textContent='Rename'; rename.addEventListener('click', async ()=> { const n = prompt('New name', p.name); if(!n) return; p.name = n; await savePage(p); await loadAll(); renderPages(); renderPage(); renderPagesManage(); showToast('Renamed'); });
+    const del = document.createElement('button'); del.className='btn danger'; del.textContent='Delete'; del.addEventListener('click', async ()=> { if(!confirm('Delete page and its transactions?')) return; await idbDelete('data', p.id); const txns = state.txns.filter(t=>t.pageId === p.id); for(const t of txns) await idbDelete('data', t.id); await loadAll(); renderPages(); renderPage(); renderPagesManage(); showToast('Page removed'); });
     right.appendChild(rename); right.appendChild(del); el.appendChild(right); wrap.appendChild(el);
   });
 }
@@ -523,37 +509,9 @@ async function renderPagesManage(){
 /* ---------------------------
    Security: PIN & recovery code
    --------------------------- */
-document.getElementById('enablePin').addEventListener('click', async ()=>{
-  const pin = prompt('Create a 4-8 digit PIN (numbers only):'); if(!pin || !/^\d{4,8}$/.test(pin)){ alert('Invalid PIN'); return; }
-  const answer = prompt('Security question for backup (optional). Enter an answer you will remember.');
-  const hashPin = await sha256hex(pin);
-  const hashAns = answer ? await sha256hex(answer) : null;
-  // generate recovery code shown once
-  const recovery = Math.random().toString(36).slice(2,10).toUpperCase();
-  const payload = { enabled:true, pinHash: hashPin, recovery, securityAnswerHash: hashAns };
-  await idbPut('settings', { key:'finance.lock', value: payload });
-  alert('PIN enabled. Recovery code (store it somewhere safe):\n\n' + recovery + '\n\nThis is the only way to reset if you forget your PIN.');
-  state.locked = true;
-  renderLockIfNeeded();
-});
-
-document.getElementById('disablePin').addEventListener('click', async ()=>{
-  if(!confirm('Disable PIN lock?')) return;
-  await idbPut('settings', { key:'finance.lock', value: { enabled:false }});
-  state.locked = false; await loadAll(); renderPages(); renderPage(); showToast('PIN disabled');
-});
-
-document.getElementById('resetPin').addEventListener('click', async ()=>{
-  // use recovery code
-  const rec = prompt('Enter your recovery code (the one shown when you enabled PIN):'); if(!rec) return;
-  const lock = await idbGet('settings','finance.lock');
-  if(!lock || !lock.value){ alert('No PIN set'); return; }
-  if(lock.value.recovery === rec){
-    const newPin = prompt('Enter new 4-8 digit PIN:'); if(!newPin || !/^\d{4,8}$/.test(newPin)){ alert('Invalid PIN'); return; }
-    const hash = await sha256hex(newPin);
-    lock.value.pinHash = hash; await idbPut('settings', { key:'finance.lock', value: lock.value }); showToast('PIN reset. Keep your recovery code safe.');
-  } else alert('Recovery code incorrect');
-});
+document.getElementById('enablePin').addEventListener('click', async ()=>{ const pin = prompt('Create a 4-8 digit PIN (numbers only):'); if(!pin || !/^\d{4,8}$/.test(pin)){ alert('Invalid PIN'); return; } const answer = prompt('Security question for backup (optional). Enter an answer you will remember.'); const hashPin = await sha256hex(pin); const hashAns = answer ? await sha256hex(answer) : null; const recovery = Math.random().toString(36).slice(2,10).toUpperCase(); const payload = { enabled:true, pinHash: hashPin, recovery, securityAnswerHash: hashAns }; await idbPut('settings', { key:'finance.lock', value: payload }); alert('PIN enabled. Recovery code (store it somewhere safe):\n\n' + recovery + '\n\nThis is the only way to reset if you forget your PIN.'); state.locked = true; renderLockIfNeeded(); });
+document.getElementById('disablePin').addEventListener('click', async ()=>{ if(!confirm('Disable PIN lock?')) return; await idbPut('settings', { key:'finance.lock', value: { enabled:false }}); state.locked = false; await loadAll(); renderPages(); renderPage(); showToast('PIN disabled'); });
+document.getElementById('resetPin').addEventListener('click', async ()=>{ const rec = prompt('Enter your recovery code (the one shown when you enabled PIN):'); if(!rec) return; const lock = await idbGet('settings','finance.lock'); if(!lock || !lock.value){ alert('No PIN set'); return; } if(lock.value.recovery === rec){ const newPin = prompt('Enter new 4-8 digit PIN:'); if(!newPin || !/^\d{4,8}$/.test(newPin)){ alert('Invalid PIN'); return; } const hash = await sha256hex(newPin); lock.value.pinHash = hash; await idbPut('settings', { key:'finance.lock', value: lock.value }); showToast('PIN reset. Keep your recovery code safe.'); } else alert('Recovery code incorrect'); });
 
 /* ---------------------------
    Lock overlay flow
@@ -568,17 +526,7 @@ async function renderLockIfNeeded(){
     document.getElementById('lockOverlay').classList.remove('visible'); document.getElementById('lockOverlay').style.visibility='hidden'; document.getElementById('lockOverlay').style.opacity=0; document.getElementById('lockOverlay').setAttribute('aria-hidden','true');
   }
 }
-document.getElementById('unlockBtn').addEventListener('click', async ()=>{
-  const pin = document.getElementById('unlockPin').value || '';
-  const rec = document.getElementById('unlockRecovery').value || '';
-  const lock = await idbGet('settings','finance.lock'); if(!lock || !lock.value){ renderLockIfNeeded(); return; }
-  if(pin){
-    const h = await sha256hex(pin);
-    if(h === lock.value.pinHash){ document.getElementById('unlockPin').value=''; document.getElementById('unlockRecovery').value=''; document.getElementById('lockOverlay').classList.remove('visible'); await loadAll(); renderPages(); renderPage(); showToast('Unlocked'); return; }
-  }
-  if(rec && rec === lock.value.recovery){ document.getElementById('unlockPin').value=''; document.getElementById('unlockRecovery').value=''; document.getElementById('lockOverlay').classList.remove('visible'); await loadAll(); renderPages(); renderPage(); showToast('Unlocked with recovery code'); return; }
-  alert('PIN or recovery code incorrect');
-});
+document.getElementById('unlockBtn').addEventListener('click', async ()=>{ const pin = document.getElementById('unlockPin').value || ''; const rec = document.getElementById('unlockRecovery').value || ''; const lock = await idbGet('settings','finance.lock'); if(!lock || !lock.value){ renderLockIfNeeded(); return; } if(pin){ const h = await sha256hex(pin); if(h === lock.value.pinHash){ document.getElementById('unlockPin').value=''; document.getElementById('unlockRecovery').value=''; document.getElementById('lockOverlay').classList.remove('visible'); await loadAll(); renderPages(); renderPage(); showToast('Unlocked'); return; } } if(rec && rec === lock.value.recovery){ document.getElementById('unlockPin').value=''; document.getElementById('unlockRecovery').value=''; document.getElementById('lockOverlay').classList.remove('visible'); await loadAll(); renderPages(); renderPage(); showToast('Unlocked with recovery code'); return; } alert('PIN or recovery code incorrect'); });
 document.getElementById('unlockCancel').addEventListener('click', ()=> alert('Finance remains locked.'));
 
  /* ---------------------------
@@ -586,7 +534,7 @@ document.getElementById('unlockCancel').addEventListener('click', ()=> alert('Fi
    --------------------------- */
 document.getElementById('homeBtn').addEventListener('click', ()=> location.href='index.html');
 
-/* ---------------------------
+ /* ---------------------------
    Boot: load and render; show lock if needed
    --------------------------- */
 (async function boot(){

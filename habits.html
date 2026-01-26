@@ -1,8 +1,10 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Habits — Tomorrow</title>
+<link rel="manifest" href="/manifest.json"/>
 <style>
 body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 .header{padding:14px;background:linear-gradient(90deg,#10B981,#059669);color:white;border-radius:0 0 18px 18px}
@@ -11,19 +13,21 @@ body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 .habit{padding:10px 0;border-bottom:1px solid #eee}
 .btn{padding:10px;border-radius:12px;border:0;background:#10B981;color:white;width:100%}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center}
+.offline-banner{display:none;background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px}
 </style>
 </head>
 <body>
-
 <div class="header">
   <h1>Habits</h1>
   <small>Build consistency daily</small>
 </div>
 
 <div class="container">
+  <div id="offlineBanner" class="offline-banner">Offline — working from cached data.</div>
+
   <div class="card">
     <input id="habitText" placeholder="New habit e.g Drink water"/>
-    <button class="btn" onclick="addHabit()" style="margin-top:8px">Add Habit</button>
+    <button id="addBtn" class="btn" style="margin-top:8px">Add Habit</button>
   </div>
 
   <div class="card">
@@ -34,36 +38,50 @@ body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 <div class="bottom-nav"><a href="index.html">🏠</a></div>
 
 <script>
+/* SW registration & UI */
+function showToast(msg,ms=1400){ const el=document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
+const offlineBanner = document.getElementById('offlineBanner');
+function updateOffline(){ offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
+window.addEventListener('online', ()=>{ updateOffline(); showToast('Online'); });
+window.addEventListener('offline', ()=>{ updateOffline(); showToast('Offline'); });
+updateOffline();
+async function regSW(){ if(!('serviceWorker' in navigator)) return; try{ await navigator.serviceWorker.register('/sw.js',{scope:'/'}); navigator.serviceWorker.addEventListener('message', e=>{ const d=e.data||{}; if(d.type==='DOWNLOAD_OFFLINE_DONE') showToast('Cached for offline'); if(d.type==='SW_UPDATED') { showToast('New SW — reloading'); setTimeout(()=>location.reload(),700); } }); }catch(e){ console.warn(e); } }
+regSW();
+
+/* IndexedDB helpers */
 const DB='tomorrowai-db';
-function db(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
-async function all(){const d=await db();return new Promise(res=>{const r=d.transaction('data').objectStore('data').getAll();r.onsuccess=e=>res(e.target.result||[]);});}
-async function put(v){const d=await db();d.transaction('data','readwrite').objectStore('data').put(v);}
-async function del(id){const d=await db();d.transaction('data','readwrite').objectStore('data').delete(id);}
+function openDB(){ return new Promise(res=>{ const r=indexedDB.open(DB,2); r.onupgradeneeded=e=>{ const d=e.target.result; if(!d.objectStoreNames.contains('data')) d.createObjectStore('data',{keyPath:'id'}); }; r.onsuccess=e=>res(e.target.result); }); }
+async function all(){ const d=await openDB(); return new Promise(res=>{ const r=d.transaction('data').objectStore('data').getAll(); r.onsuccess=e=>res(e.target.result||[]); }); }
+async function put(v){ const d=await openDB(); return new Promise(res=>{ const tx=d.transaction('data','readwrite'); tx.objectStore('data').put(v); tx.oncomplete=()=>res(true); }); }
+async function del(id){ const d=await openDB(); return new Promise(res=>{ const tx=d.transaction('data','readwrite'); tx.objectStore('data').delete(id); tx.oncomplete=()=>res(true); }); }
 
 async function render(){
   const items=(await all()).filter(x=>x.type==='habit');
-  habitsList.innerHTML=items.map(h=>`
+  const el=document.getElementById('habitsList');
+  if(items.length===0){ el.innerHTML='<div class="small">No habits yet</div>'; return; }
+  el.innerHTML = items.map(h=>`
     <div class="habit">
-      <strong>${h.text}</strong><br/>
+      <strong>${escapeHtml(h.text)}</strong><br/>
       <small>Streak: ${h.streak||0} days</small><br/>
       <button onclick="markDone('${h.id}')">Done Today</button>
       <button onclick="remove('${h.id}')">Delete</button>
     </div>`).join('');
 }
-async function addHabit(){
-  if(!habitText.value)return;
-  await put({id:'habit_'+Date.now(),type:'habit',text:habitText.value,streak:0,last:null});
-  habitText.value=''; render();
-}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+document.getElementById('addBtn').addEventListener('click', async ()=>{
+  const t = (document.getElementById('habitText')||{}).value.trim();
+  if(!t) return alert('Enter habit');
+  await put({ id:'habit_'+Date.now(), type:'habit', text:t, streak:0, last:null });
+  document.getElementById('habitText').value=''; render();
+});
 async function markDone(id){
-  const items=await all();
-  const h=items.find(x=>x.id===id);
-  if(!h)return;
-  const today=new Date().toDateString();
-  if(h.last!==today){h.streak++; h.last=today;}
-  await put(h); render();
+  const items = await all(); const h = items.find(x=>x.id===id); if(!h) return;
+  const today = new Date().toDateString();
+  if(h.last !== today){ h.streak = (h.streak||0) + 1; h.last = today; await put(h); showToast('Marked'); render(); } else showToast('Already marked today');
 }
-async function remove(id){await del(id);render();}
+async function remove(id){ if(!confirm('Delete habit?')) return; await del(id); render(); }
+
 render();
 </script>
 </body>

@@ -1,32 +1,33 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Habits — Tomorrow</title>
-<link rel="manifest" href="/manifest.json"/>
 <style>
 body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 .header{padding:14px;background:linear-gradient(90deg,#10B981,#059669);color:white;border-radius:0 0 18px 18px}
 .container{padding:14px}
 .card{background:white;padding:14px;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
-.habit{padding:10px 0;border-bottom:1px solid #eee}
-.btn{padding:10px;border-radius:12px;border:0;background:#10B981;color:white;width:100%}
+.habit{padding:10px 0;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.habit-left{flex:1}
+.habit-actions{display:flex;gap:8px}
+input[type="text"]{width:100%;padding:10px;border-radius:10px;border:1px solid #eee;font-size:15px}
+.btn{padding:10px;border-radius:12px;border:0;background:#10B981;color:white;width:100%;cursor:pointer}
+.btn.small{padding:8px 10px;width:auto}
+.empty{color:#7a6e6e;padding:8px;text-align:center}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center}
-.offline-banner{display:none;background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px}
 </style>
 </head>
 <body>
+
 <div class="header">
   <h1>Habits</h1>
   <small>Build consistency daily</small>
 </div>
 
 <div class="container">
-  <div id="offlineBanner" class="offline-banner">Offline — working from cached data.</div>
-
   <div class="card">
-    <input id="habitText" placeholder="New habit e.g Drink water"/>
+    <input id="habitText" placeholder="New habit e.g. Drink water" type="text" />
     <button id="addBtn" class="btn" style="margin-top:8px">Add Habit</button>
   </div>
 
@@ -38,52 +39,157 @@ body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 <div class="bottom-nav"><a href="index.html">🏠</a></div>
 
 <script>
-/* SW registration & UI */
-function showToast(msg,ms=1400){ const el=document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
-const offlineBanner = document.getElementById('offlineBanner');
-function updateOffline(){ offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
-window.addEventListener('online', ()=>{ updateOffline(); showToast('Online'); });
-window.addEventListener('offline', ()=>{ updateOffline(); showToast('Offline'); });
-updateOffline();
-async function regSW(){ if(!('serviceWorker' in navigator)) return; try{ await navigator.serviceWorker.register('/sw.js',{scope:'/'}); navigator.serviceWorker.addEventListener('message', e=>{ const d=e.data||{}; if(d.type==='DOWNLOAD_OFFLINE_DONE') showToast('Cached for offline'); if(d.type==='SW_UPDATED') { showToast('New SW — reloading'); setTimeout(()=>location.reload(),700); } }); }catch(e){ console.warn(e); } }
-regSW();
+/* Robust, awaited IndexedDB helpers + habit UI */
+const DB_NAME = 'tomorrowai-db';
+const DB_VER = 2;
+const STORE = 'data';
 
-/* IndexedDB helpers */
-const DB='tomorrowai-db';
-function openDB(){ return new Promise(res=>{ const r=indexedDB.open(DB,2); r.onupgradeneeded=e=>{ const d=e.target.result; if(!d.objectStoreNames.contains('data')) d.createObjectStore('data',{keyPath:'id'}); }; r.onsuccess=e=>res(e.target.result); }); }
-async function all(){ const d=await openDB(); return new Promise(res=>{ const r=d.transaction('data').objectStore('data').getAll(); r.onsuccess=e=>res(e.target.result||[]); }); }
-async function put(v){ const d=await openDB(); return new Promise(res=>{ const tx=d.transaction('data','readwrite'); tx.objectStore('data').put(v); tx.oncomplete=()=>res(true); }); }
-async function del(id){ const d=await openDB(); return new Promise(res=>{ const tx=d.transaction('data','readwrite'); tx.objectStore('data').delete(id); tx.oncomplete=()=>res(true); }); }
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = (e)=>{
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        db.createObjectStore(STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = e => resolve(e.target.result);
+    req.onerror = e => reject(e.target.error || new Error('IDB open failed'));
+  });
+}
+
+async function idbGetAll(){
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const store = tx.objectStore(STORE);
+    const r = store.getAll();
+    r.onsuccess = e => res(e.target.result || []);
+    r.onerror = e => rej(e.target.error || new Error('getAll failed'));
+  });
+}
+
+async function idbPut(val){
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const req = store.put(val);
+    req.onerror = e => rej(e.target.error || new Error('put failed'));
+    tx.oncomplete = () => res(true);
+    tx.onerror = e => rej(e.target.error || new Error('transaction failed'));
+  });
+}
+
+async function idbDelete(key){
+  const db = await openDB();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const store = tx.objectStore(STORE);
+    const req = store.delete(key);
+    req.onerror = e => rej(e.target.error || new Error('delete failed'));
+    tx.oncomplete = () => res(true);
+    tx.onerror = e => rej(e.target.error || new Error('transaction failed'));
+  });
+}
+
+/* UI references */
+const habitTextEl = document.getElementById('habitText');
+const addBtn = document.getElementById('addBtn');
+const habitsListEl = document.getElementById('habitsList');
+
+function makeId(){ return 'habit_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
 
 async function render(){
-  const items=(await all()).filter(x=>x.type==='habit');
-  const el=document.getElementById('habitsList');
-  if(items.length===0){ el.innerHTML='<div class="small">No habits yet</div>'; return; }
-  el.innerHTML = items.map(h=>`
-    <div class="habit">
-      <strong>${escapeHtml(h.text)}</strong><br/>
-      <small>Streak: ${h.streak||0} days</small><br/>
-      <button onclick="markDone('${h.id}')">Done Today</button>
-      <button onclick="remove('${h.id}')">Delete</button>
-    </div>`).join('');
+  try{
+    const all = await idbGetAll();
+    const items = (all || []).filter(x => x && x.type === 'habit').sort((a,b)=> (b.createdAt||0)-(a.createdAt||0));
+    if(items.length === 0){
+      habitsListEl.innerHTML = '<div class="empty">No habits yet. Add one above.</div>';
+      return;
+    }
+    habitsListEl.innerHTML = items.map(h => {
+      const text = escapeHtml(h.text || '');
+      const streak = Number(h.streak || 0);
+      const last = h.last || '';
+      return `
+        <div class="habit" data-id="${h.id}">
+          <div class="habit-left">
+            <strong>${text}</strong><br/>
+            <small>Streak: ${streak} day${streak===1?'':'s'} ${ last ? '· Last: ' + last : '' }</small>
+          </div>
+          <div class="habit-actions">
+            <button class="btn small" data-action="done" data-id="${h.id}">Done Today</button>
+            <button class="btn small" style="background:#ef4444" data-action="delete" data-id="${h.id}">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+  }catch(err){
+    console.error('render err', err);
+    habitsListEl.innerHTML = '<div class="empty">Error loading habits (see console).</div>';
+  }
 }
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-document.getElementById('addBtn').addEventListener('click', async ()=>{
-  const t = (document.getElementById('habitText')||{}).value.trim();
-  if(!t) return alert('Enter habit');
-  await put({ id:'habit_'+Date.now(), type:'habit', text:t, streak:0, last:null });
-  document.getElementById('habitText').value=''; render();
-});
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+async function addHabit(){
+  const text = (habitTextEl.value || '').trim();
+  if(!text) return habitTextEl.focus();
+  const id = makeId();
+  const rec = { id, type:'habit', text, streak:0, last:null, createdAt: Date.now() };
+  try{
+    await idbPut(rec);
+    habitTextEl.value = '';
+    await render();
+  }catch(e){
+    console.error('addHabit err', e);
+    alert('Failed to add habit. See console.');
+  }
+}
+
 async function markDone(id){
-  const items = await all(); const h = items.find(x=>x.id===id); if(!h) return;
-  const today = new Date().toDateString();
-  if(h.last !== today){ h.streak = (h.streak||0) + 1; h.last = today; await put(h); showToast('Marked'); render(); } else showToast('Already marked today');
+  try{
+    const all = await idbGetAll();
+    const h = all.find(x => x.id === id);
+    if(!h) return;
+    const today = new Date().toDateString();
+    if(h.last !== today){
+      h.streak = (Number(h.streak)||0) + 1;
+      h.last = today;
+      await idbPut(h);
+    }
+    await render();
+  }catch(e){ console.error('markDone err', e); }
 }
-async function remove(id){ if(!confirm('Delete habit?')) return; await del(id); render(); }
 
-render();
+async function removeHabit(id){
+  if(!confirm('Delete this habit?')) return;
+  try{
+    await idbDelete(id);
+    await render();
+  }catch(e){ console.error('remove err', e); }
+}
+
+/* event delegation for action buttons inside list */
+habitsListEl.addEventListener('click', (ev)=>{
+  const btn = ev.target.closest('button[data-action]');
+  if(!btn) return;
+  const action = btn.getAttribute('data-action');
+  const id = btn.getAttribute('data-id');
+  if(action === 'done') markDone(id);
+  if(action === 'delete') removeHabit(id);
+});
+
+/* wire add */
+addBtn.addEventListener('click', addHabit);
+habitTextEl.addEventListener('keypress', (e)=>{ if(e.key === 'Enter') addHabit(); });
+
+/* boot */
+(async function init(){
+  await render();
+})();
 </script>
 </body>
 </html>
-

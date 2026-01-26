@@ -17,14 +17,12 @@
   --danger:#EF4444;
   --radius:18px;
 }
-
 body{
   margin:0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
   background:var(--bg);
   color:var(--text);
 }
-
 .header{
   padding:16px;
   background:linear-gradient(90deg,var(--accent),var(--accent2));
@@ -33,13 +31,11 @@ body{
 }
 .header h1{margin:0;font-size:19px}
 .header .sub{font-size:12px;opacity:.9}
-
 .container{
   padding:14px;
-  max-width:480px;
+  max-width:720px;
   margin:auto;
 }
-
 .card{
   background:var(--card);
   border-radius:var(--radius);
@@ -47,7 +43,6 @@ body{
   margin-bottom:14px;
   box-shadow:0 10px 25px rgba(0,0,0,.07);
 }
-
 label{font-size:13px;font-weight:600}
 input,textarea{
   width:100%;
@@ -57,7 +52,6 @@ input,textarea{
   font-size:14px;
   margin-top:6px;
 }
-
 .btn{
   width:100%;
   padding:12px;
@@ -69,18 +63,15 @@ input,textarea{
   font-weight:600;
   font-size:14px;
 }
-
 .btn.secondary{
   background:#F1E8DE;
   color:#3B2F2F;
 }
-
 .goal{
   padding:12px 0;
   border-bottom:1px solid #f0e7dc;
 }
 .goal:last-child{border-bottom:none}
-
 .goal-header{
   display:flex;
   justify-content:space-between;
@@ -94,7 +85,6 @@ input,textarea{
 }
 .badge.done{background:#DCFCE7;color:#166534}
 .badge.progress{background:#FEF3C7;color:#92400E}
-
 .progress{
   height:9px;
   background:#F1E4D4;
@@ -107,26 +97,19 @@ input,textarea{
   display:block;
   background:linear-gradient(90deg,var(--accent),var(--accent2));
 }
-
 .goal-actions{
   display:flex;
   gap:8px;
   margin-top:8px;
 }
-
 .goal-actions button{
   flex:1;
   font-size:12px;
   padding:8px;
   border-radius:10px;
 }
-
 .small{font-size:12px;color:var(--muted)}
-
-input[type="range"]{
-  width:100%;
-}
-
+input[type="range"]{ width:100%; }
 .bottom-nav{
   position:fixed;
   bottom:0;
@@ -147,6 +130,7 @@ input[type="range"]{
   font-weight:600;
 }
 .icon{width:22px;height:22px}
+.offline-banner{background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px;display:none;max-width:720px;margin-left:auto;margin-right:auto}
 </style>
 </head>
 
@@ -156,6 +140,8 @@ input[type="range"]{
   <h1>My Goals</h1>
   <div class="sub">Plan • Track • Achieve</div>
 </div>
+
+<div id="offlineBanner" class="offline-banner">Offline — core functionality available. Use "Download for offline" from Home to cache pages for full offline access.</div>
 
 <div class="container">
 
@@ -188,7 +174,7 @@ input[type="range"]{
 
 <!-- Bottom Home -->
 <div class="bottom-nav">
-  <a href="index.html" class="home-btn">
+  <a href="index.html" class="home-btn" title="Home">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
       <path d="M3 10L12 3l9 7v10a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/>
     </svg>
@@ -197,8 +183,65 @@ input[type="range"]{
 </div>
 
 <script>
-const DB_NAME='tomorrowai-db', DB_VER=3;
+/* ---------- Offline & SW helpers ---------- */
+(function offlineInit(){
+  // inject Google fonts only when online
+  if(navigator.onLine){
+    const f = document.createElement('link');
+    f.rel = 'stylesheet';
+    f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap';
+    document.head.appendChild(f);
+  }
 
+  const banner = document.getElementById('offlineBanner');
+  function updateBanner(){ banner.style.display = navigator.onLine ? 'none' : 'block'; }
+  window.addEventListener('online', () => { updateBanner(); showToast('Online — syncing...'); });
+  window.addEventListener('offline', () => { updateBanner(); showToast('Offline — local-only mode'); });
+  updateBanner();
+
+  async function registerSWAndEnsureCached(){
+    if(!('serviceWorker' in navigator)) return;
+    try{
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      // quick check: if this path isn't cached, ask SW to download offline list
+      if('caches' in window){
+        try{
+          const keys = await caches.keys();
+          const shellName = keys.find(k => k.startsWith('tomorrow-shell-')) || null;
+          if(shellName){
+            const cache = await caches.open(shellName);
+            const match = await cache.match(location.pathname) || await cache.match('/goals.html') || await cache.match('/index.html');
+            if(!match){
+              if(navigator.serviceWorker.controller){
+                navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
+                showToast('Caching pages for offline (background)...');
+              } else {
+                navigator.serviceWorker.ready.then(reg => { try{ if(reg.active) reg.active.postMessage({ type: 'DOWNLOAD_OFFLINE' }); }catch(e){} });
+              }
+            }
+          } else {
+            if(navigator.serviceWorker.controller){
+              navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
+              showToast('Caching pages for offline (background)...');
+            }
+          }
+        }catch(e){ console.warn('cache check failed', e); }
+      }
+
+      navigator.serviceWorker.addEventListener('message', evt => {
+        const data = evt.data || {};
+        if(!data || !data.type) return;
+        if(data.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Pages cached for offline');
+        else if(data.type === 'CLEAR_CACHES_DONE') showToast('Caches cleared');
+        else if(data.type === 'SW_UPDATED'){ showToast('New version available — reloading...'); setTimeout(()=> location.reload(), 700); }
+      });
+    }catch(e){ console.warn('SW register failed', e); }
+  }
+  registerSWAndEnsureCached();
+})();
+
+/* ---------- IndexedDB helpers ---------- */
+const DB_NAME='tomorrowai-db', DB_VER=3;
 function openDB(){
   return new Promise((res,rej)=>{
     const req=indexedDB.open(DB_NAME,DB_VER);
@@ -238,10 +281,20 @@ async function idbDelete(id){
   });
 }
 
+/* ---------- small UI helpers ---------- */
 function formatDate(ts){
-  return new Date(ts).toLocaleDateString();
+  try{ return new Date(ts).toLocaleDateString(); }catch(e){ return ''; }
+}
+function showToast(msg,ms=1600){
+  const el=document.createElement('div');
+  el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000;
+  el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=> el.remove(), ms);
 }
 
+/* ---------- Goals logic (preserved + robust) ---------- */
 async function renderGoals(){
   const all=(await idbGetAll()).filter(x=>x.type==='goal').sort((a,b)=>b.ts-a.ts);
   const out=document.getElementById('goalsList');
@@ -257,62 +310,65 @@ async function renderGoals(){
     div.className='goal';
     div.innerHTML=`
       <div class="goal-header">
-        <strong>${g.title}</strong>
+        <strong>${escapeHtml(g.title)}</strong>
         <span class="badge ${achieved?'done':'progress'}">
           ${achieved?'Achieved':'In progress'}
         </span>
       </div>
-      <div class="small">${g.desc||''}</div>
-      <div class="small">Created: ${formatDate(g.ts)} ${g.deadline?`• Deadline: ${g.deadline}`:''}</div>
-
+      <div class="small">${escapeHtml(g.desc||'')}</div>
+      <div class="small">Created: ${formatDate(g.ts)} ${g.deadline?`• Deadline: ${escapeHtml(g.deadline)}`:''}</div>
       <div class="progress"><span style="width:${pct}%"></span></div>
       <div class="small">${pct}% / ${g.target}%</div>
-
-      <input type="range" min="0" max="100" value="${pct}" oninput="updateProgress('${g.id}',this.value)"/>
-
+      <input type="range" min="0" max="100" value="${pct}" data-id="${g.id}" />
       <div class="goal-actions">
-        <button class="btn secondary" onclick="deleteGoal('${g.id}')">Delete</button>
+        <button class="btn secondary" data-delete="${g.id}">Delete</button>
       </div>
     `;
     out.appendChild(div);
   });
+
+  // wire range inputs and delete buttons
+  out.querySelectorAll('input[type="range"]').forEach(r=>{
+    r.addEventListener('input', async (e)=> {
+      const id=r.dataset.id; const val=Number(r.value||0);
+      const allData = await idbGetAll(); const g = allData.find(x=>x.id===id); if(!g) return;
+      g.progress = val; await idbPut(g); renderGoals();
+    });
+  });
+  out.querySelectorAll('button[data-delete]').forEach(b=>{
+    b.addEventListener('click', async (e)=>{
+      const id=b.getAttribute('data-delete');
+      if(!confirm('Delete this goal?')) return;
+      await idbDelete(id); renderGoals();
+    });
+  });
 }
 
-async function updateProgress(id,val){
-  const num=Number(val);
-  const all=await idbGetAll();
-  const g=all.find(x=>x.id===id);
-  if(!g)return;
-  g.progress=num;
-  await idbPut(g);
-  renderGoals();
-}
+function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 
-async function deleteGoal(id){
-  if(!confirm('Delete this goal?'))return;
-  await idbDelete(id);
-  renderGoals();
-}
-
+/* ---------- add goal handler ---------- */
 document.getElementById('addGoal').onclick=async()=>{
-  const title=goalTitle.value.trim();
-  if(!title)return alert('Enter a title');
-  const g={
-    id:'goal_'+Date.now(),
-    type:'goal',
+  const title = (document.getElementById('goalTitle').value || '').trim();
+  if(!title) return alert('Enter a title');
+  const g = {
+    id: 'goal_' + Date.now(),
+    type: 'goal',
     title,
-    desc:goalDesc.value.trim(),
-    target:Number(goalTarget.value)||100,
-    deadline:goalDeadline.value||null,
-    progress:0,
-    ts:Date.now()
+    desc: document.getElementById('goalDesc').value.trim(),
+    target: Number(document.getElementById('goalTarget').value) || 100,
+    deadline: document.getElementById('goalDeadline').value || null,
+    progress: 0,
+    ts: Date.now()
   };
-  await idbPut(g);
-  goalTitle.value=''; goalDesc.value=''; goalTarget.value=''; goalDeadline.value='';
+  try{ await idbPut(g); }catch(e){ console.error('save err', e); alert('Failed to save locally'); return; }
+  document.getElementById('goalTitle').value=''; document.getElementById('goalDesc').value=''; document.getElementById('goalTarget').value=''; document.getElementById('goalDeadline').value='';
   renderGoals();
 };
 
-renderGoals();
+/* ---------- boot ---------- */
+(async function init(){
+  try{ await renderGoals(); }catch(e){ console.error('boot err', e); showToast('Startup error — see console'); }
+})();
 </script>
 </body>
 </html>

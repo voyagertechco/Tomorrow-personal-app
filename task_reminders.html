@@ -4,7 +4,7 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Tasks & Reminders — Tomorrow</title>
-<link rel="manifest" href="/manifest.json"/>
+
 <style>
 :root{
   --bg:#FFF8F1; --card:#fff; --text:#3B2F2F; --muted:#7A6F66;
@@ -23,8 +23,6 @@ input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
 .task small{color:var(--muted)}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;display:flex;justify-content:center;box-shadow:0 -4px 10px rgba(0,0,0,.06)}
 .icon{width:22px;height:22px}
-.offline-banner{display:none;background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px}
-.small{font-size:13px;color:var(--muted)}
 </style>
 </head>
 
@@ -35,13 +33,11 @@ input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
 </div>
 
 <div class="container">
-  <div id="offlineBanner" class="offline-banner">Offline — page available from cache. Use Home → Download for offline to cache all pages.</div>
-
   <div class="card">
     <strong>New Task</strong><br/><br/>
     <input id="taskText" placeholder="What do you need to do?"/>
     <input id="taskTime" type="datetime-local" style="margin-top:8px"/>
-    <button id="addBtn" class="btn" style="margin-top:10px">Add Task</button>
+    <button class="btn" style="margin-top:10px" onclick="addTask()">Add Task</button>
   </div>
 
   <div class="card">
@@ -51,7 +47,7 @@ input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
 </div>
 
 <div class="bottom-nav">
-  <a href="index.html" title="Home">
+  <a href="index.html">
     <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
       <path d="M3 10L12 3l9 7v10a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/>
     </svg>
@@ -59,82 +55,31 @@ input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
 </div>
 
 <script>
-/* --- offline & SW helpers --- */
-function showToast(msg,ms=1600){ const el=document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
-const offlineBanner = document.getElementById('offlineBanner');
-function updateOfflineUI(){ if(!offlineBanner) return; offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
-window.addEventListener('online', ()=>{ updateOfflineUI(); showToast('Online — syncing...'); });
-window.addEventListener('offline', ()=>{ updateOfflineUI(); showToast('Offline — local mode'); });
-updateOfflineUI();
+const DB='tomorrowai-db'; 
+function openDB(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
+async function getAll(){const d=await openDB();return new Promise(res=>{const t=d.transaction('data','readonly').objectStore('data').getAll();t.onsuccess=e=>res(e.target.result||[]);});}
+async function put(v){const d=await openDB();const tx=d.transaction('data','readwrite');tx.objectStore('data').put(v);}
+async function del(id){const d=await openDB();const tx=d.transaction('data','readwrite');tx.objectStore('data').delete(id);}
 
-async function registerSWAndEnsureCached(){
-  if(!('serviceWorker' in navigator)) return;
-  try{
-    await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    navigator.serviceWorker.addEventListener('message', evt=>{
-      const d = evt.data || {};
-      if(d.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Offline cache ready');
-      if(d.type === 'SW_UPDATED') { showToast('New version available — reloading'); setTimeout(()=>location.reload(),700); }
-      if(d.type === 'CLEAR_CACHES_DONE') showToast('Caches cleared');
-    });
-
-    // quick check: if this page isn't in shell cache, request download
-    if('caches' in window){
-      const keys = await caches.keys();
-      const shell = keys.find(k=>k.startsWith('tomorrow-shell-'));
-      if(!shell){
-        if(navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' });
-      } else {
-        const cache = await caches.open(shell);
-        const match = await cache.match(location.pathname) || await cache.match('/task_reminders.html');
-        if(!match && navigator.serviceWorker.controller){
-          navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' });
-        }
-      }
-    }
-  }catch(e){ console.warn('SW err', e); }
-}
-registerSWAndEnsureCached();
-
-/* --- tiny IndexedDB wrapper (same schema used across app) --- */
-const DB = 'tomorrowai-db';
-function openDB(){ return new Promise((res,reject)=>{ const rq = indexedDB.open(DB, 2); rq.onupgradeneeded = e => { const db = e.target.result; if(!db.objectStoreNames.contains('data')) db.createObjectStore('data', { keyPath: 'id' }); }; rq.onsuccess = e => res(e.target.result); rq.onerror = e => reject(e.target.error); }); }
-async function getAll(){ const db = await openDB(); return new Promise(res=>{ const tx = db.transaction('data','readonly').objectStore('data').getAll(); tx.onsuccess = e => res(e.target.result || []); }); }
-async function put(v){ const db = await openDB(); return new Promise(res=>{ const tx = db.transaction('data','readwrite'); tx.objectStore('data').put(v); tx.oncomplete = ()=>res(true); }); }
-async function del(id){ const db = await openDB(); return new Promise(res=>{ const tx = db.transaction('data','readwrite'); tx.objectStore('data').delete(id); tx.oncomplete = ()=>res(true); }); }
-
-/* --- tasks logic --- */
 async function render(){
-  const all=(await getAll()).filter(x=>x.type==='task').sort((a,b)=>b.ts-a.ts);
+  const all=(await getAll()).filter(x=>x.type==='task');
   const out=document.getElementById('tasksList'); out.innerHTML='';
-  if(!all.length) return out.innerHTML='<small class="small">No tasks yet</small>';
+  if(!all.length) return out.innerHTML='<small>No tasks yet</small>';
   all.forEach(t=>{
     const div=document.createElement('div');
     div.className='task';
-    div.innerHTML=`
-      <strong>${escapeHtml(t.text)}</strong>
+    div.innerHTML=`<strong>${t.text}</strong>
       <div><small>${t.time||''}</small></div>
-      <div style="margin-top:6px"><button onclick="delTask('${t.id}')">Delete</button></div>
-    `;
+      <button onclick="delTask('${t.id}')">Delete</button>`;
     out.appendChild(div);
   });
 }
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-
 async function addTask(){
-  const text = (document.getElementById('taskText')||{}).value || '';
-  const time = (document.getElementById('taskTime')||{}).value || '';
-  if(!text.trim()) return alert('Enter task');
-  const rec = { id: 'task_'+Date.now(), type:'task', text: text.trim(), time, ts: Date.now() };
-  await put(rec);
-  document.getElementById('taskText').value=''; document.getElementById('taskTime').value='';
-  render();
+  if(!taskText.value)return alert('Enter task');
+  await put({id:'task_'+Date.now(),type:'task',text:taskText.value,time:taskTime.value});
+  taskText.value=''; taskTime.value=''; render();
 }
-async function delTask(id){ if(!confirm('Delete task?')) return; await del(id); render(); }
-
-document.getElementById('addBtn').addEventListener('click', addTask);
-
-/* boot */
+async function delTask(id){await del(id);render();}
 render();
 </script>
 </body>

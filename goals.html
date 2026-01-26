@@ -1,374 +1,117 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Goals — Tomorrow</title>
-
+<link rel="manifest" href="/manifest.json"/>
 <style>
 :root{
-  --bg:#FFF8F1;
-  --card:#FFFFFF;
-  --muted:#7A6F66;
-  --text:#3B2F2F;
-  --accent:#F59E0B;
-  --accent2:#F97316;
-  --success:#22C55E;
-  --danger:#EF4444;
-  --radius:18px;
+  --bg:#FFF8F1; --card:#FFFFFF; --muted:#7A6F66; --text:#3B2F2F;
+  --accent:#F59E0B; --accent2:#F97316; --success:#22C55E; --radius:18px;
 }
-body{
-  margin:0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";
-  background:var(--bg);
-  color:var(--text);
-}
-.header{
-  padding:16px;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-  color:#fff;
-  border-radius:0 0 22px 22px;
-}
+body{margin:0;font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI";background:var(--bg);color:var(--text)}
+.header{padding:16px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border-radius:0 0 22px 22px}
 .header h1{margin:0;font-size:19px}
-.header .sub{font-size:12px;opacity:.9}
-.container{
-  padding:14px;
-  max-width:720px;
-  margin:auto;
-}
-.card{
-  background:var(--card);
-  border-radius:var(--radius);
-  padding:14px;
-  margin-bottom:14px;
-  box-shadow:0 10px 25px rgba(0,0,0,.07);
-}
+.container{padding:14px;max-width:720px;margin:auto}
+.card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:0 10px 25px rgba(0,0,0,.07)}
 label{font-size:13px;font-weight:600}
-input,textarea{
-  width:100%;
-  padding:11px;
-  border-radius:12px;
-  border:1px solid #eee;
-  font-size:14px;
-  margin-top:6px;
-}
-.btn{
-  width:100%;
-  padding:12px;
-  border-radius:14px;
-  border:0;
-  cursor:pointer;
-  background:var(--accent);
-  color:white;
-  font-weight:600;
-  font-size:14px;
-}
-.btn.secondary{
-  background:#F1E8DE;
-  color:#3B2F2F;
-}
-.goal{
-  padding:12px 0;
-  border-bottom:1px solid #f0e7dc;
-}
+input,textarea{width:100%;padding:11px;border-radius:12px;border:1px solid #eee;font-size:14px;margin-top:6px}
+.btn{width:100%;padding:12px;border-radius:14px;border:0;cursor:pointer;background:var(--accent);color:white;font-weight:600;font-size:14px}
+.btn.secondary{background:#F1E8DE;color:#3B2F2F}
+.goal{padding:12px 0;border-bottom:1px solid #f0e7dc}
 .goal:last-child{border-bottom:none}
-.goal-header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.badge{
-  font-size:11px;
-  padding:4px 8px;
-  border-radius:10px;
-  font-weight:600;
-}
+.badge{font-size:11px;padding:4px 8px;border-radius:10px;font-weight:600}
 .badge.done{background:#DCFCE7;color:#166534}
 .badge.progress{background:#FEF3C7;color:#92400E}
-.progress{
-  height:9px;
-  background:#F1E4D4;
-  border-radius:10px;
-  overflow:hidden;
-  margin:6px 0;
-}
-.progress span{
-  height:100%;
-  display:block;
-  background:linear-gradient(90deg,var(--accent),var(--accent2));
-}
-.goal-actions{
-  display:flex;
-  gap:8px;
-  margin-top:8px;
-}
-.goal-actions button{
-  flex:1;
-  font-size:12px;
-  padding:8px;
-  border-radius:10px;
-}
+.progress{height:9px;background:#F1E4D4;border-radius:10px;overflow:hidden;margin:6px 0}
+.progress span{height:100%;display:block;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.goal-actions{display:flex;gap:8px;margin-top:8px}
 .small{font-size:12px;color:var(--muted)}
-input[type="range"]{ width:100%; }
-.bottom-nav{
-  position:fixed;
-  bottom:0;
-  left:0;
-  right:0;
-  background:white;
-  display:flex;
-  justify-content:center;
-  padding:10px;
-  box-shadow:0 -4px 10px rgba(0,0,0,.06);
-}
-.home-btn{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  text-decoration:none;
-  color:var(--text);
-  font-weight:600;
-}
-.icon{width:22px;height:22px}
-.offline-banner{background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px;display:none;max-width:720px;margin-left:auto;margin-right:auto}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;display:flex;justify-content:center;padding:10px;box-shadow:0 -4px 10px rgba(0,0,0,.06)}
+.offline-banner{display:none;background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px}
 </style>
 </head>
-
 <body>
-
 <div class="header">
   <h1>My Goals</h1>
   <div class="sub">Plan • Track • Achieve</div>
 </div>
 
-<div id="offlineBanner" class="offline-banner">Offline — core functionality available. Use "Download for offline" from Home to cache pages for full offline access.</div>
-
 <div class="container">
+  <div id="offlineBanner" class="offline-banner">Offline — this page is working from cache.</div>
 
-  <!-- Add Goal -->
   <div class="card">
     <strong>Create a Goal</strong><br/><br/>
-
-    <label>Title</label>
-    <input id="goalTitle" placeholder="e.g. Buy a laptop"/>
-
-    <label>Description</label>
-    <textarea id="goalDesc" placeholder="Why this matters..."></textarea>
-
-    <label>Target (%)</label>
-    <input id="goalTarget" type="number" placeholder="100"/>
-
-    <label>Deadline</label>
-    <input id="goalDeadline" type="date"/>
-
+    <label>Title</label><input id="goalTitle" placeholder="e.g. Buy a laptop"/>
+    <label>Description</label><textarea id="goalDesc" placeholder="Why this matters..."></textarea>
+    <label>Target (%)</label><input id="goalTarget" type="number" placeholder="100"/>
+    <label>Deadline</label><input id="goalDeadline" type="date"/>
     <button id="addGoal" class="btn" style="margin-top:10px">Save Goal</button>
   </div>
 
-  <!-- Goals -->
   <div class="card">
     <strong>Your Goals</strong>
     <div id="goalsList" style="margin-top:10px"></div>
   </div>
-
 </div>
 
-<!-- Bottom Home -->
-<div class="bottom-nav">
-  <a href="index.html" class="home-btn" title="Home">
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
-      <path d="M3 10L12 3l9 7v10a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/>
-    </svg>
-    Home
-  </a>
-</div>
+<div class="bottom-nav"><a href="index.html" class="home-btn">Home</a></div>
 
 <script>
-/* ---------- Offline & SW helpers ---------- */
-(function offlineInit(){
-  // inject Google fonts only when online
-  if(navigator.onLine){
-    const f = document.createElement('link');
-    f.rel = 'stylesheet';
-    f.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap';
-    document.head.appendChild(f);
-  }
+/* offline + SW */
+function showToast(msg,ms=1500){ const el=document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
+const offlineBanner = document.getElementById('offlineBanner');
+function updateOfflineUI(){ offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
+window.addEventListener('online', ()=>{ updateOfflineUI(); showToast('Online — syncing...'); });
+window.addEventListener('offline', ()=>{ updateOfflineUI(); showToast('Offline'); });
+updateOfflineUI();
+async function registerSW(){ if(!('serviceWorker' in navigator)) return; try{ await navigator.serviceWorker.register('/sw.js', { scope: '/' }); navigator.serviceWorker.addEventListener('message', e=>{ const d=e.data||{}; if(d.type==='DOWNLOAD_OFFLINE_DONE') showToast('Offline cache ready'); if(d.type==='SW_UPDATED'){ showToast('Updating...'); setTimeout(()=>location.reload(),700); } }); const keys = await caches.keys(); const shell = keys.find(k=>k.startsWith('tomorrow-shell-')); if(!shell && navigator.serviceWorker.controller) navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' }); }catch(e){ console.warn(e); } }
+registerSW();
 
-  const banner = document.getElementById('offlineBanner');
-  function updateBanner(){ banner.style.display = navigator.onLine ? 'none' : 'block'; }
-  window.addEventListener('online', () => { updateBanner(); showToast('Online — syncing...'); });
-  window.addEventListener('offline', () => { updateBanner(); showToast('Offline — local-only mode'); });
-  updateBanner();
-
-  async function registerSWAndEnsureCached(){
-    if(!('serviceWorker' in navigator)) return;
-    try{
-      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-      // quick check: if this path isn't cached, ask SW to download offline list
-      if('caches' in window){
-        try{
-          const keys = await caches.keys();
-          const shellName = keys.find(k => k.startsWith('tomorrow-shell-')) || null;
-          if(shellName){
-            const cache = await caches.open(shellName);
-            const match = await cache.match(location.pathname) || await cache.match('/goals.html') || await cache.match('/index.html');
-            if(!match){
-              if(navigator.serviceWorker.controller){
-                navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
-                showToast('Caching pages for offline (background)...');
-              } else {
-                navigator.serviceWorker.ready.then(reg => { try{ if(reg.active) reg.active.postMessage({ type: 'DOWNLOAD_OFFLINE' }); }catch(e){} });
-              }
-            }
-          } else {
-            if(navigator.serviceWorker.controller){
-              navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' });
-              showToast('Caching pages for offline (background)...');
-            }
-          }
-        }catch(e){ console.warn('cache check failed', e); }
-      }
-
-      navigator.serviceWorker.addEventListener('message', evt => {
-        const data = evt.data || {};
-        if(!data || !data.type) return;
-        if(data.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Pages cached for offline');
-        else if(data.type === 'CLEAR_CACHES_DONE') showToast('Caches cleared');
-        else if(data.type === 'SW_UPDATED'){ showToast('New version available — reloading...'); setTimeout(()=> location.reload(), 700); }
-      });
-    }catch(e){ console.warn('SW register failed', e); }
-  }
-  registerSWAndEnsureCached();
-})();
-
-/* ---------- IndexedDB helpers ---------- */
+/* IndexedDB helpers */
 const DB_NAME='tomorrowai-db', DB_VER=3;
-function openDB(){
-  return new Promise((res,rej)=>{
-    const req=indexedDB.open(DB_NAME,DB_VER);
-    req.onupgradeneeded=e=>{
-      const db=e.target.result;
-      if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'});
-    };
-    req.onsuccess=e=>res(e.target.result);
-    req.onerror=e=>rej(e.target.error);
-  });
-}
-async function idbPut(val){
-  const db=await openDB();
-  return new Promise((res,rej)=>{
-    const tx=db.transaction('data','readwrite');
-    tx.objectStore('data').put(val);
-    tx.oncomplete=()=>res(true);
-    tx.onerror=e=>rej(e.target.error);
-  });
-}
-async function idbGetAll(){
-  const db=await openDB();
-  return new Promise((res,rej)=>{
-    const tx=db.transaction('data','readonly');
-    const r=tx.objectStore('data').getAll();
-    r.onsuccess=e=>res(e.target.result||[]);
-    r.onerror=e=>rej(e.target.error);
-  });
-}
-async function idbDelete(id){
-  const db=await openDB();
-  return new Promise((res,rej)=>{
-    const tx=db.transaction('data','readwrite');
-    tx.objectStore('data').delete(id);
-    tx.oncomplete=()=>res(true);
-    tx.onerror=e=>rej(e.target.error);
-  });
-}
+function openDB(){ return new Promise((res,rej)=>{ const rq=indexedDB.open(DB_NAME,DB_VER); rq.onupgradeneeded=e=>{ const db=e.target.result; if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'}); }; rq.onsuccess=e=>res(e.target.result); rq.onerror=e=>rej(e.target.error); }); }
+async function idbPut(val){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('data','readwrite'); tx.objectStore('data').put(val); tx.oncomplete=()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
+async function idbGetAll(){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('data','readonly'); const r=tx.objectStore('data').getAll(); r.onsuccess=e=>res(e.target.result||[]); r.onerror=e=>rej(e.target.error); }); }
+async function idbDelete(id){ const db=await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction('data','readwrite'); tx.objectStore('data').delete(id); tx.oncomplete=()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
 
-/* ---------- small UI helpers ---------- */
-function formatDate(ts){
-  try{ return new Date(ts).toLocaleDateString(); }catch(e){ return ''; }
-}
-function showToast(msg,ms=1600){
-  const el=document.createElement('div');
-  el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000;
-  el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  setTimeout(()=> el.remove(), ms);
-}
+function formatDate(ts){ return new Date(ts).toLocaleDateString(); }
 
-/* ---------- Goals logic (preserved + robust) ---------- */
 async function renderGoals(){
   const all=(await idbGetAll()).filter(x=>x.type==='goal').sort((a,b)=>b.ts-a.ts);
-  const out=document.getElementById('goalsList');
-  out.innerHTML='';
-  if(all.length===0){
-    out.innerHTML='<div class="small">No goals yet</div>';
-    return;
-  }
+  const out=document.getElementById('goalsList'); out.innerHTML='';
+  if(all.length===0){ out.innerHTML='<div class="small">No goals yet</div>'; return; }
   all.forEach(g=>{
     const pct=Math.min(100,Math.max(0,g.progress||0));
     const achieved=pct>=g.target;
-    const div=document.createElement('div');
-    div.className='goal';
+    const div=document.createElement('div'); div.className='goal';
     div.innerHTML=`
       <div class="goal-header">
         <strong>${escapeHtml(g.title)}</strong>
-        <span class="badge ${achieved?'done':'progress'}">
-          ${achieved?'Achieved':'In progress'}
-        </span>
+        <span class="badge ${achieved?'done':'progress'}">${achieved?'Achieved':'In progress'}</span>
       </div>
       <div class="small">${escapeHtml(g.desc||'')}</div>
-      <div class="small">Created: ${formatDate(g.ts)} ${g.deadline?`• Deadline: ${escapeHtml(g.deadline)}`:''}</div>
+      <div class="small">Created: ${formatDate(g.ts)} ${g.deadline?`• Deadline: ${g.deadline}`:''}</div>
       <div class="progress"><span style="width:${pct}%"></span></div>
       <div class="small">${pct}% / ${g.target}%</div>
-      <input type="range" min="0" max="100" value="${pct}" data-id="${g.id}" />
-      <div class="goal-actions">
-        <button class="btn secondary" data-delete="${g.id}">Delete</button>
-      </div>
+      <input type="range" min="0" max="100" value="${pct}" oninput="updateProgress('${g.id}',this.value)"/>
+      <div class="goal-actions"><button class="btn secondary" onclick="deleteGoal('${g.id}')">Delete</button></div>
     `;
     out.appendChild(div);
   });
-
-  // wire range inputs and delete buttons
-  out.querySelectorAll('input[type="range"]').forEach(r=>{
-    r.addEventListener('input', async (e)=> {
-      const id=r.dataset.id; const val=Number(r.value||0);
-      const allData = await idbGetAll(); const g = allData.find(x=>x.id===id); if(!g) return;
-      g.progress = val; await idbPut(g); renderGoals();
-    });
-  });
-  out.querySelectorAll('button[data-delete]').forEach(b=>{
-    b.addEventListener('click', async (e)=>{
-      const id=b.getAttribute('data-delete');
-      if(!confirm('Delete this goal?')) return;
-      await idbDelete(id); renderGoals();
-    });
-  });
 }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 
-function escapeHtml(s){ if(!s) return ''; return String(s).replace(/[&<>"']/g, (m)=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+async function updateProgress(id,val){ const num=Number(val); const all=await idbGetAll(); const g=all.find(x=>x.id===id); if(!g) return; g.progress=num; await idbPut(g); renderGoals(); }
+async function deleteGoal(id){ if(!confirm('Delete this goal?')) return; await idbDelete(id); renderGoals(); }
 
-/* ---------- add goal handler ---------- */
-document.getElementById('addGoal').onclick=async()=>{
-  const title = (document.getElementById('goalTitle').value || '').trim();
-  if(!title) return alert('Enter a title');
-  const g = {
-    id: 'goal_' + Date.now(),
-    type: 'goal',
-    title,
-    desc: document.getElementById('goalDesc').value.trim(),
-    target: Number(document.getElementById('goalTarget').value) || 100,
-    deadline: document.getElementById('goalDeadline').value || null,
-    progress: 0,
-    ts: Date.now()
-  };
-  try{ await idbPut(g); }catch(e){ console.error('save err', e); alert('Failed to save locally'); return; }
-  document.getElementById('goalTitle').value=''; document.getElementById('goalDesc').value=''; document.getElementById('goalTarget').value=''; document.getElementById('goalDeadline').value='';
-  renderGoals();
+document.getElementById('addGoal').onclick = async ()=>{
+  const title = (document.getElementById('goalTitle')||{}).value.trim(); if(!title) return alert('Enter a title');
+  const g = { id:'goal_'+Date.now(), type:'goal', title, desc:(document.getElementById('goalDesc')||{}).value.trim(), target: Number(document.getElementById('goalTarget')||0)||100, deadline: (document.getElementById('goalDeadline')||{}).value||null, progress:0, ts:Date.now() };
+  await idbPut(g); document.getElementById('goalTitle').value=''; document.getElementById('goalDesc').value=''; document.getElementById('goalTarget').value=''; document.getElementById('goalDeadline').value=''; renderGoals();
 };
 
-/* ---------- boot ---------- */
-(async function init(){
-  try{ await renderGoals(); }catch(e){ console.error('boot err', e); showToast('Startup error — see console'); }
-})();
+(async function init(){ await renderGoals(); })();
 </script>
 </body>
 </html>

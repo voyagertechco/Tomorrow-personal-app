@@ -36,7 +36,7 @@
     .header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
     .icon-btn{background:transparent;border:0;color:white;cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px}
     .icon-svg{width:20px;height:20px;display:inline-block;vertical-align:middle}
-    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.45);padding:20px;visibility:hidden;opacity:0;transition:opacity .12s;z-index:12000}
+    .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.65);padding:20px;visibility:hidden;opacity:0;transition:opacity .12s;z-index:12000}
     .modal.visible{visibility:visible;opacity:1}
     .modal-card{width:100%;max-width:520px;background:var(--surface);border-radius:12px;padding:18px;box-shadow:0 20px 60px rgba(2,6,23,0.22)}
     label{display:block;margin-bottom:6px;font-weight:600}
@@ -48,7 +48,9 @@
     .ai-float{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:20000;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:0 12px 30px rgba(11,22,60,0.12)}
     .ai-float .letter{font-weight:900;font-size:20px}
     .profile-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    @media(max-width:520px){ .profile-field-row{grid-template-columns:1fr} }
+    @media(max-width:520px){ .profile-field-row{grid-template-columns:1fr} .modal-card{height:100vh;border-radius:0;padding:16px;overflow:auto} .modal{align-items:flex-start;padding-top:16px} }
+    .error-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);color:white;display:flex;align-items:center;justify-content:center;z-index:13000;padding:18px}
+    .required-note{color:#b91c1c;font-size:13px;margin-bottom:8px}
   </style>
 </head>
 <body>
@@ -56,7 +58,7 @@
     <header>
       <div>
         <h1 id="appTitle">Tomorrow Personal App</h1>
-        <div class="subtitle" id="appSubtitle">Private & local-first — local profile saved</div>
+        <div class="subtitle" id="appSubtitle">Private & local-first — local profile required</div>
       </div>
 
       <div class="header-right" role="navigation" aria-label="Header controls">
@@ -85,29 +87,30 @@
         <div id="offlineNote" class="small muted" style="margin-top:8px;display:none">Offline (server unreachable). Local mode active.</div>
       </div>
 
-      <div class="card small" style="text-align:center">This PWA works offline after installation. You can update the UI without losing your collected data.</div>
+      <div class="card small" style="text-align:center">This PWA works offline after installation. You must fill your profile to continue.</div>
     </main>
 
     <footer class="small">all rights reserved @tomorrow tech.co.</footer>
   </div>
 
-  <!-- Profile modal (one-time) -->
+  <!-- Profile modal (required) -->
   <div id="profileModal" class="modal" aria-hidden="true">
-    <div class="modal-card">
-      <h3 style="margin-top:0">Tell us about yourself</h3>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+      <h3 id="profileTitle" style="margin-top:0">Tell us about yourself</h3>
       <div class="muted">Only asked once locally. These details are stored on-device and will be synced to server when online so admin can see them.</div>
 
       <div style="margin-top:12px">
+        <div class="required-note">Name, Country and City / Location are required to continue.</div>
         <label>Full name</label>
-        <input id="profileName" placeholder="Your name" />
+        <input id="profileName" placeholder="Your name" autocomplete="name" />
         <div class="profile-field-row">
           <div>
             <label>Country</label>
-            <input id="profileCountry" placeholder="Country" />
+            <input id="profileCountry" placeholder="Country" autocomplete="country" />
           </div>
           <div>
             <label>City / Location</label>
-            <input id="profileLocation" placeholder="City" />
+            <input id="profileLocation" placeholder="City" autocomplete="address-level2" />
           </div>
         </div>
         <div class="profile-field-row">
@@ -128,8 +131,7 @@
         </div>
 
         <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
-          <button id="skipProfileBtn" class="btn secondary">Skip</button>
-          <button id="saveProfileBtn" class="btn">Save</button>
+          <button id="saveProfileBtn" class="btn" disabled>Save profile</button>
         </div>
       </div>
     </div>
@@ -166,30 +168,186 @@
   <button id="aiFloatBtn" class="ai-float" aria-label="Smart action"><span class="letter">T</span></button>
 
   <script>
-/* index.html — simplified hub with one-time profile, settings, offline sync */
+/* Robust index.html — profile REQUIRED. IndexedDB with localStorage fallback. */
 
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
 let dbPromise = null;
+let idbAvailable = true;
+
 function openDB(){
   if(dbPromise) return dbPromise;
   dbPromise = new Promise((resolve,reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VER);
-    req.onupgradeneeded = e => {
-      const db = e.target.result;
-      if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
-      if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'});
-      if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'});
-      if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id', autoIncrement:true});
-    };
-    req.onsuccess = e => resolve(e.target.result);
-    req.onerror = e => reject(e.target.error);
+    try{
+      const req = indexedDB.open(DB_NAME, DB_VER);
+      req.onupgradeneeded = e => {
+        const db = e.target.result;
+        if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
+        if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'});
+        if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'});
+        if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id', autoIncrement:true});
+      };
+      req.onsuccess = e => resolve(e.target.result);
+      req.onerror = e => { idbAvailable = false; console.warn('IndexedDB open error', e.target.error); reject(e.target.error); };
+    }catch(e){ idbAvailable = false; console.warn('IndexedDB init failed', e); reject(e); }
   });
   return dbPromise;
 }
-async function idbPut(store, value){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).put(value); tx.oncomplete = ()=>res(true); tx.onerror = e => rej(e.target.error); }); }
-async function idbGet(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).get(key); r.onsuccess = e => res(e.target.result); r.onerror = e => rej(e.target.error); }); }
-async function idbGetAll(store){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).getAll(); r.onsuccess = e => res(e.target.result || []); r.onerror = e => rej(e.target.error); }); }
-async function idbDelete(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete = ()=>res(true); tx.onerror = e => rej(e.target.error); }); }
+
+/* idb helpers with graceful fallback to localStorage */
+async function idbPut(store, value){
+  // try IDB first
+  try{
+    if(!idbAvailable) throw new Error('IndexedDB unavailable');
+    const db = await openDB();
+    return await new Promise((res,rej)=>{
+      const tx = db.transaction(store,'readwrite');
+      const os = tx.objectStore(store);
+      // ensure the shape matches the store keyPath expectations
+      os.put(value);
+      tx.oncomplete = ()=>res(true);
+      tx.onerror = e => rej(e.target.error || e);
+    });
+  }catch(e){
+    // fallback to localStorage (structured)
+    console.warn('idbPut failed — falling back to localStorage', store, e);
+    try{
+      if(store === 'settings' && value && (value.key !== undefined)){
+        // store value.value if provided, else value
+        const v = (value && value.value !== undefined) ? value.value : value;
+        localStorage.setItem('tomorrow:settings:' + value.key, JSON.stringify(v));
+        return true;
+      }
+      if(store === 'users' && value && value.email){
+        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
+        users[value.email] = value;
+        localStorage.setItem('tomorrow:users', JSON.stringify(users));
+        return true;
+      }
+      if(store === 'auth' && value && (value.key !== undefined)){
+        const v = (value && value.value !== undefined) ? value.value : value;
+        localStorage.setItem('tomorrow:auth:' + value.key, JSON.stringify(v));
+        return true;
+      }
+      if(store === 'data'){
+        const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+        arr.push(value);
+        localStorage.setItem('tomorrow:data', JSON.stringify(arr));
+        return true;
+      }
+      // unknown store fallback
+      localStorage.setItem(`tomorrow:${store}:${Date.now()}`, JSON.stringify(value));
+      return true;
+    }catch(err){
+      console.error('localStorage fallback failed', err);
+      throw err;
+    }
+  }
+}
+
+async function idbGet(store, key){
+  try{
+    if(!idbAvailable) throw new Error('IndexedDB unavailable');
+    const db = await openDB();
+    return await new Promise((res,rej)=>{
+      const tx = db.transaction(store,'readonly');
+      const r = tx.objectStore(store).get(key);
+      r.onsuccess = e => res(e.target.result);
+      r.onerror = e => rej(e.target.error || e);
+    });
+  }catch(e){
+    console.warn('idbGet failed — falling back to localStorage', store, key, e);
+    try{
+      if(store === 'settings'){
+        const raw = localStorage.getItem('tomorrow:settings:' + key);
+        if(!raw) return null;
+        // mimic IDB stored object shape { key, value } in some code paths
+        return { key: key, value: JSON.parse(raw) };
+      }
+      if(store === 'users'){
+        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
+        return users[key] || null;
+      }
+      if(store === 'auth'){
+        const raw = localStorage.getItem('tomorrow:auth:' + key);
+        if(!raw) return null;
+        return JSON.parse(raw);
+      }
+      if(store === 'data'){
+        const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+        return arr; // returns array
+      }
+      // generic fallback: try namespaced key
+      const raw = localStorage.getItem(`tomorrow:${store}:${key}`);
+      return raw ? JSON.parse(raw) : null;
+    }catch(err){
+      console.error('localStorage get fallback failed', err);
+      return null;
+    }
+  }
+}
+
+async function idbGetAll(store){
+  try{
+    if(!idbAvailable) throw new Error('IndexedDB unavailable');
+    const db = await openDB();
+    return await new Promise((res,rej)=>{
+      const tx = db.transaction(store,'readonly');
+      const r = tx.objectStore(store).getAll();
+      r.onsuccess = e => res(e.target.result || []);
+      r.onerror = e => rej(e.target.error || e);
+    });
+  }catch(e){
+    console.warn('idbGetAll failed — falling back to localStorage', store, e);
+    try{
+      if(store === 'settings'){
+        // iterate localStorage keys that match prefix
+        const out = [];
+        for(const k of Object.keys(localStorage)){
+          if(k.startsWith('tomorrow:settings:')){
+            const key = k.replace('tomorrow:settings:','');
+            out.push({ key: key, value: JSON.parse(localStorage.getItem(k)) });
+          }
+        }
+        return out;
+      }
+      if(store === 'users'){
+        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
+        return Object.values(users);
+      }
+      if(store === 'auth'){
+        const out = [];
+        for(const k of Object.keys(localStorage)){
+          if(k.startsWith('tomorrow:auth:')){
+            out.push({ key: k.replace('tomorrow:auth:',''), value: JSON.parse(localStorage.getItem(k)) });
+          }
+        }
+        return out;
+      }
+      if(store === 'data'){
+        return JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+      }
+      // generic: collect keys with prefix
+      const out = [];
+      for(const k of Object.keys(localStorage)){
+        if(k.startsWith(`tomorrow:${store}:`)){
+          out.push(JSON.parse(localStorage.getItem(k)));
+        }
+      }
+      return out;
+    }catch(err){
+      console.error('localStorage getAll fallback failed', err);
+      return [];
+    }
+  }
+}
+
+/* Helper to normalize settings.profile shape (some stores use {key, value}) */
+async function getProfileRecord(){
+  const raw = await idbGet('settings','profile');
+  if(!raw) return null;
+  // raw might be { key, value } or might already be stored as value object
+  return raw.value ? raw.value : raw;
+}
 
 function showToast(msg,ms=2200){
   const el = document.createElement('div');
@@ -200,7 +358,7 @@ function showToast(msg,ms=2200){
   setTimeout(()=> el.remove(), ms);
 }
 
-/* Hub items (includes 'more') */
+/* Hub items (same as before) */
 const hubItems = [
   { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M12 1v22"/><path d="M5 7h14"/></svg>` },
   { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
@@ -218,9 +376,7 @@ function markInternalNav(){ allowInternalNav = true; setTimeout(()=> allowIntern
 
 async function renderHubGrid(){
   const grid = document.getElementById('hubGrid'); if(!grid) return; grid.innerHTML = '';
-  // get local profile as current user (if any)
-  const profile = await idbGet('settings','profile') || null;
-  // also try server-driven disabledApps via auth current
+  const profile = await getProfileRecord();
   const currentAuth = await idbGet('auth','current');
   const email = currentAuth?.value?.email || (profile ? profile._email : null);
   const currentUser = email ? (await idbGet('users', email) || null) : null;
@@ -230,7 +386,7 @@ async function renderHubGrid(){
     const disabledForUser = currentUser && Array.isArray(currentUser.disabledApps) && currentUser.disabledApps.includes(it.id);
     const disableButtonHtml = (currentUser && currentUser.email && currentUser.email.endsWith('@local') === false)
                              ? `<button class="app-disable-btn" data-app="${it.id}" title="${disabledForUser ? 'Enable this section' : 'Disable this section'}">${disabledForUser ? 'Enable' : 'Disable'}</button>`
-                             : ''; // only allow toggle if real server user present
+                             : '';
 
     btn.innerHTML = `
       ${disableButtonHtml}
@@ -261,7 +417,7 @@ async function renderHubGrid(){
   });
 }
 
-/* toggle disabled apps -- requires server-registered user (not pure local guest) */
+/* toggle disabled apps (keeps local users store updated) */
 async function toggleAppDisabledForCurrentUser(appId){
   const currentAuth = await idbGet('auth','current');
   if(!currentAuth || !currentAuth.value) { showToast('Sign in or register online to toggle'); return; }
@@ -274,26 +430,19 @@ async function toggleAppDisabledForCurrentUser(appId){
   await idbPut('users', user);
   showToast(idx === -1 ? 'Section disabled for your account' : 'Section enabled for your account');
 
-  // also send to server (best effort) to keep admin view in sync
-  try{
-    await fetch('/api/register', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ email: user.email, name: user.name || user.email, location: user.location||'', country:user.country||'', meta: { disabledApps:user.disabledApps } })
-    });
-  }catch(e){ /* ignore */ }
+  try{ await fetch('/api/register', {
+    method:'POST', headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify({ email: user.email, name: user.name || user.email, location: user.location||'', country:user.country||'', meta: { disabledApps:user.disabledApps } })
+  }); }catch(e){}
 }
 
-/* PROFILE: one-time prompt + local store + server sync */
-function makeLocalEmail(){
-  // deterministic-ish local id
-  const rnd = Math.floor(Math.random()*1e8).toString(16);
-  return `user-${Date.now().toString(16)}-${rnd}@local`;
-}
+/* PROFILE: required flow */
+function makeLocalEmail(){ const rnd = Math.floor(Math.random()*1e8).toString(16); return `user-${Date.now().toString(16)}-${rnd}@local`; }
 
 async function saveLocalProfile(profile){
-  // profile: { name, country, location, age, gender }
   const now = new Date().toISOString();
-  let email = profile.email || (await idbGet('settings','profile'))?._email || makeLocalEmail();
+  let existing = await getProfileRecord();
+  let email = profile.email || (existing ? existing._email : null) || makeLocalEmail();
   const record = {
     _email: email,
     name: profile.name || '',
@@ -301,37 +450,32 @@ async function saveLocalProfile(profile){
     location: profile.location || '',
     age: profile.age || null,
     gender: profile.gender || '',
-    createdAt: (await idbGet('settings','profile'))?.createdAt || now,
+    createdAt: existing?.createdAt || now,
     lastSeen: now
   };
+  // write using idbPut (will fallback to localStorage if needed)
   await idbPut('settings', { key:'profile', value: record });
-  // also store in users store locally (makes logic uniform)
   await idbPut('users', { email: email, name: record.name, location: record.location, country: record.country, created_at: record.createdAt, last_seen: record.lastSeen, enabled:1, disabled_apps: JSON.stringify([]), meta: JSON.stringify({ age: record.age, gender: record.gender }) });
-  // set auth current to allow toggles etc (will be local@ unless server registers)
   await idbPut('auth', { key:'current', value:{ email: email, name: record.name }});
-  // render hub
   await renderHubGrid();
-  // try to sync to server
+  // note: we attempt server sync, but admin reading from device is supported by local storage above
   trySyncProfileToServer();
 }
 
 async function trySyncProfileToServer(){
-  const profileWrap = await idbGet('settings','profile');
-  if(!profileWrap) return;
-  const email = profileWrap._email;
-  // if already looks like server email (not @local) we still attempt
-  if(!navigator.onLine) { document.getElementById('offlineNote').style.display = 'block'; return; }
+  const profile = await getProfileRecord();
+  if(!profile) return;
+  const email = profile._email;
+  if(!navigator.onLine){ document.getElementById('offlineNote').style.display = 'block'; return; }
   try{
-    const payload = { email: email, name: profileWrap.name || email, location: profileWrap.location || '', country: profileWrap.country || '', meta: { age: profileWrap.age||'', gender: profileWrap.gender||'' } };
+    const payload = { email: email, name: profile.name || email, location: profile.location || '', country: profile.country || '', meta: { age: profile.age||'', gender: profile.gender||'' } };
     const res = await fetch('/api/register', {
       method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload)
     });
     if(res && res.ok){
       const json = await res.json().catch(()=>null);
       if(json && json.ok && json.user){
-        // write server canonical user row (server may persist different fields)
         const userRec = json.user;
-        // convert server row to local user store shape
         await idbPut('users', {
           email: userRec.email,
           name: userRec.name,
@@ -343,50 +487,68 @@ async function trySyncProfileToServer(){
           disabled_apps: JSON.stringify(userRec.disabledApps || []),
           meta: JSON.stringify(userRec.meta || {})
         });
-        // mark auth current as server email (keeps admin toggles available)
         await idbPut('auth', { key:'current', value:{ email: userRec.email, name: userRec.name }});
         showToast('Profile synced to server');
       } else {
-        // fallback: still ensure local user present
         showToast('Profile saved locally');
       }
     } else {
       showToast('Could not sync profile (server error)');
     }
-  }catch(e){
-    console.warn('sync error', e);
-    document.getElementById('offlineNote').style.display = 'block';
-  }
+  }catch(e){ console.warn('sync error', e); document.getElementById('offlineNote').style.display = 'block'; }
 }
 
-/* profile modal wiring */
-document.getElementById('saveProfileBtn').addEventListener('click', async ()=>{
-  const name = (document.getElementById('profileName').value || '').trim();
-  const country = (document.getElementById('profileCountry').value || '').trim();
-  const location = (document.getElementById('profileLocation').value || '').trim();
+/* profile modal wiring: REQUIRED - no skip */
+const saveProfileBtn = document.getElementById('saveProfileBtn');
+const profileNameInput = document.getElementById('profileName');
+const profileCountryInput = document.getElementById('profileCountry');
+const profileLocationInput = document.getElementById('profileLocation');
+
+function validateProfileForm(){
+  const ok = profileNameInput.value.trim() !== '' && profileCountryInput.value.trim() !== '' && profileLocationInput.value.trim() !== '';
+  saveProfileBtn.disabled = !ok;
+  return ok;
+}
+profileNameInput.addEventListener('input', validateProfileForm);
+profileCountryInput.addEventListener('input', validateProfileForm);
+profileLocationInput.addEventListener('input', validateProfileForm);
+
+saveProfileBtn.addEventListener('click', async ()=>{
+  const name = profileNameInput.value.trim();
+  const country = profileCountryInput.value.trim();
+  const location = profileLocationInput.value.trim();
   const age = (document.getElementById('profileAge').value || '').trim();
-  const gender = (document.getElementById('profileGender').value || '').trim();
-  if(!name || !country || !location){
-    showToast('Please fill name, country and location (or skip).');
-    return;
+  const gender = document.getElementById('profileGender').value || '';
+  if(!name || !country || !location){ showToast('Please fill the required fields'); return; }
+  try{
+    await saveLocalProfile({ name, country, location, age: age || null, gender });
+    hideProfileModal();
+    showToast('Profile saved locally on device');
+  }catch(e){
+    console.error('Save profile failed', e);
+    // show helpful message with fallback instruction
+    showToast('Failed to save profile (see console). If this repeats, allow storage permissions or try a different browser.');
   }
-  await saveLocalProfile({ name, country, location, age: age || null, gender });
-  hideProfileModal();
 });
 
-document.getElementById('skipProfileBtn').addEventListener('click', async ()=>{
-  // create a guest local profile minimal
-  const name = 'Guest';
-  await saveLocalProfile({ name, country:'', location:'', age:null, gender:'' });
-  hideProfileModal();
-});
+function showProfileModal(){
+  const m = document.getElementById('profileModal'); m.classList.add('visible'); m.setAttribute('aria-hidden','false');
+  // prevent closing by click outside or escape
+  document.addEventListener('keydown', blockEscape, { passive: false });
+  document.body.style.overflow = 'hidden';
+  const card = m.querySelector('.modal-card');
+  if(card) card.addEventListener('click', e => e.stopPropagation());
+}
+function hideProfileModal(){
+  const m = document.getElementById('profileModal'); m.classList.remove('visible'); m.setAttribute('aria-hidden','true');
+  document.removeEventListener('keydown', blockEscape);
+  document.body.style.overflow = '';
+  window.removeEventListener('beforeunload', beforeUnloadBlock);
+}
+function blockEscape(e){ if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); return false; } }
 
-function showProfileModal(){ document.getElementById('profileModal').classList.add('visible'); document.getElementById('profileModal').setAttribute('aria-hidden','false'); }
-function hideProfileModal(){ document.getElementById('profileModal').classList.remove('visible'); document.getElementById('profileModal').setAttribute('aria-hidden','true'); }
-
-/* settings wiring */
+/* Settings / SW helpers (unchanged) */
 document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{
-  // load current settings and populate
   const settingsAll = await idbGetAll('settings');
   const settings = {};
   settingsAll.forEach(s => settings[s.key] = s.value);
@@ -411,17 +573,9 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
   document.getElementById('settingsModal').classList.remove('visible');
 });
 
-/* clear caches (calls SW) */
-document.getElementById('clearCachesBtn').addEventListener('click', async ()=>{
-  if(navigator.serviceWorker && navigator.serviceWorker.controller){
-    navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' });
-    showToast('Sent clear caches to service worker');
-  } else {
-    showToast('Service worker not active');
-  }
-});
+/* a few utility buttons (download offline, clear caches) still post messages to SW if present */
+document.getElementById('clearCachesBtn').addEventListener('click', async ()=>{ if(navigator.serviceWorker && navigator.serviceWorker.controller){ navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' }); showToast('Sent clear caches to service worker'); } else { showToast('Service worker not active'); } });
 
-/* export local data */
 document.getElementById('openExportBtn').addEventListener('click', async ()=>{
   const settings = await idbGetAll('settings'); const users = await idbGetAll('users'); const auth = await idbGetAll('auth'); const data = await idbGetAll('data');
   const payload = { exportedAt: new Date().toISOString(), settings, users, auth, data };
@@ -430,22 +584,11 @@ document.getElementById('openExportBtn').addEventListener('click', async ()=>{
   const a = document.createElement('a'); a.href = url; a.download = 'tomorrow-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
 });
 
-/* offline download button */
-document.getElementById('downloadOfflineBtn').addEventListener('click', async ()=>{
-  if(navigator.serviceWorker && navigator.serviceWorker.controller){
-    navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' });
-    showToast('Started download for offline. Background task will cache core assets.');
-  } else showToast('Service worker not active yet.');
-});
+document.getElementById('downloadOfflineBtn').addEventListener('click', async ()=>{ if(navigator.serviceWorker && navigator.serviceWorker.controller){ navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' }); showToast('Started download for offline.'); } else showToast('Service worker not active yet.'); });
 
-/* share */
-document.getElementById('shareAppBtn').addEventListener('click', async ()=>{
-  const shareData = { title: 'Tomorrow — Personal App', text: 'Try Tomorrow PWA', url: location.origin + location.pathname };
-  if(navigator.share){ try{ await navigator.share(shareData); }catch(e){ showToast('Share canceled'); } }
-  else { try{ await navigator.clipboard.writeText(shareData.url); showToast('Link copied'); }catch(e){ showToast('Cannot copy link'); } }
-});
+document.getElementById('shareAppBtn').addEventListener('click', async ()=>{ const shareData = { title: 'Tomorrow — Personal App', text: 'Try Tomorrow PWA', url: location.origin + location.pathname }; if(navigator.share){ try{ await navigator.share(shareData); }catch(e){ showToast('Share canceled'); } } else { try{ await navigator.clipboard.writeText(shareData.url); showToast('Link copied'); }catch(e){ showToast('Cannot copy link'); } } });
 
-/* apply settings UI */
+/* settings application */
 async function applySettings(){
   const settingsAll = await idbGetAll('settings'); const settings = {}; settingsAll.forEach(s=>settings[s.key]=s.value);
   document.documentElement.style.setProperty('--base-font-size', (settings.fontSize || 15) + 'px');
@@ -463,80 +606,74 @@ async function applySettings(){
   }
 }
 
-/* install prompt handling */
-let deferredInstallPrompt = null;
-const installBtn = document.getElementById('installBtn');
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  if(installBtn){ installBtn.style.display='inline-block'; installBtn.onclick = async ()=>{
-    installBtn.style.display='none'; deferredInstallPrompt.prompt();
-    try{ const choice = await deferredInstallPrompt.userChoice; if(choice && choice.outcome==='accepted') showToast('App installed'); else showToast('Install dismissed'); }catch(e){}
-    deferredInstallPrompt = null;
-  }; }
-});
+/* SW registration (keeps same behavior) */
+let deferredInstallPrompt = null; const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; if(installBtn){ installBtn.style.display='inline-block'; installBtn.onclick = async ()=>{ installBtn.style.display='none'; deferredInstallPrompt.prompt(); try{ const choice = await deferredInstallPrompt.userChoice; if(choice && choice.outcome==='accepted') showToast('App installed'); else showToast('Install dismissed'); }catch(e){} deferredInstallPrompt = null; }; } });
 
-/* service worker registration (robust) */
 async function registerServiceWorker(){
   if(!('serviceWorker' in navigator)){ showToast('Service worker not supported'); return; }
   const isLocalhost = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-  if(location.protocol !== 'https:' && !isLocalhost){ console.warn('SW requires HTTPS or localhost'); /* still try to register on localhost */ }
+  if(location.protocol !== 'https:' && !isLocalhost){ console.warn('SW requires HTTPS or localhost'); }
   try{
-    // quick fetch to assert availability (helps debugging)
-    try{
-      const pre = await fetch('/sw.js', { method:'GET', cache:'no-store', mode:'same-origin' });
-      if(!pre.ok && pre.type !== 'opaque') console.warn('sw.js fetch returned', pre.status);
-    }catch(e){ /* ignore */ }
+    try{ const pre = await fetch('/sw.js', { method:'GET', cache:'no-store', mode:'same-origin' }); if(!pre.ok && pre.type !== 'opaque') console.warn('sw.js fetch returned', pre.status); }catch(e){}
     const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
     console.log('SW registered', reg);
-  }catch(e){
-    console.warn('sw register failed', e);
-    showToast('Service worker registration failed (check console).');
-  }
+    navigator.serviceWorker.addEventListener('message', (evt) => {
+      const data = evt.data || {};
+      if (data.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Offline download complete.');
+      if (data.type === 'CLEAR_CACHES_DONE') showToast('Caches cleared.');
+      if (data.type === 'SW_UPDATED') { showToast('New version available — reloading...'); setTimeout(()=> window.location.reload(), 700); }
+    });
+  }catch(e){ console.warn('sw register failed', e); showToast('Service worker registration failed (check console).'); }
 }
 registerServiceWorker();
 
+/* request SW update check */
+function requestCheckForUpdates(){
+  if(navigator.serviceWorker && navigator.serviceWorker.controller){
+    navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_UPDATES' });
+    showToast('Checking for updates...');
+  } else {
+    showToast('Service worker controller not active yet.');
+  }
+}
+
 /* startup flow */
 async function boot(){
-  await applySettings().catch(()=>{});
-  // If no profile, show profile modal
-  const profileWrap = await idbGet('settings','profile');
-  if(!profileWrap){
-    // show modal for mobile-first UX
-    showProfileModal();
-  } else {
-    // update auth.current from profile
-    await idbPut('auth', { key:'current', value:{ email: profileWrap._email, name: profileWrap.name }});
-    // attempt to sync if online
-    trySyncProfileToServer();
-    renderHubGrid();
-  }
-
-  // ensure we render hub grid always (guest fallback)
-  await renderHubGrid();
+  try{ await applySettings().catch(()=>{}); }catch(e){}
+  try{
+    const profile = await getProfileRecord();
+    if(!profile){
+      showProfileModal();
+      setTimeout(()=> profileNameInput.focus(), 350);
+      window.addEventListener('beforeunload', beforeUnloadBlock);
+    } else {
+      // ensure auth.current exists
+      await idbPut('auth', { key:'current', value:{ email: profile._email, name: profile.name }});
+      trySyncProfileToServer();
+      renderHubGrid();
+    }
+    await renderHubGrid();
+  }catch(e){ console.error('Boot error', e); showErrorOverlay('IndexedDB not available or another startup error occurred. Check console.'); }
 }
-boot();
+function beforeUnloadBlock(e){ e.preventDefault(); e.returnValue = 'Please save your profile before leaving.'; }
 
-/* when network comes back, try sync and refresh status */
-window.addEventListener('online', () => { showToast('Online — syncing...'); trySyncProfileToServer(); renderHubGrid(); });
+function showErrorOverlay(msg){ const el = document.createElement('div'); el.className='error-overlay'; el.innerHTML = `<div><h3>Startup error</h3><div style="max-width:560px">${msg}</div></div>`; document.body.appendChild(el); }
+
+/* online/offline */
+window.addEventListener('online', () => { showToast('Online — syncing...'); trySyncProfileToServer(); renderHubGrid(); requestCheckForUpdates(); });
 window.addEventListener('offline', () => { showToast('Offline — local-only mode'); document.getElementById('offlineNote').style.display = 'block'; });
 
-/* minimal floating T action */
+/* floating T */
 document.getElementById('aiFloatBtn').addEventListener('click', ()=>{ showToast('Smart action (placeholder)'); });
 
-/* pageshow/back handling: push spacer state */
-try{
-  const pathname = (location.pathname || '/').split('/').pop() || '';
-  const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/';
-  if(isIndex){ history.replaceState({ home: true }, ''); history.pushState({ home: true, spacer: true }, ''); }
-}catch(e){}
+/* navigation safety (unchanged) */
+try{ const pathname = (location.pathname || '/').split('/').pop() || ''; const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/'; if(isIndex){ history.replaceState({ home: true }, ''); history.pushState({ home: true, spacer: true }, ''); } }catch(e){}
+window.addEventListener('popstate', (ev) => { if(ev.state && ev.state.spacer){ if(confirm('Do you want to leave the app?')) { history.back(); } else { history.pushState({ home:true, spacer:true }, ''); } } });
 
-/* leave confirm */
-window.addEventListener('popstate', (ev) => {
-  if(ev.state && ev.state.spacer){
-    if(confirm('Do you want to leave the app?')) { history.back(); } else { history.pushState({ home:true, spacer:true }, ''); }
-  }
-});
+/* initial validation + boot */
+validateProfileForm();
+boot();
 
 </script>
 </body>

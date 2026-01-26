@@ -83,9 +83,6 @@
   .muted-xs{font-size:12px;color:var(--muted)}
   .favorite{color:#F59E0B;font-weight:700}
   .trash-note{font-size:13px;color:var(--muted);margin-top:8px}
-
-  /* offline banner */
-  .offline-banner{display:none;background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin:12px auto;max-width:880px;text-align:center}
 </style>
 </head>
 <body>
@@ -103,9 +100,6 @@
         <button class="btn ghost" id="settingsBtn">Settings</button>
       </div>
     </header>
-
-    <!-- Offline banner (controlled by JS) -->
-    <div id="offlineBanner" class="offline-banner">Offline — this page is working from cache.</div>
 
     <main class="layout">
       <!-- left: editor -->
@@ -291,38 +285,6 @@ function toISODate(d){ if(!d) return null; const y=d.getFullYear(), m=('0'+(d.ge
 function nowTs(){ return Date.now(); }
 function uid(prefix='j'){ return prefix + '_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
 function showToast(msg, time=1800){ const el = document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.textContent = msg; document.body.appendChild(el); setTimeout(()=>el.remove(), time); }
-
-/* ---------------------------
-   Offline / Service Worker helpers
-   --------------------------- */
-function updateOfflineUI(){ const offlineBanner = document.getElementById('offlineBanner'); if(!offlineBanner) return; offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
-window.addEventListener('online', ()=>{ updateOfflineUI(); showToast('Online — syncing...'); if(navigator.serviceWorker && navigator.serviceWorker.controller){ try{ navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' }); }catch(e){} } });
-window.addEventListener('offline', ()=>{ updateOfflineUI(); showToast('Offline'); });
-
-async function registerSW(){
-  if(!('serviceWorker' in navigator)) return;
-  try{
-    // Register SW (same /sw.js used by index)
-    const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    // Listen for messages from SW
-    navigator.serviceWorker.addEventListener('message', e=>{
-      const d = e.data || {};
-      if(d.type === 'DOWNLOAD_OFFLINE_DONE') showToast('Offline cache ready');
-      if(d.type === 'CLEAR_CACHES_DONE') showToast('Caches cleared');
-      if(d.type === 'SW_UPDATED'){ showToast('Updating...'); setTimeout(()=>location.reload(),700); }
-    });
-    // If controller exists ask to pre-download assets (helpful to warm cache when user opens journal)
-    if(navigator.serviceWorker.controller){
-      try{ navigator.serviceWorker.controller.postMessage({ type:'DOWNLOAD_OFFLINE' }); }catch(e){}
-    } else {
-      // if not controlled yet, try when ready
-      navigator.serviceWorker.ready.then(r=>{ if(r.active) try{ r.active.postMessage({ type:'DOWNLOAD_OFFLINE' }); }catch(e){} });
-    }
-  }catch(err){ console.warn('SW register failed', err); }
-}
-// start SW registration early
-registerSW();
-updateOfflineUI();
 
 /* ---------------------------
    App state
@@ -723,7 +685,6 @@ async function initLoad(){
 // On initial load: check journal-specific security; if unlocked then init; otherwise wait for unlock
 (async function boot(){
   await checkSecurityOnLoad();
-  updateOfflineUI();
   if(state.unlocked){
     await initLoad();
   } else {

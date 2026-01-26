@@ -1,9 +1,8 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Wishlist & Health — Tomorrow</title>
-<link rel="manifest" href="/manifest.json"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Wishlist & Health</title>
 <style>
 body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 .header{padding:14px;background:linear-gradient(90deg,#EC4899,#F472B6);color:#fff;border-radius:0 0 18px 18px}
@@ -12,17 +11,14 @@ body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 .btn{padding:10px;border-radius:12px;border:0;background:#EC4899;color:#fff;width:100%}
 .item{padding:10px 0;border-bottom:1px solid #eee}
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center}
-.offline-banner{display:none;background:#fff3cd;padding:10px;border-radius:8px;border:1px solid #ffeeba;color:#856404;margin-bottom:12px}
 </style>
 </head>
 <body>
 <div class="header"><h1>Wishlist & Health</h1><small>Your desires & wellbeing</small></div>
 <div class="container">
-  <div id="offlineBanner" class="offline-banner">Offline — saved locally</div>
-
   <div class="card">
     <input id="wishText" placeholder="Add wish or health note"/>
-    <button id="addBtn" class="btn" style="margin-top:8px">Add</button>
+    <button class="btn" onclick="addWish()" style="margin-top:8px">Add</button>
   </div>
   <div class="card">
     <div id="wishList"></div>
@@ -31,27 +27,22 @@ body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
 <div class="bottom-nav"><a href="index.html">🏠</a></div>
 
 <script>
-/* SW + offline UI */
-function showToast(msg,ms=1400){ const el=document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='8px'; el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
-const offlineBanner = document.getElementById('offlineBanner');
-function updateOffline(){ offlineBanner.style.display = navigator.onLine ? 'none' : 'block'; }
-window.addEventListener('online', ()=>{ updateOffline(); showToast('Online'); });
-window.addEventListener('offline', ()=>{ updateOffline(); showToast('Offline'); });
-updateOffline();
-if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(()=>{});
-
 const DB='tomorrowai-db';
-function db(){ return new Promise(res=>{ const r=indexedDB.open(DB,2); r.onupgradeneeded=e=>{ const d=e.target.result; if(!d.objectStoreNames.contains('data')) d.createObjectStore('data',{keyPath:'id'}); }; r.onsuccess=e=>res(e.target.result); }); }
-async function all(){ const d=await db(); return new Promise(res=>{ const r=d.transaction('data').objectStore('data').getAll(); r.onsuccess=e=>res(e.target.result||[]); }); }
-async function put(v){ const d=await db(); return new Promise(res=>{ const tx=d.transaction('data','readwrite'); tx.objectStore('data').put(v); tx.oncomplete=()=>res(true); }); }
-async function del(id){ const d=await db(); return new Promise(res=>{ const tx=d.transaction('data','readwrite'); tx.objectStore('data').delete(id); tx.oncomplete=()=>res(true); }); }
+function db(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
+async function all(){const d=await db();return new Promise(res=>{const r=d.transaction('data').objectStore('data').getAll();r.onsuccess=e=>res(e.target.result||[]);});}
+async function put(v){const d=await db();d.transaction('data','readwrite').objectStore('data').put(v);}
+async function del(id){const d=await db();d.transaction('data','readwrite').objectStore('data').delete(id);}
 
-async function render(){ const items=(await all()).filter(x=>x.type==='wish'); document.getElementById('wishList').innerHTML = items.map(i=>`<div class="item">${escapeHtml(i.text)} <button onclick="remove('${i.id}')">✕</button></div>`).join(''); }
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-
-document.getElementById('addBtn').addEventListener('click', async ()=>{ const t=(document.getElementById('wishText')||{}).value.trim(); if(!t) return alert('Enter text'); await put({ id:'wish_'+Date.now(), type:'wish', text:t }); document.getElementById('wishText').value=''; render(); showToast('Saved locally'); });
-
-async function remove(id){ if(!confirm('Remove?')) return; await del(id); render(); }
+async function render(){
+  const items=(await all()).filter(x=>x.type==='wish');
+  wishList.innerHTML=items.map(i=>`<div class="item">${i.text}<button onclick="remove('${i.id}')">✕</button></div>`).join('');
+}
+async function addWish(){
+  if(!wishText.value)return;
+  await put({id:'wish_'+Date.now(),type:'wish',text:wishText.value});
+  wishText.value=''; render();
+}
+async function remove(id){await del(id);render();}
 render();
 </script>
 </body>

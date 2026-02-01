@@ -5,18 +5,38 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <link rel="manifest" href="/manifest.json"/>
   <title>Tomorrow Personal App — Hub</title>
-  <meta name="theme-color" content="#4F46E5"/>
+  <!-- theme-color matches warm-pink header -->
+  <meta name="theme-color" content="#FF6B9F"/>
   <style>
     :root{
-      --bg:#F7FBFF;--surface:#fff;--muted:#6B7280;--text:#0f172a;
-      --accent:#0EA5A4;--accent-2:#3B82F6;--radius:14px;--base-font-size:15px;
-      --title-accent:#FFD166;
+      /* base */
+      --bg:#F7FBFF;
+      --surface:#fff;
+      --muted:#6B7280;
+      --text:#0f172a;
+      --radius:14px;
+      --base-font-size:15px;
       --hub-icon-size:56px;
-      --btn-radius:20px; --btn-padding:10px 14px; --btn-shadow:0 10px 30px rgba(15,23,42,0.08);
+      --btn-radius:20px;
+      --btn-padding:10px 14px;
+      --btn-shadow:0 10px 30px rgba(15,23,42,0.08);
+
+      /* PALE GREEN ACCENTS (slightly paler than before) */
+      --accent: #A7F3D0;    /* paler minty green */
+      --accent-2: #34D399;  /* slightly richer secondary green */
+
+      /* WARM PINK HEADER */
+      --header-start: #FF6B9F;
+      --header-end:   #FF9BB3;
+
+      /* TITLE ACCENT: pale gold for contrast */
+      --title-accent: #FFD166;
     }
+
     html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial;font-size:var(--base-font-size)}
     .app{max-width:920px;margin:0 auto;height:100vh;display:flex;flex-direction:column}
-    header{padding:14px 16px;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;border-radius:0 0 12px 12px;display:flex;align-items:center;gap:12px}
+    /* header now uses warm pink gradient */
+    header{padding:14px 16px;background:linear-gradient(90deg,var(--header-start),var(--header-end));color:#fff;border-radius:0 0 12px 12px;display:flex;align-items:center;gap:12px}
     header h1{margin:0;font-size:20px;font-weight:800;color:var(--title-accent);text-shadow:0 2px 6px rgba(0,0,0,0.12)}
     header .subtitle{font-size:12px;opacity:.95}
     main{flex:1;overflow:auto;padding:16px}
@@ -25,11 +45,13 @@
     @media(min-width:720px){.grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}}
     .hub-btn{border-radius:18px;padding:12px;text-align:center;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(15,23,42,0.06);transition:transform .12s, box-shadow .12s;position:relative;overflow:visible}
     .hub-btn:active{transform:translateY(2px)}
+    /* hub-icon uses updated pale green gradient */
     .hub-icon{width:var(--hub-icon-size);height:var(--hub-icon-size);border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white;font-size:18px;flex:0 0 var(--hub-icon-size)}
     .hub-icon svg{ width:28px; height:28px; stroke:currentColor; fill:none; display:block;}
     .hub-label{font-weight:700;margin-top:8px;font-size:calc(var(--base-font-size) * 0.95);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
     .hub-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .app-disable-btn{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:6px;border-radius:8px}
+    /* primary buttons use the pale green accent gradient */
     .btn{padding:var(--btn-padding);border-radius:var(--btn-radius);border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:var(--btn-shadow);transition:transform .12s,box-shadow .12s}
     .small{font-size:12px;color:var(--muted)}
     footer.small{text-align:center;padding:8px 12px;color:var(--muted);font-size:12px}
@@ -44,6 +66,7 @@
     .muted{font-size:13px;color:var(--muted)}
     .hidden{display:none !important}
     .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1e293b;font-size:12px}
+    /* floating button uses pale green accent */
     .ai-float{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:20000;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:0 12px 30px rgba(11,22,60,0.12)}
     .ai-float .letter{font-weight:900;font-size:20px}
     .profile-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -627,7 +650,6 @@ async function registerServiceWorker(){
 }
 registerServiceWorker();
 
-/* request SW update check */
 function requestCheckForUpdates(){
   if(navigator.serviceWorker && navigator.serviceWorker.controller){
     navigator.serviceWorker.controller.postMessage({ type: 'CHECK_FOR_UPDATES' });
@@ -674,6 +696,6 @@ window.addEventListener('popstate', (ev) => { if(ev.state && ev.state.spacer){ i
 validateProfileForm();
 boot();
 
-</script>
+  </script>
 </body>
 </html>

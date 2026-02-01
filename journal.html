@@ -6,34 +6,39 @@
 <title>Journal — Tomorrow</title>
 <link rel="manifest" href="/manifest.json"/>
 <style>
-  /* --- Theme variables (can be switched live) --- */
+  /* --- Theme variables (mobile-first, cream calm theme) --- */
   :root{
-    --bg: #F7FBFF;
-    --card: #fff;
-    --text: #0f172a;
+    --bg: #FBF7F2;              /* calm cream page background */
+    --card: #FFFDF8;            /* card surface */
+    --paper: linear-gradient(180deg, rgba(255,250,243,0.98), rgba(255,253,248,0.96));
+    --text: #1e293b;            /* slightly softer dark */
     --muted: #6B7280;
-    --accent: #0EA5A4;
-    --accent-2: #3B82F6;
-    --paper: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));
+    --accent: #A7F3D0;          /* pale calm green accent */
+    --accent-2: #34D399;
     --radius: 12px;
-    --shadow: 0 10px 30px rgba(2,6,23,0.06);
+    --shadow: 0 10px 30px rgba(20,20,30,0.06);
     --line: rgba(15,23,42,0.04);
     --font: Inter, system-ui, Arial, sans-serif;
     --max-width: 920px;
+    --base-font-size: 17px;    /* larger base for comfy reading on phones */
+    --tap-size: 48px;          /* minimum comfortable tap target */
   }
-  /* Notebook mode will use subtle lines and warm paper; Night mode overrides variables when applied by JS. */
 
-  html,body{height:100%;margin:0;background:var(--bg);font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased}
-  .app{max-width:var(--max-width);margin:0 auto;min-height:100vh;padding:12px 12px 120px}
+  /* basic layout */
+  html,body{height:100%;margin:0;background:var(--bg);font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased;font-size:var(--base-font-size)}
+  .app{max-width:var(--max-width);margin:0 auto;min-height:100vh;padding:14px 12px 120px}
   header{display:flex;align-items:center;gap:12px;padding:8px 0}
   header h1{margin:0;font-size:20px}
   header .sub{font-size:13px;color:var(--muted)}
-  .btn{padding:10px 12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer}
+
+  /* buttons */
+  .btn{padding:12px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;min-height:var(--tap-size);display:inline-flex;align-items:center;justify-content:center}
   .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(15,23,42,0.06)}
   .btn.danger{background:#ef4444}
-  .row{display:flex;gap:8px;align-items:center}
-  .col{flex:1}
-  .card{background:var(--card);border-radius:var(--radius);padding:12px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.04)}
+  .btn.small{padding:8px 10px;border-radius:10px;min-height:40px}
+
+  /* cards */
+  .card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid rgba(15,23,42,0.04)}
   .muted{color:var(--muted);font-size:13px}
   .small{font-size:13px;color:var(--muted)}
 
@@ -41,51 +46,58 @@
   .layout{display:flex;flex-direction:column;gap:12px}
   @media(min-width:860px){ .layout{flex-direction:row} .left{flex:0 0 46%} .right{flex:1} }
 
-  /* New entry editor */
-  .editor{background:var(--paper);border-radius:10px;padding:10px;border:1px solid var(--line);min-height:220px;position:relative}
-  .editor textarea{width:100%;min-height:140px;border:0;outline:none;font-size:15px;padding:8px;background:transparent;resize:vertical;font-family:inherit;color:var(--text)}
-  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center}
-  .input{padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:white}
+  /* Editor */
+  .editor{background:var(--paper);border-radius:12px;padding:12px;border:1px solid var(--line);min-height:260px;position:relative}
+  .editor input, .editor textarea{width:100%;border:0;background:transparent;font-family:inherit;color:var(--text)}
+  .editor textarea{min-height:170px;outline:none;padding:10px;font-size:16px;resize:vertical;border-radius:8px}
+  .input{padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);background:#fff;margin:0}
+  .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
 
-  /* Notebook visual lines for notebook mode */
+  /* Notebook lines */
   .notebook .editor{background:
-    repeating-linear-gradient(to bottom, rgba(240,239,255,0.06) 0px, rgba(240,239,255,0.06) 36px, transparent 36px, transparent 72px),
-    linear-gradient(90deg, rgba(255,255,255,0.98), rgba(255,255,255,0.98));
-    box-shadow: 0 8px 24px rgba(20,18,50,0.04);
+    repeating-linear-gradient(to bottom, rgba(246,244,241,0.6) 0px, rgba(246,244,241,0.6) 42px, transparent 42px, transparent 84px),
+    linear-gradient(90deg, rgba(255,250,243,0.98), rgba(255,253,248,0.98)); box-shadow:0 8px 24px rgba(20,18,50,0.04);
   }
 
   /* Entries list */
-  .entries{display:flex;flex-direction:column;gap:8px}
-  .entry{padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.96));display:flex;flex-direction:column;gap:8px}
+  .entries{display:flex;flex-direction:column;gap:10px}
+  .entry{padding:12px;border-radius:12px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,253,248,0.98));display:flex;flex-direction:column;gap:8px}
   .entry.head{display:flex;justify-content:space-between;align-items:center}
   .entry .meta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .tag{padding:4px 8px;border-radius:999px;background:rgba(14,165,164,0.08);color:var(--accent);font-weight:600;font-size:12px}
-  .mood{font-size:18px}
-  .preview{color:var(--muted);white-space:pre-wrap;max-height:84px;overflow:hidden}
+  .tag{padding:6px 10px;border-radius:999px;background:rgba(167,243,208,0.28);color:#047857;font-weight:600;font-size:13px}
+  .mood{font-size:20px}
+  .preview{color:var(--muted);white-space:pre-wrap;max-height:140px;overflow:hidden;font-size:15px}
 
-  /* controls on top of list */
+  /* top controls */
   .list-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
-  .search{flex:1;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);}
+  .search{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);font-size:15px}
 
-  /* selection bar for bulk actions */
-  .selection-bar{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(14,165,164,0.06);color:var(--accent);font-weight:600}
+  /* selection */
+  .selection-bar{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(167,243,208,0.18);color:var(--accent);font-weight:600}
 
-  /* modal backdrop */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s;
-    /* allow clicks through when hidden; only capture when modal is visible */
-    pointer-events: none;
-  }
+  /* modal backdrop - ensure hidden backdrops don't block touches */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s;pointer-events:none}
   .modal-backdrop.visible{visibility:visible;opacity:1;pointer-events:auto}
-  .modal{background:var(--card);padding:14px;border-radius:12px;max-width:520px;width:92%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
+  .modal{background:var(--card);padding:14px;border-radius:12px;max-width:520px;width:92%;box-shadow:0 20px 60px rgba(2,6,23,0.18)}
 
-  /* bottom home FAB */
-  .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
+  /* fab */
+  .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.12);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
   .fab-home svg{width:22px;height:22px;fill:white}
 
-  /* small helpers */
+  /* helpers */
   .muted-xs{font-size:12px;color:var(--muted)}
   .favorite{color:#F59E0B;font-weight:700}
   .trash-note{font-size:13px;color:var(--muted);margin-top:8px}
+
+  /* Make touch targets full width on small screens */
+  @media(max-width:520px){
+    .meta{flex-direction:column;align-items:stretch}
+    .meta .input, .meta select, .meta button{width:100%}
+    .btn{width:100%}
+    .editor textarea{font-size:18px;min-height:220px}
+    header h1{font-size:20px}
+    .card{padding:12px}
+  }
 </style>
 </head>
 <body>
@@ -94,7 +106,7 @@
       <a href="index.html" aria-label="Home" title="Home" style="text-decoration:none;color:var(--accent)">←</a>
       <div>
         <h1>Journal</h1>
-        <div class="sub muted">Write, reflect, and browse — private & beautiful</div>
+        <div class="sub muted">Write, reflect, and browse — calm & private</div>
       </div>
 
       <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
@@ -104,7 +116,7 @@
       </div>
     </header>
 
-    <main class="layout">
+    <main class="layout" id="mainLayout">
       <!-- left: editor -->
       <section class="left">
         <div class="card">
@@ -114,12 +126,12 @@
           </div>
 
           <div style="margin-top:8px" class="editor" id="editorArea">
-            <input id="entryTitle" class="input" placeholder="Title (optional)" style="margin-bottom:8px;font-weight:700"/>
-            <textarea id="entryText" placeholder="Write what happened, how you feel, or anything you want to remember..."></textarea>
+            <input id="entryTitle" class="input" placeholder="Title (optional)" style="margin-bottom:8px;font-weight:700;font-size:16px"/>
+            <textarea id="entryText" placeholder="Write what happened, how you feel, or anything you want to remember..." aria-label="Entry text"></textarea>
 
             <div class="meta">
               <input id="entryDate" class="input" type="date" />
-              <select id="entryMood" class="input" style="width:110px">
+              <select id="entryMood" class="input" style="width:140px">
                 <option value="">Mood</option>
                 <option value="😊">😊 Happy</option>
                 <option value="😔">😔 Sad</option>
@@ -129,7 +141,7 @@
                 <option value="🤧">🤧 Unwell</option>
               </select>
               <input id="entryTags" class="input" placeholder="Tags (comma separated)" />
-              <button id="saveEntry" class="btn">Save</button>
+              <button id="saveEntry" class="btn" title="Save entry">Save</button>
               <button id="clearEntry" class="btn ghost">Clear</button>
             </div>
 
@@ -141,7 +153,7 @@
                 <option value="night">Night</option>
               </select>
               <label class="muted-xs" style="margin-left:auto">Font size</label>
-              <input id="fontSize" type="number" min="13" max="20" value="15" style="width:72px" class="input"/>
+              <input id="fontSize" type="number" min="14" max="22" value="17" style="width:72px" class="input"/>
             </div>
           </div>
         </div>
@@ -182,7 +194,7 @@
             </div>
           </div>
 
-          <div style="margin-top:10px" id="entriesContainer" class="entries"></div>
+          <div style="margin-top:10px" id="entriesContainer" class="entries" aria-live="polite"></div>
         </div>
       </section>
     </main>
@@ -224,7 +236,7 @@
       </div>
     </div>
 
-    <!-- Unlock modal shown when security is enabled -->
+    <!-- Unlock modal -->
     <div id="unlockModal" class="modal-backdrop" aria-hidden="true">
       <div class="modal">
         <div><strong>Unlock Journal</strong><div class="muted">Answer your security question to access your entries</div></div>
@@ -237,7 +249,7 @@
       </div>
     </div>
 
-    <!-- editor edit modal -->
+    <!-- edit modal -->
     <div id="editModal" class="modal-backdrop" aria-hidden="true">
       <div class="modal">
         <div><strong>Edit entry</strong></div>
@@ -256,24 +268,217 @@
     </div>
 
     <!-- floating home -->
-    <div class="fab-home" id="homeBtn" title="Home">
+    <div class="fab-home" id="homeBtn" title="Home" role="button" aria-label="Home">
       <svg viewBox="0 0 24 24"><path d="M12 3l9 8h-3v8h-4v-6H10v6H6v-8H3z"></path></svg>
     </div>
   </div>
 
 <script>
 /* ---------------------------
-   IndexedDB helpers (same DB used app-wide)
+   Robust storage helpers: IndexedDB with localStorage fallback
+   Ensures save works on mobile browsers with IDB quirks.
    --------------------------- */
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
-function openDB(){ return new Promise((res,rej)=>{ const req = indexedDB.open(DB_NAME, DB_VER); req.onupgradeneeded = e => { const db = e.target.result; if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'}); if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'}); if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'}); if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'}); }; req.onsuccess = e => res(e.target.result); req.onerror = e => rej(e.target.error); }); }
-async function idbPut(store, val){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).put(val); tx.oncomplete = ()=>res(true); tx.onerror = e=>rej(e.target.error); }); }
-async function idbGet(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).get(key); r.onsuccess = e => res(e.target.result); r.onerror = e => rej(e.target.error); }); }
-async function idbGetAll(store){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readonly'); const r = tx.objectStore(store).getAll(); r.onsuccess = e => res(e.target.result || []); r.onerror = e => rej(e.target.error); }); }
-async function idbDelete(store, key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx = db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete = ()=>res(true); tx.onerror = e => rej(e.target.error); }); }
+let db = null;
+let idbAvailable = true;
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    try{
+      const req = indexedDB.open(DB_NAME, DB_VER);
+      req.onupgradeneeded = e => {
+        const d = e.target.result;
+        if(!d.objectStoreNames.contains('data')) d.createObjectStore('data',{keyPath:'id'});
+        if(!d.objectStoreNames.contains('settings')) d.createObjectStore('settings',{keyPath:'key'});
+        if(!d.objectStoreNames.contains('users')) d.createObjectStore('users',{keyPath:'email'});
+        if(!d.objectStoreNames.contains('auth')) d.createObjectStore('auth',{keyPath:'key'});
+      };
+      req.onsuccess = e => { db = e.target.result; resolve(db); };
+      req.onerror = e => { idbAvailable = false; console.warn('IndexedDB open failed', e.target.error); reject(e.target.error); };
+    }catch(err){
+      idbAvailable = false; console.warn('IndexedDB not available', err); reject(err);
+    }
+  });
+}
+
+async function _getDB(){
+  if(db) return db;
+  try{ return await openDB(); }catch(e){ return null; }
+}
+
+async function idbPut(store, val){
+  // try IDB, else fallback to localStorage
+  try{
+    const d = await _getDB();
+    if(!d) throw new Error('IDB not available');
+    return await new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readwrite');
+      tx.objectStore(store).put(val);
+      tx.oncomplete = () => res(true);
+      tx.onerror = (e) => { rej(e.target?.error || e); };
+    });
+  }catch(e){
+    // localStorage fallback
+    console.warn('idbPut fallback', store, e);
+    try{
+      if(store === 'settings' && val && val.key !== undefined){
+        const v = val.value !== undefined ? val.value : val;
+        localStorage.setItem('tomorrow:settings:' + val.key, JSON.stringify(v));
+        return true;
+      }
+      if(store === 'auth' && val && val.key !== undefined){
+        const v = val.value !== undefined ? val.value : val;
+        localStorage.setItem('tomorrow:auth:' + val.key, JSON.stringify(v));
+        return true;
+      }
+      if(store === 'users' && val && val.email){
+        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
+        users[val.email] = val;
+        localStorage.setItem('tomorrow:users', JSON.stringify(users));
+        return true;
+      }
+      if(store === 'data'){
+        const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+        // avoid duplicates by id
+        if(!arr.find(x=>x.id === val.id)) arr.push(val);
+        else {
+          // replace existing
+          const idx = arr.findIndex(x=>x.id===val.id);
+          arr[idx] = val;
+        }
+        localStorage.setItem('tomorrow:data', JSON.stringify(arr));
+        return true;
+      }
+      // generic fallback
+      localStorage.setItem(`tomorrow:${store}:${Date.now()}`, JSON.stringify(val));
+      return true;
+    }catch(err){ console.error('localStorage fallback failed', err); throw err; }
+  }
+}
+
+async function idbGet(store, key){
+  try{
+    const d = await _getDB();
+    if(!d) throw new Error('IDB not available');
+    return await new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readonly');
+      const r = tx.objectStore(store).get(key);
+      r.onsuccess = e => res(e.target.result);
+      r.onerror = e => rej(e.target.error || e);
+    });
+  }catch(e){
+    console.warn('idbGet fallback', store, key, e);
+    try{
+      if(store === 'settings'){
+        const raw = localStorage.getItem('tomorrow:settings:' + key);
+        if(!raw) return null;
+        return { key: key, value: JSON.parse(raw) };
+      }
+      if(store === 'auth'){
+        const raw = localStorage.getItem('tomorrow:auth:' + key);
+        if(!raw) return null;
+        return JSON.parse(raw);
+      }
+      if(store === 'users'){
+        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
+        return users[key] || null;
+      }
+      if(store === 'data'){
+        return JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+      }
+      const raw = localStorage.getItem(`tomorrow:${store}:${key}`);
+      return raw ? JSON.parse(raw) : null;
+    }catch(err){ console.error('localStorage get failed', err); return null; }
+  }
+}
+
+async function idbGetAll(store){
+  try{
+    const d = await _getDB();
+    if(!d) throw new Error('IDB not available');
+    return await new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readonly');
+      const r = tx.objectStore(store).getAll();
+      r.onsuccess = e => res(e.target.result || []);
+      r.onerror = e => rej(e.target.error || e);
+    });
+  }catch(e){
+    console.warn('idbGetAll fallback', store, e);
+    try{
+      if(store === 'settings'){
+        const out = [];
+        for(const k in localStorage){
+          if(k.startsWith('tomorrow:settings:')){
+            const key = k.replace('tomorrow:settings:','');
+            out.push({ key, value: JSON.parse(localStorage.getItem(k)) });
+          }
+        }
+        return out;
+      }
+      if(store === 'users'){
+        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
+        return Object.values(users);
+      }
+      if(store === 'auth'){
+        const out = [];
+        for(const k in localStorage){
+          if(k.startsWith('tomorrow:auth:')){
+            out.push({ key: k.replace('tomorrow:auth:',''), value: JSON.parse(localStorage.getItem(k)) });
+          }
+        }
+        return out;
+      }
+      if(store === 'data'){
+        return JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+      }
+      // generic
+      const out = [];
+      for(const k in localStorage){
+        if(k.startsWith(`tomorrow:${store}:`)){
+          out.push(JSON.parse(localStorage.getItem(k)));
+        }
+      }
+      return out;
+    }catch(err){ console.error('localStorage getAll failed', err); return []; }
+  }
+}
+
+async function idbDelete(store, key){
+  try{
+    const d = await _getDB();
+    if(!d) throw new Error('IDB not available');
+    return await new Promise((res, rej) => {
+      const tx = d.transaction(store, 'readwrite');
+      tx.objectStore(store).delete(key);
+      tx.oncomplete = () => res(true);
+      tx.onerror = e => rej(e.target.error || e);
+    });
+  }catch(e){
+    console.warn('idbDelete fallback', store, key, e);
+    try{
+      if(store === 'data'){
+        const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+        const out = arr.filter(x=> x.id !== key);
+        localStorage.setItem('tomorrow:data', JSON.stringify(out));
+        return true;
+      }
+      if(store === 'settings'){
+        localStorage.removeItem('tomorrow:settings:' + key);
+        return true;
+      }
+      if(store === 'auth'){
+        localStorage.removeItem('tomorrow:auth:' + key);
+        return true;
+      }
+      const candidate = `tomorrow:${store}:${key}`;
+      localStorage.removeItem(candidate);
+      return true;
+    }catch(err){ console.error('localStorage delete failed', err); return false; }
+  }
+}
 
 /* ---------------------------
-   SHA-256 for security answers
+   Crypto helper (SHA-256)
    --------------------------- */
 async function sha256hex(text){
   const enc = new TextEncoder().encode(text);
@@ -282,7 +487,7 @@ async function sha256hex(text){
 }
 
 /* ---------------------------
-   Utility helpers
+   Utilities
    --------------------------- */
 function toISODate(d){ if(!d) return null; const y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2); return `${y}-${m}-${day}`; }
 function nowTs(){ return Date.now(); }
@@ -292,26 +497,17 @@ function showToast(msg, time=1800){ const el = document.createElement('div'); el
 /* ---------------------------
    App state
    --------------------------- */
-let state = {
-  entries: [],       // all entries loaded from DB
-  selection: new Set(),
-  unlocked: true,    // will be set by security logic
-  editingId: null
-};
+let state = { entries: [], selection: new Set(), unlocked: true, editingId: null };
 
 /* ---------------------------
-   Load entries and render
+   Load / Render
    --------------------------- */
 async function loadEntries(){
   const all = await idbGetAll('data');
-  // ensure entries have consistent structure: { id, type:'journal', title, text, date(iso), mood, tags:[...], ts, favorite:boolean, deleted:boolean, deletedAt }
-  state.entries = (all.filter(x => x.type === 'journal')).sort((a,b)=> (b.ts||0) - (a.ts||0));
+  state.entries = (Array.isArray(all) ? all.filter(x => x && x.type === 'journal') : []).sort((a,b)=> (b.ts||0) - (a.ts||0));
 }
 
-function parseTags(s){
-  if(!s) return [];
-  return s.split(',').map(x => x.trim()).filter(Boolean).slice(0,6);
-}
+function parseTags(s){ if(!s) return []; return s.split(',').map(x=>x.trim()).filter(Boolean).slice(0,6); }
 
 function renderEntries(){
   const container = document.getElementById('entriesContainer');
@@ -321,11 +517,10 @@ function renderEntries(){
 
   let list = state.entries.slice();
 
-  // apply filter
   if(filter === 'favorites') list = list.filter(e=> e.favorite);
   else if(filter === 'trash') list = list.filter(e=> e.deleted);
   else if(filter === 'notes') list = list.filter(e=> !e.deleted);
-  // apply search
+
   if(search){
     list = list.filter(e => {
       const hay = ((e.title||'') + ' ' + (e.text||'') + ' ' + (e.tags||[]).join(' ') + ' ' + (e.date||'')).toLowerCase();
@@ -339,26 +534,19 @@ function renderEntries(){
   }
 
   list.forEach(e => {
-    const el = document.createElement('div');
-    el.className = 'entry';
-    el.dataset.id = e.id;
+    const el = document.createElement('div'); el.className = 'entry'; el.dataset.id = e.id;
     const head = document.createElement('div'); head.className='entry head';
     const left = document.createElement('div');
-    const title = document.createElement('div'); title.innerHTML = `<strong>${e.title ? e.title : (e.text ? e.text.slice(0,32) : 'Untitled')}</strong>`;
+    const title = document.createElement('div'); title.innerHTML = `<strong style="font-size:15px">${e.title ? escapeHtml(e.title) : (e.text ? escapeHtml(e.text).slice(0,32) : 'Untitled')}</strong>`;
     const meta = document.createElement('div'); meta.className='meta-row muted-sm';
     const dateText = e.date ? e.date : new Date(e.ts).toLocaleString();
-    meta.innerHTML = `<span class="muted-xs">${dateText}</span> ${e.mood ? '<span class="mood">'+e.mood+'</span>' : ''} ${e.favorite ? '<span class="tag" style="background:rgba(245,158,11,0.12);color:#F59E0B">★ favorite</span>' : ''} ${e.deleted ? '<span class="tag" style="background:rgba(239,68,68,0.06);color:#ef4444">Trash</span>' : ''}`;
+    meta.innerHTML = `<span class="muted-xs">${dateText}</span> ${e.mood ? '<span class="mood">'+escapeHtml(e.mood)+'</span>' : ''} ${e.favorite ? '<span class="tag" style="background:rgba(245,158,11,0.12);color:#F59E0B">★ favorite</span>' : ''} ${e.deleted ? '<span class="tag" style="background:rgba(239,68,68,0.06);color:#ef4444">Trash</span>' : ''}`;
     left.appendChild(title); left.appendChild(meta);
 
-    const right = document.createElement('div');
-    right.style.display = 'flex'; right.style.gap = '8px'; right.style.alignItems = 'center';
-
+    const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
     const check = document.createElement('input'); check.type='checkbox'; check.style.width='18px'; check.style.height='18px';
     check.checked = state.selection.has(e.id);
-    check.addEventListener('change', (ev) => {
-      if(ev.target.checked) state.selection.add(e.id); else state.selection.delete(e.id);
-      refreshSelectionBar();
-    });
+    check.addEventListener('change', (ev) => { if(ev.target.checked) state.selection.add(e.id); else state.selection.delete(e.id); refreshSelectionBar(); });
     right.appendChild(check);
 
     const favBtn = document.createElement('button'); favBtn.className='btn ghost'; favBtn.innerHTML = e.favorite ? '★' : '☆';
@@ -381,8 +569,7 @@ function renderEntries(){
     });
     right.appendChild(delBtn);
 
-    head.appendChild(left); head.appendChild(right);
-    el.appendChild(head);
+    head.appendChild(left); head.appendChild(right); el.appendChild(head);
 
     const preview = document.createElement('div'); preview.className='preview'; preview.textContent = e.text || '';
     el.appendChild(preview);
@@ -398,60 +585,41 @@ function renderEntries(){
   refreshSelectionBar();
 }
 
+/* small escape helper for title injection */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
+
 /* ---------------------------
    Selection bar and bulk actions
    --------------------------- */
-function refreshSelectionBar(){
-  const selBar = document.getElementById('selectionBar');
-  const count = state.selection.size;
-  if(count === 0){ selBar.style.display = 'none'; return; }
-  selBar.style.display = 'flex';
-  document.getElementById('selectionCount').textContent = `${count} selected`;
-}
+function refreshSelectionBar(){ const selBar = document.getElementById('selectionBar'); const count = state.selection.size; if(count === 0){ selBar.style.display = 'none'; return; } selBar.style.display = 'flex'; document.getElementById('selectionCount').textContent = `${count} selected`; }
 
-document.getElementById('bulkMoveTrash').addEventListener('click', async ()=>{ 
-  if(state.selection.size === 0) return;
-  if(!confirm('Move selected entries to Trash?')) return;
-  for(const id of Array.from(state.selection)){
-    const e = state.entries.find(x=>x.id===id);
-    if(e){ e.deleted = true; e.deletedAt = Date.now(); await idbPut('data', e); }
-  }
-  state.selection.clear();
-  await loadEntries(); renderEntries(); showToast('Moved to Trash');
-});
-document.getElementById('bulkRestore').addEventListener('click', async ()=>{ 
-  if(state.selection.size === 0) return;
-  for(const id of Array.from(state.selection)){
-    const e = state.entries.find(x=>x.id===id);
-    if(e){ e.deleted = false; delete e.deletedAt; await idbPut('data', e); }
-  }
-  state.selection.clear();
-  await loadEntries(); renderEntries(); showToast('Restored selected');
-});
-document.getElementById('bulkDelete').addEventListener('click', async ()=>{ 
-  if(state.selection.size === 0) return;
-  if(!confirm('Permanently delete selected entries?')) return;
-  for(const id of Array.from(state.selection)){
-    await idbDelete('data', id);
-  }
-  state.selection.clear();
-  await loadEntries(); renderEntries(); showToast('Permanently deleted');
-});
+document.getElementById('bulkMoveTrash').addEventListener('click', async ()=>{ if(state.selection.size === 0) return; if(!confirm('Move selected entries to Trash?')) return; for(const id of Array.from(state.selection)){ const e = state.entries.find(x=>x.id===id); if(e){ e.deleted = true; e.deletedAt = Date.now(); await idbPut('data', e); } } state.selection.clear(); await loadEntries(); renderEntries(); showToast('Moved to Trash'); });
+
+document.getElementById('bulkRestore').addEventListener('click', async ()=>{ if(state.selection.size === 0) return; for(const id of Array.from(state.selection)){ const e = state.entries.find(x=>x.id===id); if(e){ e.deleted = false; delete e.deletedAt; await idbPut('data', e); } } state.selection.clear(); await loadEntries(); renderEntries(); showToast('Restored selected'); });
+
+document.getElementById('bulkDelete').addEventListener('click', async ()=>{ if(state.selection.size === 0) return; if(!confirm('Permanently delete selected entries?')) return; for(const id of Array.from(state.selection)){ await idbDelete('data', id); } state.selection.clear(); await loadEntries(); renderEntries(); showToast('Permanently deleted'); });
 
 /* ---------------------------
-   Create / Save / Clear entry
+   Save / Clear entry (with robust fallback)
    --------------------------- */
 async function saveNewEntry(){
-  const title = document.getElementById('entryTitle').value.trim();
-  const text = document.getElementById('entryText').value.trim();
-  const date = document.getElementById('entryDate').value || toISODate(new Date());
-  const mood = document.getElementById('entryMood').value || '';
-  const tags = parseTags(document.getElementById('entryTags').value || '');
-  if(!text && !title){ alert('Write something or add a title before saving'); return; }
-  const ent = { id: uid('journal'), type:'journal', title, text, date, mood, tags, ts: nowTs(), favorite:false, deleted:false };
-  await idbPut('data', ent);
-  await loadEntries(); renderEntries();
-  document.getElementById('entryTitle').value=''; document.getElementById('entryText').value=''; document.getElementById('entryTags').value=''; showToast('Saved');
+  try{
+    const title = document.getElementById('entryTitle').value.trim();
+    const text = document.getElementById('entryText').value.trim();
+    const date = document.getElementById('entryDate').value || toISODate(new Date());
+    const mood = document.getElementById('entryMood').value || '';
+    const tags = parseTags(document.getElementById('entryTags').value || '');
+    if(!text && !title){ alert('Write something or add a title before saving'); return; }
+    const ent = { id: uid('journal'), type:'journal', title, text, date, mood, tags, ts: nowTs(), favorite:false, deleted:false };
+    await idbPut('data', ent);           // will fallback to localStorage if IDB fails
+    await loadEntries();
+    renderEntries();
+    document.getElementById('entryTitle').value=''; document.getElementById('entryText').value=''; document.getElementById('entryTags').value='';
+    showToast('Saved');
+  }catch(err){
+    console.error('Save failed', err);
+    alert('Could not save entry. Please try again. If this repeats, check storage permissions or try another browser.');
+  }
 }
 
 document.getElementById('saveEntry').addEventListener('click', saveNewEntry);
@@ -462,7 +630,7 @@ document.getElementById('newQuick').addEventListener('click', ()=>{ document.get
 document.getElementById('todayQuick').addEventListener('click', async ()=>{ document.getElementById('entryDate').value = toISODate(new Date()); document.getElementById('entryText').value = ''; document.getElementById('entryTitle').value = `Note — ${new Date().toLocaleDateString()}`; });
 document.getElementById('favQuick').addEventListener('click', ()=>{ document.getElementById('filterSelect').value='favorites'; renderEntries(); });
 
-/* search and filter */
+/* search & filter */
 document.getElementById('searchInput').addEventListener('input', ()=> renderEntries());
 document.getElementById('filterSelect').addEventListener('change', ()=> renderEntries());
 
@@ -476,16 +644,11 @@ function openEditModal(entry){
   document.getElementById('editDate').value = entry.date || toISODate(new Date(entry.ts));
   document.getElementById('editMood').value = entry.mood || '';
   document.getElementById('editTags').value = (entry.tags || []).join(', ');
-  document.getElementById('editModal').classList.add('visible'); document.getElementById('editModal').style.visibility='visible'; document.getElementById('editModal').style.opacity=1;
-  document.getElementById('editModal').setAttribute('aria-hidden','false');
+  const m = document.getElementById('editModal'); m.classList.add('visible'); m.setAttribute('aria-hidden','false');
 }
 
 document.getElementById('cancelEdit').addEventListener('click', closeEditModal);
-function closeEditModal(){
-  state.editingId = null;
-  document.getElementById('editModal').classList.remove('visible'); document.getElementById('editModal').style.visibility='hidden'; document.getElementById('editModal').style.opacity=0;
-  document.getElementById('editModal').setAttribute('aria-hidden','true');
-}
+function closeEditModal(){ state.editingId = null; const m = document.getElementById('editModal'); m.classList.remove('visible'); m.setAttribute('aria-hidden','true'); }
 
 document.getElementById('saveEdit').addEventListener('click', async ()=>{
   const id = state.editingId; if(!id) return;
@@ -521,7 +684,6 @@ document.getElementById('importBtn').addEventListener('click', ()=> {
       const obj = JSON.parse(text);
       if(obj.data && Array.isArray(obj.data)){
         for(const item of obj.data){
-          // avoid duplicates by id; if id exists skip
           const existing = await idbGet('data', item.id);
           if(!existing) await idbPut('data', item);
         }
@@ -533,30 +695,24 @@ document.getElementById('importBtn').addEventListener('click', ()=> {
 });
 
 /* ---------------------------
-   Settings modal (security)
+   Settings / Security logic
    --------------------------- */
 document.getElementById('settingsBtn').addEventListener('click', async ()=> {
-  // load current security state
   const sec = await idbGet('settings','journal.security');
   document.getElementById('secEnable').value = (sec && sec.value && sec.value.enabled) ? 'yes' : 'no';
   if(sec && sec.value && sec.value.custom) document.getElementById('secCustomQ').value = sec.value.customQuestion || '';
   document.getElementById('secCustomQ').style.display = (sec && sec.value && sec.value.questionKey === 'custom') ? 'block' : 'none';
-  document.getElementById('settingsModal').classList.add('visible'); document.getElementById('settingsModal').style.visibility='visible'; document.getElementById('settingsModal').style.opacity=1; document.getElementById('settingsModal').setAttribute('aria-hidden','false');
+  const m = document.getElementById('settingsModal'); m.classList.add('visible'); m.setAttribute('aria-hidden','false');
 });
-document.getElementById('closeSettings').addEventListener('click', ()=> {
-  document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').style.visibility='hidden'; document.getElementById('settingsModal').style.opacity=0; document.getElementById('settingsModal').setAttribute('aria-hidden','true');
-});
+document.getElementById('closeSettings').addEventListener('click', ()=> { const m = document.getElementById('settingsModal'); m.classList.remove('visible'); m.setAttribute('aria-hidden','true'); });
 
-document.getElementById('secQuestion').addEventListener('change', (e)=> {
-  document.getElementById('secCustomQ').style.display = e.target.value === 'custom' ? 'block' : 'none';
-});
+document.getElementById('secQuestion').addEventListener('change', (e)=> { document.getElementById('secCustomQ').style.display = e.target.value === 'custom' ? 'block' : 'none'; });
 
 document.getElementById('saveSecurity').addEventListener('click', async ()=>{
   const enabled = document.getElementById('secEnable').value === 'yes';
   if(!enabled){
     await idbPut('settings', { key:'journal.security', value: { enabled:false }});
-    showToast('Security disabled');
-    return;
+    showToast('Security disabled'); return;
   }
   const qKey = document.getElementById('secQuestion').value;
   const customQ = document.getElementById('secCustomQ').value.trim();
@@ -569,34 +725,23 @@ document.getElementById('saveSecurity').addEventListener('click', async ()=>{
   document.getElementById('secAnswer').value = '';
 });
 
-document.getElementById('removeSecurity').addEventListener('click', async ()=>{
-  if(!confirm('Remove the journal security question?')) return;
-  await idbPut('settings', { key:'journal.security', value: { enabled:false }});
-  showToast('Security removed');
-});
+document.getElementById('removeSecurity').addEventListener('click', async ()=>{ if(!confirm('Remove the journal security question?')) return; await idbPut('settings', { key:'journal.security', value: { enabled:false }}); showToast('Security removed'); });
 
 /* ---------------------------
-   Unlock flow on load if security enabled
+   Unlock on load if security enabled
    --------------------------- */
 async function checkSecurityOnLoad(){
   const sec = await idbGet('settings','journal.security');
   if(sec && sec.value && sec.value.enabled){
-    // show unlock modal and block interaction
-    document.getElementById('unlockModal').classList.add('visible'); document.getElementById('unlockModal').style.visibility='visible'; document.getElementById('unlockModal').style.opacity=1; document.getElementById('unlockModal').setAttribute('aria-hidden','false');
-    // populate question
+    const m = document.getElementById('unlockModal'); m.classList.add('visible'); m.setAttribute('aria-hidden','false');
     const k = sec.value.questionKey;
     const q = k === 'custom' ? (sec.value.customQuestion || 'Security question') : (k === 'pet' ? "What was your first pet's name?" : k === 'city' ? "What city were you born in?" : "What is your mother's maiden name?");
     document.getElementById('unlockQuestion').textContent = q;
     state.unlocked = false;
-  } else {
-    state.unlocked = true;
-  }
+  } else state.unlocked = true;
 }
 
-document.getElementById('unlockCancel').addEventListener('click', ()=> {
-  // keep locked but hide prompt? We'll keep it visible and do nothing to prevent access. To be safe we hide UI by overlay:
-  alert('Journal remains locked until you unlock it.');
-});
+document.getElementById('unlockCancel').addEventListener('click', ()=> { alert('Journal remains locked until you unlock it.'); });
 
 document.getElementById('unlockSubmit').addEventListener('click', async ()=>{
   const ans = document.getElementById('unlockAnswer').value || '';
@@ -605,72 +750,27 @@ document.getElementById('unlockSubmit').addEventListener('click', async ()=>{
   const hash = await sha256hex(ans);
   if(hash === sec.value.answerHash){
     state.unlocked = true;
-    document.getElementById('unlockModal').classList.remove('visible');
-    document.getElementById('unlockModal').style.visibility='hidden'; document.getElementById('unlockModal').style.opacity=0;
-    document.getElementById('unlockModal').setAttribute('aria-hidden','true');
-    // load and render now
-    await initLoad();
-    showToast('Unlocked');
-  } else {
-    alert('Incorrect answer');
-  }
+    const m = document.getElementById('unlockModal'); m.classList.remove('visible'); m.setAttribute('aria-hidden','true');
+    await initLoad(); showToast('Unlocked');
+  } else { alert('Incorrect answer'); }
 });
 
 /* ---------------------------
-   Remove all local journal data (danger)
+   Remove all local journal data
    --------------------------- */
-document.getElementById('clearAllBtn').addEventListener('click', async ()=>{
-  if(!confirm('Remove all journal entries and settings for the journal? This cannot be undone.')) return;
-  const all = await idbGetAll('data');
-  for(const it of all.filter(x=>x.type==='journal')) await idbDelete('data', it.id);
-  await idbPut('settings', { key:'journal.security', value: { enabled:false }});
-  // reload state
-  await initLoad();
-  showToast('All journal data removed');
-});
+document.getElementById('clearAllBtn').addEventListener('click', async ()=>{ if(!confirm('Remove all journal entries and settings for the journal? This cannot be undone.')) return; const all = await idbGetAll('data'); for(const it of all.filter(x=>x.type==='journal')) await idbDelete('data', it.id); await idbPut('settings', { key:'journal.security', value: { enabled:false }}); await initLoad(); showToast('All journal data removed'); });
 
 /* ---------------------------
-   Clear caches / service worker messaging
+   Caches / service worker messaging
    --------------------------- */
-document.getElementById('closeCacheBtn').addEventListener('click', async ()=>{
-  if(!confirm('Ask service worker to clear cached assets? App will reload.')) return;
-  if(navigator.serviceWorker && navigator.serviceWorker.controller){
-    navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' });
-  }
-  setTimeout(()=> location.reload(true), 800);
-});
+document.getElementById('closeCacheBtn').addEventListener('click', async ()=>{ if(!confirm('Ask service worker to clear cached assets? App will reload.')) return; if(navigator.serviceWorker && navigator.serviceWorker.controller){ navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' }); } setTimeout(()=> location.reload(true), 800); });
 
 /* ---------------------------
-   Page mode / theme handling
+   Theme, mode and font-size handling
    --------------------------- */
-document.getElementById('modeSelect').addEventListener('change', (e)=>{
-  const mode = e.target.value;
-  document.body.classList.remove('notebook');
-  if(mode === 'notebook'){ document.body.classList.add('notebook'); }
-  else if(mode === 'night'){
-    // apply night theme variables
-    document.documentElement.style.setProperty('--bg', '#071022');
-    document.documentElement.style.setProperty('--card', '#071a2a');
-    document.documentElement.style.setProperty('--text', '#E6EEF6');
-    document.documentElement.style.setProperty('--muted', '#9AA4B2');
-    document.documentElement.style.setProperty('--accent', '#7C3AED');
-    document.documentElement.style.setProperty('--accent-2', '#4F46E5');
-  } else {
-    // reset to default light theme
-    document.documentElement.style.removeProperty('--bg');
-    document.documentElement.style.removeProperty('--card');
-    document.documentElement.style.removeProperty('--text');
-    document.documentElement.style.removeProperty('--muted');
-    document.documentElement.style.removeProperty('--accent');
-    document.documentElement.style.removeProperty('--accent-2');
-  }
-});
+document.getElementById('modeSelect').addEventListener('change', (e)=>{ const mode = e.target.value; document.body.classList.remove('notebook'); if(mode === 'notebook'){ document.body.classList.add('notebook'); } else if(mode === 'night'){ document.documentElement.style.setProperty('--bg', '#0b1220'); document.documentElement.style.setProperty('--card', '#071022'); document.documentElement.style.setProperty('--text', '#e6eef6'); document.documentElement.style.setProperty('--muted', '#9AA4B2'); } else { document.documentElement.style.removeProperty('--bg'); document.documentElement.style.removeProperty('--card'); document.documentElement.style.removeProperty('--text'); document.documentElement.style.removeProperty('--muted'); } });
 
-/* font size */
-document.getElementById('fontSize').addEventListener('change', (e)=>{
-  const v = Number(e.target.value) || 15;
-  document.documentElement.style.setProperty('font-size', v + 'px');
-});
+document.getElementById('fontSize').addEventListener('change', (e)=>{ const v = Number(e.target.value) || 17; document.documentElement.style.setProperty('font-size', v + 'px'); });
 
 /* ---------------------------
    Home FAB
@@ -678,22 +778,20 @@ document.getElementById('fontSize').addEventListener('change', (e)=>{
 document.getElementById('homeBtn').addEventListener('click', ()=> location.href='index.html');
 
 /* ---------------------------
-   Init: load entries and apply security
+   Init
    --------------------------- */
-async function initLoad(){
-  await loadEntries();
-  renderEntries();
-}
+async function initLoad(){ await loadEntries(); renderEntries(); }
 
-// On initial load: check journal-specific security; if unlocked then init; otherwise wait for unlock
+// initial boot: check security then load
 (async function boot(){
   await checkSecurityOnLoad();
   if(state.unlocked){
     await initLoad();
   } else {
-    // keep app locked until unlock — nothing to render
+    // stay locked until unlock
   }
 })();
+
 </script>
 </body>
 </html>

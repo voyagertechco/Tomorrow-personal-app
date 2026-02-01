@@ -71,8 +71,11 @@
   .selection-bar{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(14,165,164,0.06);color:var(--accent);font-weight:600}
 
   /* modal backdrop */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s}
-  .modal-backdrop.visible{visibility:visible;opacity:1}
+  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s;
+    /* allow clicks through when hidden; only capture when modal is visible */
+    pointer-events: none;
+  }
+  .modal-backdrop.visible{visibility:visible;opacity:1;pointer-events:auto}
   .modal{background:var(--card);padding:14px;border-radius:12px;max-width:520px;width:92%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
 
   /* bottom home FAB */
@@ -406,7 +409,7 @@ function refreshSelectionBar(){
   document.getElementById('selectionCount').textContent = `${count} selected`;
 }
 
-document.getElementById('bulkMoveTrash').addEventListener('click', async ()=>{
+document.getElementById('bulkMoveTrash').addEventListener('click', async ()=>{ 
   if(state.selection.size === 0) return;
   if(!confirm('Move selected entries to Trash?')) return;
   for(const id of Array.from(state.selection)){
@@ -416,7 +419,7 @@ document.getElementById('bulkMoveTrash').addEventListener('click', async ()=>{
   state.selection.clear();
   await loadEntries(); renderEntries(); showToast('Moved to Trash');
 });
-document.getElementById('bulkRestore').addEventListener('click', async ()=>{
+document.getElementById('bulkRestore').addEventListener('click', async ()=>{ 
   if(state.selection.size === 0) return;
   for(const id of Array.from(state.selection)){
     const e = state.entries.find(x=>x.id===id);
@@ -425,7 +428,7 @@ document.getElementById('bulkRestore').addEventListener('click', async ()=>{
   state.selection.clear();
   await loadEntries(); renderEntries(); showToast('Restored selected');
 });
-document.getElementById('bulkDelete').addEventListener('click', async ()=>{
+document.getElementById('bulkDelete').addEventListener('click', async ()=>{ 
   if(state.selection.size === 0) return;
   if(!confirm('Permanently delete selected entries?')) return;
   for(const id of Array.from(state.selection)){

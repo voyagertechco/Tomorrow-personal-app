@@ -4,15 +4,13 @@ app.py - Tomorrow PWA backend + Admin UI (LAN-only)
 
 Drop-in replacement you can copy as-is. Key improvements compared to your draft:
  - ADMIN_PATH is honored everywhere (admin HTML, export path, links).
- - Robust parsing and safe storage of `meta.age` and `meta.gender` (no forced casts; validated and merged).
+ - Robust parsing and safe storage of `meta.age` and `meta.gender`.
  - Admin shows all users (no filtering by online) and handles null/missing fields safely.
  - Extra HTML-escaping when rendering admin page to avoid template breakages from user data.
  - Defensive DB access & exception handling to avoid 500s from malformed rows.
- - Preserves reports, commands, keepalive, messages, and client APIs.
-
-Run: python app.py
+ - /pulse_receiver accepts POST/GET pulses, updates keepalive, and stores a report row.
+ - DOES NOT forward pulses back (no circular pings).
 """
-
 import os
 import json
 import csv
@@ -374,7 +372,7 @@ def api_register():
     return jsonify({"ok": True, "user": row_to_user_dict(row)}), 200
 
 
-@app.route("/api/ping", methods=["POST"]) 
+@app.route("/api/ping", methods=["POST"])
 def api_ping():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
@@ -409,7 +407,7 @@ def api_ping():
     }), 200
 
 
-@app.route("/api/status", methods=["GET"]) 
+@app.route("/api/status", methods=["GET"])
 def api_status():
     email = (request.args.get("email") or "").strip().lower()
     if not email:
@@ -431,7 +429,7 @@ def api_status():
 
 
 # --- NEW: client -> server reports
-@app.route("/api/report", methods=["POST"]) 
+@app.route("/api/report", methods=["POST"])
 def api_report():
     data = request.get_json(silent=True) or {}
     report_type = (data.get("reportType") or data.get("report_type") or "generic").strip()
@@ -455,7 +453,7 @@ def api_report():
 
 
 # --- NEW: clients poll for commands
-@app.route("/api/commands", methods=["GET"]) 
+@app.route("/api/commands", methods=["GET"])
 def api_commands():
     email = (request.args.get("email") or "").strip().lower() or None
     client_id = (request.args.get("client_id") or "").strip() or None
@@ -503,7 +501,7 @@ def api_commands():
 # -----------------------
 # Messages & notifications
 # -----------------------
-@app.route("/api/messages", methods=["GET"]) 
+@app.route("/api/messages", methods=["GET"])
 def api_get_messages():
     email = (request.args.get("email") or "").strip().lower()
     if not email:
@@ -532,7 +530,7 @@ def api_get_messages():
     return jsonify({"ok": True, "messages": out}), 200
 
 
-@app.route("/api/messages/dismiss", methods=["POST"]) 
+@app.route("/api/messages/dismiss", methods=["POST"])
 def api_dismiss_message():
     data = request.get_json(silent=True) or {}
     email = (data.get("email") or "").strip().lower()
@@ -603,7 +601,7 @@ def background_heartbeat_loop():
         time.sleep(max(10, KEEPALIVE_INTERVAL))
 
 
-@app.route("/api/keepalive_status", methods=["GET"]) 
+@app.route("/api/keepalive_status", methods=["GET"])
 def api_keepalive_status():
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -622,7 +620,7 @@ def api_keepalive_status():
 # -----------------------
 # Admin UI (LAN-only) — route depends on ADMIN_PATH
 # -----------------------
-@app.route(f"/{ADMIN_PATH}", methods=["GET", "POST"]) 
+@app.route(f"/{ADMIN_PATH}", methods=["GET", "POST"])
 def admin_dashboard():
     require_lan_admin()
     db = get_db()
@@ -989,7 +987,7 @@ def export_reports():
 # -----------------------
 # Health, keepalive pages
 # -----------------------
-@app.route("/api/health", methods=["GET"]) 
+@app.route("/api/health", methods=["GET"])
 def api_health():
     return jsonify({"ok": True, "time": now_iso()}), 200
 
@@ -1001,6 +999,7 @@ def pulse_receiver():
     """
     Receive an external pulse (from breathe) and update the keepalive table.
     If PULSE_SECRET is set, require header X-PULSE-TOKEN or ?token=... to match.
+    Stores a small report row for auditing. DOES NOT forward the pulse (prevents circular pings).
     Returns JSON {status, received_at}.
     """
     token = request.headers.get("X-PULSE-TOKEN") or request.args.get("token")
@@ -1014,6 +1013,7 @@ def pulse_receiver():
         payload = request.form.to_dict() or {"message": "ping"}
 
     now = now_iso()
+
     # Persist a quick keepalive touch (separate key so you can distinguish internal heartbeat)
     try:
         conn = sqlite3.connect(DB_PATH)
@@ -1029,17 +1029,24 @@ def pulse_receiver():
     except Exception as e:
         logger.exception("pulse_receiver DB touch failed: %s", e)
 
-    # Optionally, store the payload in the reports table for later inspection (uncomment if you want)
-    # try:
-    #     db = get_db()
-    #     cur = db.cursor()
-    #     cur.execute("INSERT INTO reports (email, report_type, payload, created_at, client_ip, user_agent) VALUES (?, ?, ?, ?, ?, ?)",
-    #                 (None, "external_pulse", json.dumps(payload), now, request.remote_addr or "", request.headers.get("User-Agent","")[:512]))
-    #     db.commit()
-    # except Exception:
-    #     logger.exception("Failed to store external pulse in reports")
+    # Store a small entry in reports table so admin UI can show incoming pulses
+    try:
+        db = get_db()
+        cur = db.cursor()
+        ua = request.headers.get("User-Agent", "")[:512]
+        client_ip = get_client_ip()
+        cur.execute("""
+            INSERT INTO reports (email, report_type, payload, created_at, client_ip, user_agent)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (None, "external_pulse", json.dumps(payload), now, client_ip, ua))
+        db.commit()
+    except Exception as e:
+        logger.exception("Failed to store external pulse as report: %s", e)
+
+    # IMPORTANT: DO NOT forward the pulse automatically to avoid circular pings.
 
     return jsonify({"status": "ok", "received_at": now}), 200
+
 
 @app.route("/babra-pixel")
 def babra_pixel():
@@ -1077,4 +1084,3 @@ if __name__ == "__main__":
         start_keepalive_thread()
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
     app.run(host=APP_HOST, port=APP_PORT, debug=debug_mode)
-

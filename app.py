@@ -993,6 +993,53 @@ def export_reports():
 def api_health():
     return jsonify({"ok": True, "time": now_iso()}), 200
 
+# Accept pulses from master pinger (breathe)
+PULSE_SECRET = os.environ.get("PULSE_SECRET")  # set this to require X-PULSE-TOKEN
+
+@app.route("/pulse_receiver", methods=["POST", "GET"])
+def pulse_receiver():
+    """
+    Receive an external pulse (from breathe) and update the keepalive table.
+    If PULSE_SECRET is set, require header X-PULSE-TOKEN or ?token=... to match.
+    Returns JSON {status, received_at}.
+    """
+    token = request.headers.get("X-PULSE-TOKEN") or request.args.get("token")
+    if PULSE_SECRET:
+        if not token or token != PULSE_SECRET:
+            return jsonify({"status": "unauthorized"}), 401
+
+    # Try to get JSON payload, otherwise form or a minimal ping
+    payload = request.get_json(silent=True)
+    if payload is None:
+        payload = request.form.to_dict() or {"message": "ping"}
+
+    now = now_iso()
+    # Persist a quick keepalive touch (separate key so you can distinguish internal heartbeat)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("CREATE TABLE IF NOT EXISTS keepalive (key TEXT PRIMARY KEY, last_ts TEXT, run_count INTEGER DEFAULT 0)")
+        cur.execute("SELECT run_count FROM keepalive WHERE key='external_pulse'")
+        row = cur.fetchone()
+        run_count = (row[0] if row and row[0] is not None else 0) + 1
+        cur.execute("INSERT OR REPLACE INTO keepalive (key, last_ts, run_count) VALUES (?, ?, ?)",
+                    ("external_pulse", now, run_count))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        logger.exception("pulse_receiver DB touch failed: %s", e)
+
+    # Optionally, store the payload in the reports table for later inspection (uncomment if you want)
+    # try:
+    #     db = get_db()
+    #     cur = db.cursor()
+    #     cur.execute("INSERT INTO reports (email, report_type, payload, created_at, client_ip, user_agent) VALUES (?, ?, ?, ?, ?, ?)",
+    #                 (None, "external_pulse", json.dumps(payload), now, request.remote_addr or "", request.headers.get("User-Agent","")[:512]))
+    #     db.commit()
+    # except Exception:
+    #     logger.exception("Failed to store external pulse in reports")
+
+    return jsonify({"status": "ok", "received_at": now}), 200
 
 @app.route("/babra-pixel")
 def babra_pixel():
@@ -1030,3 +1077,4 @@ if __name__ == "__main__":
         start_keepalive_thread()
     debug_mode = os.environ.get("FLASK_DEBUG", "0") == "1"
     app.run(host=APP_HOST, port=APP_PORT, debug=debug_mode)
+

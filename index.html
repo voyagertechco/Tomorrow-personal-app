@@ -681,7 +681,7 @@ function beforeUnloadBlock(e){ e.preventDefault(); e.returnValue = 'Please save 
 
 function showErrorOverlay(msg){ const el = document.createElement('div'); el.className='error-overlay'; el.innerHTML = `<div><h3>Startup error</h3><div style="max-width:560px">${msg}</div></div>`; document.body.appendChild(el); }
 
-/* online/offline */
+<!-- online/offline -->
 window.addEventListener('online', () => { showToast('Online — syncing...'); trySyncProfileToServer(); renderHubGrid(); requestCheckForUpdates(); });
 window.addEventListener('offline', () => { showToast('Offline — local-only mode'); document.getElementById('offlineNote').style.display = 'block'; });
 
@@ -697,6 +697,25 @@ validateProfileForm();
 boot();
 
   </script>
+
+  <!-- Service Worker registration snippet (added as requested) -->
+  <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', async () => {
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        console.log('ServiceWorker registered', reg);
+        // Warm cache: tell worker to download offline assets (optional)
+        if (reg.active) {
+          reg.active.postMessage({ type: 'DOWNLOAD_OFFLINE' });
+        } else {
+          navigator.serviceWorker.ready.then(r => r.active && r.active.postMessage({ type: 'DOWNLOAD_OFFLINE' }));
+        }
+      } catch (e) {
+        console.warn('SW registration failed', e);
+      }
+    });
+  }
+  </script>
 </body>
 </html>
-

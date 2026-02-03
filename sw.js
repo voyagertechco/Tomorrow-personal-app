@@ -1,4 +1,4 @@
-// sw.js — Tomorrow PWA (improved)
+// sw.js — Tomorrow PWA (improved, universal HTML caching + update-friendly)
 const CACHE_VERSION = 'v4'; // bump on deploy or when assets change
 const SHELL = `tomorrow-shell-${CACHE_VERSION}`;
 const RUNTIME = `tomorrow-runtime-${CACHE_VERSION}`;
@@ -6,9 +6,9 @@ const RUNTIME = `tomorrow-runtime-${CACHE_VERSION}`;
 const ASSETS_TO_CACHE = [
   '/', '/index.html', '/offline.html', '/manifest.json',
   '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-icon-512.png',
-  // app assets — list your actual hashed filenames in production
+  // common app assets (add your real hashed filenames in production)
   '/styles.css', '/app.js',
-  // hub pages (cache warm)
+  // optional "warm" pages (these will be pre-cached at install)
   '/finance.html','/goals.html','/habits.html','/journal.html',
   '/task_reminders.html','/wishlist_health.html','/menustral_tracking.html','/export.html'
 ];
@@ -96,26 +96,31 @@ self.addEventListener('fetch', (event) => {
     // network-first for navigations: prefer network, fallback to cache
     event.respondWith((async () => {
       try {
+        // try navigation preload first (fast)
         const preload = await event.preloadResponse;
         if (preload) {
-          // cache the navigation shell and return
-          try { const cache = await caches.open(SHELL); await cache.put('/', preload.clone()); } catch (e) {}
+          try {
+            const cache = await caches.open(SHELL);
+            // cache the specific navigation URL (so any HTML page is cached)
+            await cache.put(req, preload.clone());
+          } catch (e) {}
           return preload;
         }
 
+        // fetch from network
         const networkResp = await fetch(req);
+        // if success, cache the actual requested HTML page (not just '/')
         try {
           const cache = await caches.open(SHELL);
           if (networkResp && (networkResp.ok || networkResp.type === 'opaque')) {
-            // update the shell cache so offline can serve latest
-            await cache.put('/', networkResp.clone());
+            await cache.put(req, networkResp.clone());
           }
         } catch (e) {}
         return networkResp;
       } catch (err) {
-        // offline fallback
+        // offline fallback -> try the exact cached URL, then index, then offline.html
         const cache = await caches.open(SHELL);
-        const fallback = await cache.match('/') || await cache.match('/index.html') || await cache.match('/offline.html');
+        const fallback = await cache.match(req) || await cache.match('/index.html') || await cache.match('/offline.html');
         if (fallback) return fallback;
         return new Response('<h1>Offline</h1><p>Unable to reach network and no cached content.</p>', { headers: { 'Content-Type': 'text/html' }, status: 503 });
       }

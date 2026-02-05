@@ -1,70 +1,294 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta charset="utf-8"/>
 <title>Habits — Tomorrow</title>
 <style>
-body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
-.header{padding:14px;background:linear-gradient(90deg,#10B981,#059669);color:white;border-radius:0 0 18px 18px}
-.container{padding:14px}
-.card{background:white;padding:14px;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
-.habit{padding:10px 0;border-bottom:1px solid #eee}
-.btn{padding:10px;border-radius:12px;border:0;background:#10B981;color:white;width:100%}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center}
+  /* Phone-first, accessible / large typography and touch targets */
+  :root{
+    --bg:#FFF8F1;
+    --muted:#3B2F2F;
+    --accent:#10B981;
+    --card:#FFFFFF;
+    --radius:16px;
+    --gap:14px;
+    --base-font:18px; /* good default for older eyes */
+  }
+
+  html { font-size: var(--base-font); -webkit-text-size-adjust: 100%; }
+  body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;color:var(--muted);line-height:1.35}
+  .header{
+    padding:16px 18px;
+    background:linear-gradient(90deg,#10B981,#059669);
+    color:white;
+    border-radius:0 0 18px 18px;
+  }
+  .header h1{margin:0;font-size:1.6rem;letter-spacing:0.5px}
+  .header small{opacity:.95;font-size:1rem}
+
+  .container{padding:var(--gap);padding-bottom:96px} /* leave space for bottom nav */
+  .card{background:var(--card);padding:14px;border-radius:var(--radius);margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
+  .card .row{display:flex;gap:8px;align-items:center}
+  input[type="text"]{
+    flex:1;
+    font-size:1.05rem;
+    padding:12px 14px;
+    border-radius:12px;
+    border:1px solid #eee;
+    outline:none;
+  }
+  input[type="text"]:focus{box-shadow:0 0 0 3px rgba(16,185,129,0.12);border-color:var(--accent)}
+
+  .btn{
+    padding:12px;border-radius:12px;border:0;background:var(--accent);color:white;width:100%;font-size:1.05rem;
+    display:inline-block;text-align:center;
+  }
+  .btn.small{padding:8px 10px;font-size:0.95rem;border-radius:10px}
+  .habit{padding:12px 0;border-bottom:1px solid #f3f3f3;display:flex;flex-direction:column}
+  .habit .title{font-size:1.05rem;font-weight:600}
+  .habit .meta{font-size:0.95rem;color:#6b5f5f;margin-top:6px}
+  .habit .controls{margin-top:10px;display:flex;gap:8px}
+  .control-btn{flex:1;padding:10px;border-radius:12px;border:0;font-size:0.95rem}
+  .control-done{background:#059669;color:white}
+  .control-delete{background:#F87171;color:white}
+  .control-edit{background:#FBBF24;color:#3b2f2f}
+
+  .empty{padding:18px;text-align:center;color:#7a6b6b;font-size:1rem}
+
+  .bottom-nav{
+    position:fixed;bottom:0;left:0;right:0;background:white;padding:10px 12px;text-align:center;border-top:1px solid #eee;
+    display:flex;gap:10px;align-items:center;justify-content:center;
+  }
+  .bottom-nav a{font-size:1.3rem;text-decoration:none}
+
+  /* larger layout on tablets/desktop */
+  @media(min-width:720px){
+    :root{--base-font:16px}
+    .container{max-width:720px;margin:0 auto}
+    .header h1{font-size:1.8rem}
+  }
 </style>
 </head>
 <body>
 
 <div class="header">
   <h1>Habits</h1>
-  <small>Build consistency daily</small>
+  <small>Build consistency — one day at a time</small>
 </div>
 
 <div class="container">
-  <div class="card">
-    <input id="habitText" placeholder="New habit e.g Drink water"/>
-    <button class="btn" onclick="addHabit()" style="margin-top:8px">Add Habit</button>
+  <div class="card" aria-label="Add new habit">
+    <div class="row">
+      <input id="habitText" type="text" placeholder="New habit — e.g. Drink water" aria-label="New habit"/>
+      <button id="addBtn" class="btn small" aria-label="Add habit">Add</button>
+    </div>
   </div>
 
-  <div class="card">
+  <div class="card" aria-live="polite">
     <div id="habitsList"></div>
   </div>
 </div>
 
-<div class="bottom-nav"><a href="index.html">🏠</a></div>
+<div class="bottom-nav">
+  <a href="index.html" aria-label="Home">🏠 Home</a>
+</div>
 
 <script>
-const DB='tomorrowai-db';
-function db(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
-async function all(){const d=await db();return new Promise(res=>{const r=d.transaction('data').objectStore('data').getAll();r.onsuccess=e=>res(e.target.result||[]);});}
-async function put(v){const d=await db();d.transaction('data','readwrite').objectStore('data').put(v);}
-async function del(id){const d=await db();d.transaction('data','readwrite').objectStore('data').delete(id);}
+/*
+  Reliable small IndexedDB wrapper + localStorage fallback.
+  - openDB() returns a DB instance
+  - rq(req) wraps IDBRequest into Promise
+  - all()/put()/del() handle data consistently
+  Notes: if you previously have a corrupted DB, clear it in DevTools (instructions below).
+*/
+
+const DB_NAME = 'tomorrowai-db';
+const DB_VERSION = 2;
+const STORE = 'data';
+
+const habitText = document.getElementById('habitText');
+const habitsList = document.getElementById('habitsList');
+const addBtn = document.getElementById('addBtn');
+
+addBtn.addEventListener('click', addHabit);
+habitText.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addHabit(); });
+
+function openDB(){
+  if(!('indexedDB' in window)) return Promise.resolve(null);
+  return new Promise((res, rej)=>{
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e)=>{
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        db.createObjectStore(STORE, { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = e => rej(e.target.error);
+  });
+}
+
+function rq(request){
+  return new Promise((res, rej)=>{
+    request.onsuccess = e => res(e.target.result);
+    request.onerror = e => rej(e.target.error);
+  });
+}
+
+async function all(){
+  // try indexedDB first
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('No IndexedDB');
+    const tx = db.transaction(STORE,'readonly');
+    const store = tx.objectStore(STORE);
+    const result = await rq(store.getAll());
+    return result || [];
+  }catch(err){
+    // fallback to localStorage
+    try{
+      const raw = localStorage.getItem(DB_NAME);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+}
+
+async function put(v){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('No IndexedDB');
+    const tx = db.transaction(STORE,'readwrite');
+    const store = tx.objectStore(STORE);
+    await rq(store.put(v));
+    return true;
+  }catch(err){
+    // fallback: merge into localStorage array
+    try{
+      const arr = await all(); // will read from localStorage fallback
+      const idx = arr.findIndex(x=>x.id===v.id);
+      if(idx >= 0) arr[idx] = v; else arr.push(v);
+      localStorage.setItem(DB_NAME, JSON.stringify(arr));
+      return true;
+    }catch(e){ return false; }
+  }
+}
+
+async function del(id){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('No IndexedDB');
+    const tx = db.transaction(STORE,'readwrite');
+    const store = tx.objectStore(STORE);
+    await rq(store.delete(id));
+    return true;
+  }catch(err){
+    // fallback to localStorage remove
+    try{
+      const arr = await all();
+      const out = arr.filter(x=>x.id !== id);
+      localStorage.setItem(DB_NAME, JSON.stringify(out));
+      return true;
+    }catch(e){ return false; }
+  }
+}
+
+/* Rendering + actions */
+function makeId(){ return 'habit_' + Date.now() + '_' + Math.floor(Math.random()*1000); }
 
 async function render(){
-  const items=(await all()).filter(x=>x.type==='habit');
-  habitsList.innerHTML=items.map(h=>`
-    <div class="habit">
-      <strong>${h.text}</strong><br/>
-      <small>Streak: ${h.streak||0} days</small><br/>
-      <button onclick="markDone('${h.id}')">Done Today</button>
-      <button onclick="remove('${h.id}')">Delete</button>
-    </div>`).join('');
+  const items = (await all()).filter(x=>x.type==='habit');
+  if(!items.length){
+    habitsList.innerHTML = '<div class="empty">No habits yet — add one above.</div>';
+    return;
+  }
+  habitsList.innerHTML = items.map(h=>{
+    const streak = h.streak || 0;
+    const safeText = escapeHtml(h.text);
+    return `
+      <div class="habit" id="${h.id}">
+        <div class="title">${safeText}</div>
+        <div class="meta">Streak: <strong>${streak}</strong> day(s)</div>
+        <div class="controls">
+          <button class="control-btn control-done" data-action="done" data-id="${h.id}">Done Today ✅</button>
+          <button class="control-btn control-edit" data-action="edit" data-id="${h.id}">Edit ✏️</button>
+          <button class="control-btn control-delete" data-action="delete" data-id="${h.id}">Delete 🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+  // attach handlers (delegation would also work)
+  document.querySelectorAll('[data-action]').forEach(btn=>{
+    btn.onclick = (e)=>{
+      const id = e.currentTarget.dataset.id;
+      const action = e.currentTarget.dataset.action;
+      if(action==='done') markDone(id);
+      if(action==='delete') remove(id);
+      if(action==='edit') editHabit(id);
+    };
+  });
 }
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
 async function addHabit(){
-  if(!habitText.value)return;
-  await put({id:'habit_'+Date.now(),type:'habit',text:habitText.value,streak:0,last:null});
-  habitText.value=''; render();
+  const text = habitText.value && habitText.value.trim();
+  if(!text) {
+    habitText.focus();
+    return;
+  }
+  const item = { id: makeId(), type:'habit', text, streak:0, last:null, created: new Date().toISOString() };
+  await put(item);
+  habitText.value = '';
+  render();
 }
+
 async function markDone(id){
-  const items=await all();
-  const h=items.find(x=>x.id===id);
-  if(!h)return;
-  const today=new Date().toDateString();
-  if(h.last!==today){h.streak++; h.last=today;}
-  await put(h); render();
+  const items = await all();
+  const h = items.find(x=>x.id===id);
+  if(!h) return;
+  const today = new Date().toDateString();
+  if(h.last !== today){
+    h.streak = (h.streak || 0) + 1;
+    h.last = today;
+    h.updated = new Date().toISOString();
+    await put(h);
+    render();
+  } else {
+    // already marked today: toggle? here we'll just notify by simple UI change (no alert)
+    const el = document.getElementById(id);
+    if(el) el.querySelector('.meta').textContent = `Streak: ${h.streak} day(s) — already marked today`;
+    setTimeout(render, 1200);
+  }
 }
-async function remove(id){await del(id);render();}
-render();
+
+async function remove(id){
+  if(!confirm('Delete this habit?')) return;
+  await del(id);
+  render();
+}
+
+async function editHabit(id){
+  const items = await all();
+  const h = items.find(x=>x.id===id);
+  if(!h) return;
+  const newText = prompt('Edit habit text:', h.text);
+  if(newText === null) return; // cancelled
+  h.text = newText.trim() || h.text;
+  h.updated = new Date().toISOString();
+  await put(h);
+  render();
+}
+
+/* initialize */
+document.addEventListener('DOMContentLoaded', render);
+
+/* Helpful: if older/corrupt DB exists, user can clear it manually:
+   - Chrome: DevTools → Application → IndexedDB → delete "tomorrowai-db"
+   - Or clear site data.
+   (Only do this if your habits don't reappear after testing.)
+*/
 </script>
 </body>
 </html>

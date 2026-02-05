@@ -1,587 +1,563 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><title>Finance — Tomorrow</title>
-<link rel="manifest" href="/manifest.json"/>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Personal Finance — Tomorrow</title>
 <style>
   :root{
-    --bg:#FFFDF8; --card:#ffffff; --text:#07232a; --muted:#47555a;
-    --accent:#4E9A97; --accent-2:#8fc3b8; --danger:#ef4444;
+    --bg:#FFFDF8; --card:#fff; --muted:#58606a; --text:#07232a;
+    --accent:#1f9d94; --accent-2:#78c7b6; --danger:#ef4444;
     --radius:12px; --shadow:0 10px 30px rgba(10,12,12,0.06);
-    --line:rgba(10,12,12,0.08); --font:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, system-ui, sans-serif;
-    --max-width:920px; --base-font-size:18px; --line-height:1.55;
-    --btn-padding:14px 18px; --pill-size:15px; --tx-font-size:16px;
+    --line:rgba(10,12,12,0.08); --font:system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+    --base:18px; --btn-pad:14px 18px; --pill:14px;
   }
-  html,body{height:100%;margin:0;background:var(--bg);font-family:var(--font);color:var(--text);font-size:var(--base-font-size);-webkit-font-smoothing:antialiased;line-height:var(--line-height);-webkit-text-size-adjust:100%}
-  .app{max-width:var(--max-width);margin:0 auto;padding:18px 16px 120px}
-  header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-  header h1{margin:0;font-size:26px;font-weight:800}
-  header .mini{font-size:15px;color:var(--muted)}
-  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--line)}
+  html,body{height:100%;margin:0;font-family:var(--font);background:var(--bg);color:var(--text);font-size:var(--base);-webkit-text-size-adjust:100%}
+  .wrap{max-width:980px;margin:0 auto;padding:16px}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+  header h1{margin:0;font-size:22px}
+  header .mini{color:var(--muted);font-size:14px}
   .row{display:flex;gap:12px;align-items:center}
-  .btn{padding:var(--btn-padding);border-radius:12px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;font-weight:800;font-size:16px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
-  .btn.ghost{background:transparent;border:1px solid var(--line);color:var(--text);font-weight:800;padding:12px 14px;font-size:15px}
-  .btn[disabled]{opacity:.56;cursor:not-allowed}
-  input,select,textarea{padding:14px;border-radius:12px;border:1px solid var(--line);font-size:16px;line-height:1.4;background:transparent;color:var(--text)}
-  .mini{font-size:15px;color:var(--muted)}
-  .tx-list{display:flex;flex-direction:column;gap:12px;margin-top:12px}
-  .tx{display:flex;justify-content:space-between;align-items:center;padding:14px;border-radius:12px;border:1px solid rgba(10,12,12,0.04);background:linear-gradient(180deg,#fff,#fff);font-size:var(--tx-font-size)}
-  .tx .left { max-width:66% }
-  .amount{font-weight:900;font-size:18px;color:var(--text)}
-  .pill{padding:8px 12px;border-radius:999px;background:rgba(0,0,0,0.04);font-weight:800;margin-right:6px;display:inline-block;font-size:var(--pill-size)}
-  canvas{width:100%;height:180px;display:block;border-radius:8px;background:transparent}
+  .col{flex:1}
+  .card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow);border:1px solid var(--line);margin-bottom:12px}
+  button{cursor:pointer;border:0;border-radius:12px;padding:var(--btn-pad);background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#fff;font-weight:800}
+  button.ghost{background:transparent;color:var(--text);border:1px solid var(--line);font-weight:800;padding:12px 14px}
+  button.small{padding:8px 10px;font-size:14px;border-radius:10px}
+  button[disabled]{opacity:.6;cursor:not-allowed}
+  input,select,textarea{padding:12px;border-radius:10px;border:1px solid var(--line);font-size:16px;width:100%;box-sizing:border-box}
+  .mini{font-size:14px;color:var(--muted)}
+  .sources-list,.tx-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .source{display:flex;justify-content:space-between;align-items:center;padding:10px;border-radius:10px;border:1px solid rgba(10,12,12,0.04);background:#fff}
+  .tx{display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:10px;border:1px solid rgba(10,12,12,0.04);background:#fff}
+  .pill{padding:6px 10px;border-radius:999px;background:rgba(0,0,0,0.04);font-weight:800;font-size:13px}
+  canvas{width:100%;height:160px;border-radius:8px;background:transparent}
+  .fab{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:32px;display:flex;align-items:center;justify-content:center;background:linear-gradient(90deg,var(--accent),var(--accent-2));box-shadow:0 12px 30px rgba(2,6,23,0.16);z-index:1200}
+  .home{position:fixed;left:18px;bottom:18px;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);z-index:1200}
   .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s;pointer-events:none}
   .modal-backdrop.visible{visibility:visible;opacity:1;pointer-events:auto}
-  .modal{background:var(--card);padding:16px;border-radius:12px;max-width:780px;width:94%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
-  .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:64px;height:64px;border-radius:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
-  .loading-pill{position:fixed;left:12px;bottom:18px;background:var(--card);padding:8px 10px;border-radius:999px;border:1px solid var(--line);font-weight:700;color:var(--muted);font-size:13px;z-index:16000}
-  @media (max-width:720px){.row{flex-direction:column;align-items:stretch}.app{padding:14px 12px 110px}header h1{font-size:22px}}
+  .modal{background:var(--card);padding:14px;border-radius:12px;max-width:760px;width:94%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
+  .muted{color:var(--muted)}
+  .summary{display:flex;gap:10px;flex-wrap:wrap}
+  .summary .card{flex:1;min-width:160px}
+  .loading{position:fixed;left:16px;top:16px;background:#fff;padding:8px;border-radius:999px;border:1px solid var(--line);font-weight:800}
+  @media (max-width:720px){ header h1{font-size:20px}.wrap{padding:12px} }
 </style>
 </head>
 <body>
-  <div class="app" id="app">
+  <div class="loading" id="loading">Loading…</div>
+  <div class="wrap" id="app">
     <header>
-      <a href="index.html" aria-label="Back to Home">←</a>
       <div>
-        <h1>Finance</h1>
-        <div class="mini">Track wallets, income & expenses — private</div>
+        <h1>Personal Finance</h1>
+        <div class="mini">Sources → Transactions → Summary</div>
       </div>
-
-      <div style="margin-left:auto;display:flex;gap:10px;align-items:center">
-        <button id="exportBtn" class="btn ghost" title="Export finance data" disabled>Export</button>
-        <button id="importBtn" class="btn ghost" title="Import finance data" disabled>Import</button>
-        <button id="settingsBtn" class="btn ghost" title="Finance settings" disabled>Settings</button>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button id="exportBtn" class="ghost small" disabled>Export</button>
+        <button id="importBtn" class="ghost small" disabled>Import</button>
+        <button id="settingsBtn" class="ghost small" disabled>Settings</button>
       </div>
     </header>
 
-    <main>
-      <div class="card" aria-label="Pages">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><strong style="font-size:16px">Pages</strong><div class="mini">Choose a wallet / page</div></div>
-          <div class="row"><button id="addPageBtn" class="btn ghost" aria-label="Add new page" disabled>+ New Page</button></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong style="font-size:16px">Overview</strong>
+          <div class="mini">Quick totals & insights</div>
         </div>
-        <div id="pages" style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap"></div>
-      </div>
-
-      <div class="card" id="pageCard" role="region" aria-live="polite">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div id="pageTitle" style="font-weight:700">Personal</div>
-            <div class="mini" id="pageSub">Balance • Summary</div>
-          </div>
-          <div style="display:flex;gap:10px;align-items:center">
-            <div class="pill" id="pageBalance">KES 0.00</div>
-            <button id="openTxnModal" class="btn" aria-label="Add transaction" disabled> Add transaction </button>
-          </div>
-        </div>
-
-        <div style="display:flex;gap:14px;margin-top:14px;flex-wrap:wrap">
-          <div style="flex:1;min-width:180px" class="card">
-            <div class="mini">This page • Balance</div>
-            <div id="balanceVal" style="font-weight:800;font-size:20px;margin-top:8px">KES 0</div>
-            <div class="mini" id="cumulation" style="margin-top:10px">Total in: KES 0 • Total out: KES 0</div>
-          </div>
-
-          <div style="flex:1;min-width:220px" class="card">
-            <div class="mini">Top spending categories</div>
-            <div id="topCats" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
-          </div>
-
-          <div style="flex:2;min-width:260px" class="card">
-            <div class="mini">Balance over time</div>
-            <canvas id="balanceChart" aria-label="Balance over time chart"></canvas>
-          </div>
-        </div>
-
-        <div style="margin-top:14px">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-            <div><strong style="font-size:16px">Transactions</strong><div class="mini">Add income or expense and tag it</div></div>
-            <div style="display:flex;gap:10px;align-items:center">
-              <input id="txSearch" placeholder="Search note or category" style="padding:12px;border-radius:10px;border:1px solid var(--line);min-width:180px"/>
-              <select id="txFilter" style="padding:12px;border-radius:10px;border:1px solid var(--line)">
-                <option value="all">All</option><option value="in">Income</option><option value="out">Expense</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="tx-list" id="txList" style="margin-top:10px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="pill mini" id="totalBalance">KES 0.00</div>
+          <button id="addSourceBtn" class="ghost small" disabled>+ Source</button>
         </div>
       </div>
-    </main>
+
+      <div class="summary" style="margin-top:12px">
+        <div class="card"><div class="mini">Total balance</div><div id="balBig" style="font-weight:900;font-size:20px;margin-top:8px">KES 0.00</div></div>
+        <div class="card"><div class="mini">Total in (income)</div><div id="totalIn" style="font-weight:800;margin-top:8px">KES 0.00</div></div>
+        <div class="card"><div class="mini">Total out (expense)</div><div id="totalOut" style="font-weight:800;margin-top:8px">KES 0.00</div></div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:280px" class="card">
+        <strong>Sources</strong>
+        <div class="mini">Add income sources or expense buckets — each transaction attached to a source</div>
+
+        <div class="sources-list" id="sourcesList"></div>
+
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <select id="newSourceType" style="width:40%">
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+          <input id="newSourceName" placeholder="Source name (Salary, Food, Rent)"/>
+          <button id="saveSourceBtn" class="small" disabled>Add</button>
+        </div>
+      </div>
+
+      <div style="flex:2;min-width:320px" class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><strong>Transactions</strong><div class="mini">Add, edit, search — transactions link to a Source</div></div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input id="txSearch" placeholder="Search note or source" style="min-width:160px"/>
+            <select id="txFilter" style="min-width:120px">
+              <option value="all">All</option><option value="in">Income</option><option value="out">Expense</option>
+            </select>
+            <button id="openTxnModal" disabled>Add transaction</button>
+          </div>
+        </div>
+
+        <div class="tx-list" id="txList" style="margin-top:12px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <strong>Top sources (spending)</strong>
+      <div class="mini">Shows top expense sources</div>
+      <div id="topSources" style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"></div>
+    </div>
+
   </div>
 
-  <!-- add / edit transaction modal -->
+  <!-- transaction modal -->
   <div id="txnModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal" role="document" aria-labelledby="txnModalTitle">
+    <div class="modal" role="document" aria-labelledby="txnTitle">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong id="txnModalTitle">Add transaction</strong><div class="mini">Choose page, type, category</div></div>
-        <div><button id="closeTxn" class="btn ghost">Close</button></div>
+        <div><strong id="txnTitle">Add transaction</strong><div class="mini">Pick a source, amount, date</div></div>
+        <div><button id="closeTxn" class="ghost small">Close</button></div>
       </div>
 
-      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
-        <select id="txnPage" style="min-width:200px" aria-label="Select page"></select>
-        <select id="txnType" style="min-width:140px" aria-label="Transaction type"><option value="out">Expense</option><option value="in">Income</option></select>
-        <input id="txnAmount" type="number" inputmode="decimal" placeholder="Amount" style="min-width:140px" aria-label="Amount"/>
-        <input id="txnDate" type="date" style="min-width:160px" aria-label="Date"/>
-        <input id="txnCat" placeholder="Category e.g., Food" style="min-width:160px" aria-label="Category"/>
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+        <select id="txnSource" style="min-width:200px"></select>
+        <select id="txnType" style="min-width:140px"><option value="out">Expense</option><option value="in">Income</option></select>
+        <input id="txnAmount" type="number" inputmode="decimal" placeholder="Amount" style="min-width:140px"/>
+        <input id="txnDate" type="date" style="min-width:160px"/>
       </div>
 
-      <div style="margin-top:12px">
-        <textarea id="txnNote" placeholder="Note (optional)" style="width:100%;min-height:110px;padding:12px;border-radius:10px;border:1px solid var(--line)" aria-label="Note"></textarea>
+      <div style="margin-top:10px">
+        <input id="txnCategory" placeholder="Category (optional)"/>
+        <textarea id="txnNote" placeholder="Note (optional)" style="margin-top:8px;min-height:80px"></textarea>
       </div>
 
-      <div style="display:flex;gap:10px;margin-top:12px">
-        <button id="saveTxn" class="btn">Save</button>
-        <button id="delTxn" class="btn ghost" style="display:none">Delete</button>
-        <button id="cancelTxn" class="btn ghost">Cancel</button>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+        <button id="saveTxn" class="small">Save</button>
+        <button id="delTxn" class="small ghost" style="display:none">Delete</button>
+        <button id="cancelTxn" class="small ghost">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- Settings modal -->
+  <!-- settings modal -->
   <div id="settingsModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
-    <div class="modal" role="document" aria-labelledby="settingsTitle">
+    <div class="modal">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><strong id="settingsTitle">Finance Settings</strong><div class="mini">Adjust app visibility & text size</div></div>
-        <div><button id="closeSettings" class="btn ghost">Close</button></div>
+        <div><strong>Settings</strong><div class="mini">UI scale & reset</div></div>
+        <div><button id="closeSettings" class="ghost small">Close</button></div>
       </div>
-
       <div style="margin-top:12px">
-        <label style="display:block;margin-bottom:8px;font-weight:800">Base font size (px)</label>
-        <input id="settingFontSize" type="number" min="14" max="28" value="18" style="width:120px"/>
-
-        <div style="margin-top:12px;display:flex;align-items:center;gap:12px">
-          <input id="settingLargeText" type="checkbox"/><label for="settingLargeText" class="mini">Enable Large Text (increase UI scale)</label>
-        </div>
-
-        <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end">
-          <button id="saveSettingsBtn" class="btn">Save</button>
-          <button id="cancelSettingsBtn" class="btn ghost">Cancel</button>
+        <label class="mini">Base font size (px)</label>
+        <input id="settingFontSize" type="number" min="14" max="24" value="18" />
+        <div style="margin-top:10px;display:flex;gap:8px;justify-content:flex-end">
+          <button id="saveSettings" class="small">Save</button>
+          <button id="resetData" class="small ghost">Reset All</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="fab-home" id="homeBtn" title="Home"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3l9 8h-3v8h-4v-6H10v6H6v-8H3z"></path></svg></div>
-
-  <div id="loading" class="loading-pill">Loading…</div>
+  <div class="fab" id="fabAdd" title="Add transaction">＋</div>
+  <button class="home" id="homeBtn" title="Home" onclick="location.href='index.html'">Home</button>
 
 <script>
-/* ---------- IndexedDB helpers ---------- */
-const DB_NAME='tomorrowai-db', DB_VER=2;
+/* ---------- IndexedDB simple wrapper ---------- */
+const DB = 'tomorrow-finance', DBV = 1;
 function openDB(){
   return new Promise((resolve,reject)=>{
-    const req = indexedDB.open(DB_NAME, DB_VER);
+    const req = indexedDB.open(DB, DBV);
     req.onupgradeneeded = e => {
       const db = e.target.result;
-      if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'});
-      if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
+      if(!db.objectStoreNames.contains('sources')) db.createObjectStore('sources', { keyPath: 'id' });
+      if(!db.objectStoreNames.contains('txns')) db.createObjectStore('txns', { keyPath: 'id' });
+      if(!db.objectStoreNames.contains('meta')) db.createObjectStore('meta', { keyPath: 'k' });
     };
     req.onsuccess = e => resolve(e.target.result);
     req.onerror = e => reject(e.target.error || new Error('IDB open failed'));
   });
 }
-async function idbPut(store, val){
-  const db = await openDB();
-  return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readwrite');
-    const os = tx.objectStore(store);
-    const r = os.put(val);
-    r.onsuccess = () => {};
-    tx.oncomplete = ()=>res(true);
-    tx.onerror = e => rej(e.target?.error || new Error('IDB put failed'));
-  });
-}
-async function idbGet(store, key){
-  const db = await openDB();
-  return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readonly');
-    const r = tx.objectStore(store).get(key);
-    r.onsuccess = e => res(e.target.result);
-    r.onerror = e => rej(e.target.error || new Error('IDB get failed'));
-  });
-}
-async function idbGetAll(store){
-  const db = await openDB();
-  return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readonly');
-    const r = tx.objectStore(store).getAll();
-    r.onsuccess = e => res(e.target.result || []);
-    r.onerror = e => rej(e.target.error || new Error('IDB getAll failed'));
-  });
-}
-async function idbDelete(store, key){
-  const db = await openDB();
-  return new Promise((res,rej)=>{
-    const tx = db.transaction(store,'readwrite');
-    const r = tx.objectStore(store).delete(key);
-    r.onsuccess = ()=>{};
-    tx.oncomplete = ()=>res(true);
-    tx.onerror = e => rej(e.target?.error || new Error('IDB delete failed'));
-  });
-}
+async function idbPut(store, value){ const db = await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).put(value); tx.oncomplete=()=>res(true); tx.onerror=e=>rej(e.target?.error); }); }
+async function idbGetAll(store){ const db = await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readonly'); const r = tx.objectStore(store).getAll(); r.onsuccess=e=>res(e.target.result||[]); r.onerror=e=>rej(e.target.error); }); }
+async function idbGet(store,key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readonly'); const r = tx.objectStore(store).get(key); r.onsuccess=e=>res(e.target.result); r.onerror=e=>rej(e.target.error); }); }
+async function idbDelete(store,key){ const db = await openDB(); return new Promise((res,rej)=>{ const tx=db.transaction(store,'readwrite'); tx.objectStore(store).delete(key); tx.oncomplete=()=>res(true); tx.onerror=e=>rej(e.target.error); }); }
 
-/* ---------- Utilities ---------- */
-function uid(pref='f'){ return pref + '_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
-function fmt(n){ return Number(n||0).toLocaleString(undefined, { minimumFractionDigits:2, maximumFractionDigits:2 }); }
-function nowDateISO(){ return new Date().toISOString().slice(0,10); }
-function showToast(msg,ms=1800){ const el=document.createElement('div'); Object.assign(el.style,{position:'fixed',left:'12px',bottom:'64px',zIndex:16000,background:'rgba(10,10,12,0.9)',color:'white',padding:'10px 14px',borderRadius:'8px',fontSize:'14px'}); el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
+/* ---------- utilities ---------- */
+function uid(pref='u'){ return pref + '_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
+function fmt(n){ return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function nowISO(){ return new Date().toISOString().slice(0,10); }
+function toast(msg, ms=1400){ const el=document.createElement('div'); Object.assign(el.style,{position:'fixed',right:12,bottom:100,zIndex:16000,background:'rgba(10,10,10,0.9)',color:'#fff',padding:'10px 14px',borderRadius:'8px'}); el.textContent=msg; document.body.appendChild(el); setTimeout(()=>el.remove(),ms); }
 
-/* ---------- App state ---------- */
-let state = { pages: [], txns: [], currentPageId: null };
-const DEFAULT_PAGES = [
-  { id: 'page_personal', name:'Personal', type:'personal', createdAt: Date.now() },
-  { id: 'page_parents', name:'Parents', type:'parents', createdAt: Date.now() },
-  { id: 'page_salary', name:'Salary', type:'salary', createdAt: Date.now() },
-  { id: 'page_business', name:'Business', type:'business', createdAt: Date.now() }
-];
+/* ---------- state ---------- */
+let state = { sources: [], txns: [], ready: false, editingTxn: null };
 
-/* ---------- Core load/save ---------- */
-async function loadAll(){
-  const all = await idbGetAll('data');
-  state.pages = all.filter(x => x && x._kind === 'finance.page');
-  if(state.pages.length === 0){
-    for(const p of DEFAULT_PAGES){
-      try{ await idbPut('data', Object.assign({_kind:'finance.page'}, p)); }catch(e){ console.warn('seed fail', e); }
-    }
-    state.pages = (await idbGetAll('data')).filter(x=>x._kind === 'finance.page');
-  }
-  state.txns = (await idbGetAll('data')).filter(x => x && x._kind === 'finance.txn');
-  const saved = await idbGet('settings','finance.currentPage');
-  state.currentPageId = saved && saved.value ? saved.value : (state.pages[0] && state.pages[0].id);
-}
-async function savePage(p){ p._kind='finance.page'; await idbPut('data', p); }
-async function saveTxn(t){ t._kind='finance.txn'; await idbPut('data', t); }
-async function deleteTxn(id){ await idbDelete('data', id); }
+/* ---------- DOM refs ---------- */
+const loadingEl = document.getElementById('loading');
+const exportBtn = document.getElementById('exportBtn');
+const importBtn = document.getElementById('importBtn');
+const settingsBtn = document.getElementById('settingsBtn');
+const addSourceBtn = document.getElementById('saveSourceBtn');
+const addSourceInput = document.getElementById('newSourceName');
+const addSourceType = document.getElementById('newSourceType');
+const addSourceManualBtn = document.getElementById('addSourceBtn');
+const sourcesList = document.getElementById('sourcesList');
+const txList = document.getElementById('txList');
+const openTxnBtn = document.getElementById('openTxnModal');
+const fabAdd = document.getElementById('fabAdd');
+const topSourcesEl = document.getElementById('topSources');
+const totalBalanceEl = document.getElementById('totalBalance');
+const balBigEl = document.getElementById('balBig');
+const totalInEl = document.getElementById('totalIn');
+const totalOutEl = document.getElementById('totalOut');
+const txSearch = document.getElementById('txSearch');
+const txFilter = document.getElementById('txFilter');
 
-/* ---------- Rendering ---------- */
-function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-
-function renderPages(){
-  const pagesEl = document.getElementById('pages'); pagesEl.innerHTML = '';
-  state.pages.forEach(p => {
-    const btn = document.createElement('button');
-    btn.className = 'btn ghost';
-    btn.textContent = p.name;
-    btn.style.borderRadius = '10px';
-    btn.setAttribute('role','button'); btn.tabIndex = 0;
-    if(p.id === state.currentPageId){ btn.style.background = 'linear-gradient(90deg,var(--accent),var(--accent-2))'; btn.style.color='white'; }
-    const activate = async ()=> {
-      try{
-        state.currentPageId = p.id;
-        await idbPut('settings', { key:'finance.currentPage', value: p.id });
-        renderPages(); await renderPage();
-      }catch(err){ console.error('activate page err', err); showToast('Failed to switch page'); }
-    };
-    btn.addEventListener('click', activate);
-    btn.addEventListener('touchstart', ()=> activate()); // avoid preventDefault
-    btn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
-    pagesEl.appendChild(btn);
-  });
-}
-
-async function renderPage(){
-  try{
-    const page = state.pages.find(p=>p.id === state.currentPageId) || state.pages[0];
-    if(!page){ document.getElementById('pageCard').style.display='none'; return; }
-    document.getElementById('pageCard').style.display='block';
-    document.getElementById('pageTitle').textContent = page.name;
-
-    const txns = state.txns.filter(t => t.pageId === page.id).sort((a,b)=>b.ts - a.ts);
-    let balance = 0, totalIn = 0, totalOut = 0; const byCat = {};
-    txns.forEach(t => {
-      const amt = Number(t.amount) || 0;
-      if(t.type === 'in'){ balance += amt; totalIn += amt; }
-      else { balance -= amt; totalOut += amt; byCat[t.category || 'Uncategorized'] = (byCat[t.category||'Uncategorized']||0) + amt; }
-    });
-    document.getElementById('pageBalance').textContent = `KES ${fmt(balance)}`;
-    document.getElementById('balanceVal').textContent = `KES ${fmt(balance)}`;
-    document.getElementById('cumulation').textContent = `Total in: KES ${fmt(totalIn)} • Total out: KES ${fmt(totalOut)}`;
-
-    const topEl = document.getElementById('topCats'); topEl.innerHTML = '';
-    const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,6);
-    if(cats.length === 0) topEl.innerHTML = '<div class="mini">No expenses yet</div>';
-    else cats.forEach(([k,v]) => { const d = document.createElement('div'); d.className='pill'; d.textContent = `${k} • KES ${fmt(v)}`; topEl.appendChild(d); });
-
-    const txList = document.getElementById('txList'); txList.innerHTML = '';
-    const search = (document.getElementById('txSearch').value || '').toLowerCase().trim();
-    const filter = document.getElementById('txFilter').value;
-    const visible = txns.filter(t => {
-      if(filter === 'in' && t.type !== 'in') return false;
-      if(filter === 'out' && t.type !== 'out') return false;
-      if(search && !((t.note||'').toLowerCase().includes(search) || (t.category||'').toLowerCase().includes(search))) return false;
-      return true;
-    });
-    if(visible.length === 0) { txList.innerHTML = '<div class="mini">No transactions</div>'; }
-    visible.forEach(t => {
-      const el = document.createElement('div'); el.className='tx';
-      const left = document.createElement('div'); left.className='left';
-      left.innerHTML = `<div><strong>${escapeHtml(t.category || (t.type==='in'?'Income':'Expense'))}</strong> <span class="mini" style="margin-left:8px">${t.date}</span></div><div class="note">${escapeHtml(t.note || '')}</div>`;
-      const right = document.createElement('div'); right.style.display='flex'; right.style.flexDirection='column'; right.style.alignItems='flex-end';
-      const amt = document.createElement('div'); amt.className='amount'; amt.textContent = (t.type==='in'?'+':'−') + ' KES ' + fmt(t.amount);
-      const actions = document.createElement('div'); actions.style.display='flex'; actions.style.gap='8px'; actions.style.marginTop='8px';
-      const edit = document.createElement('button'); edit.className='btn ghost'; edit.textContent='Edit'; edit.addEventListener('click', ()=> openTxnModal(t));
-      const del = document.createElement('button'); del.className='btn ghost'; del.textContent='Delete'; del.addEventListener('click', async ()=>{
-        if(!confirm('Delete transaction?')) return;
-        await deleteTxn(t.id);
-        await loadAll(); renderPages(); await renderPage(); showToast('Deleted');
-      });
-      actions.appendChild(edit); actions.appendChild(del);
-      right.appendChild(amt); right.appendChild(actions);
-      el.appendChild(left); el.appendChild(right); txList.appendChild(el);
-    });
-
-    const sel = document.getElementById('txnPage'); sel.innerHTML = '';
-    if(state.pages.length === 0){
-      const o = document.createElement('option'); o.value = ''; o.textContent = 'No pages';
-      sel.appendChild(o);
-    } else {
-      state.pages.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.textContent = p.name; if(p.id === state.currentPageId) o.selected = true; sel.appendChild(o); });
-    }
-
-    drawBalanceChart(page.id);
-  }catch(err){ console.error('renderPage err', err); showToast('Render failed (see console)'); }
-}
-
-/* ---------- txn modal logic ---------- */
+/* modal refs */
 const txnBackdrop = document.getElementById('txnModal');
-let editingTxn = null;
-window.openTxnModal = openTxnModal; // expose globally for safety
+const txnSource = document.getElementById('txnSource');
+const txnType = document.getElementById('txnType');
+const txnAmount = document.getElementById('txnAmount');
+const txnDate = document.getElementById('txnDate');
+const txnCategory = document.getElementById('txnCategory');
+const txnNote = document.getElementById('txnNote');
+const saveTxnBtn = document.getElementById('saveTxn');
+const delTxnBtn = document.getElementById('delTxn');
+const cancelTxnBtn = document.getElementById('cancelTxn');
+const closeTxnBtn = document.getElementById('closeTxn');
 
-async function ensurePagesLoaded(){
-  if(!state.pages || state.pages.length === 0){
-    await loadAll();
-    renderPages();
+/* settings modal */
+const settingsModal = document.getElementById('settingsModal');
+const settingFontSize = document.getElementById('settingFontSize');
+const saveSettingsBtn = document.getElementById('saveSettings');
+const closeSettingsBtn = document.getElementById('closeSettings');
+const resetDataBtn = document.getElementById('resetData');
+
+/* ---------- core load / render ---------- */
+async function loadAll(){
+  try{
+    const [sources, txns] = await Promise.all([idbGetAll('sources'), idbGetAll('txns')]);
+    state.sources = sources.sort((a,b)=>a.order - b.order);
+    state.txns = txns.sort((a,b)=>b.ts - a.ts);
+  }catch(err){ console.error('loadAll err', err); state.sources=[]; state.txns=[]; }
+}
+
+/* ---------- render helpers ---------- */
+function renderSources(){
+  sourcesList.innerHTML = '';
+  if(state.sources.length === 0){ sourcesList.innerHTML = '<div class="mini muted">No sources. Add one below.</div>'; return; }
+  state.sources.forEach(s => {
+    const el = document.createElement('div'); el.className='source';
+    el.innerHTML = `<div>
+      <strong style="font-size:15px">${s.name}</strong>
+      <div class="mini">${s.type === 'income' ? 'Income' : 'Expense'}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="pill">KES ${fmt(sourceTotal(s.id))}</div>
+      <button class="ghost small" data-id="${s.id}" data-action="edit">Edit</button>
+      <button class="ghost small" data-id="${s.id}" data-action="del">Del</button>
+    </div>`;
+    const editBtn = el.querySelector('button[data-action="edit"]');
+    const delBtn = el.querySelector('button[data-action="del"]');
+    editBtn.addEventListener('click', ()=> editSource(s.id));
+    delBtn.addEventListener('click', async ()=> {
+      if(!confirm('Delete source and its transactions?')) return;
+      await idbDelete('sources', s.id);
+      // delete txns for source
+      for(const t of state.txns.filter(x=>x.sourceId===s.id)) await idbDelete('txns', t.id);
+      await reloadAndRender();
+      toast('Source deleted');
+    });
+    sourcesList.appendChild(el);
+  });
+  // populate txnSource select
+  txnSource.innerHTML = '';
+  state.sources.forEach(s => {
+    const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.name} — ${s.type}`;
+    txnSource.appendChild(o);
+  });
+}
+
+function sourceTotal(sourceId){
+  const txns = state.txns.filter(t=>t.sourceId===sourceId);
+  let tot = 0;
+  txns.forEach(t=> tot += (t.type==='in' ? Number(t.amount) : -Number(t.amount)));
+  return tot;
+}
+
+function computeTotals(){
+  let bal = 0, tin = 0, tout = 0;
+  state.txns.forEach(t=>{
+    const amt = Number(t.amount) || 0;
+    if(t.type === 'in'){ bal += amt; tin += amt; } else { bal -= amt; tout += amt; }
+  });
+  totalBalanceEl.textContent = `KES ${fmt(bal)}`;
+  balBigEl.textContent = `KES ${fmt(bal)}`;
+  totalInEl.textContent = `KES ${fmt(tin)}`;
+  totalOutEl.textContent = `KES ${fmt(tout)}`;
+}
+
+function renderTopSources(){
+  topSourcesEl.innerHTML = '';
+  const bySource = {};
+  for(const s of state.sources) bySource[s.id] = 0;
+  for(const t of state.txns) if(t.type==='out') bySource[t.sourceId] = (bySource[t.sourceId]||0) + Number(t.amount);
+  const arr = Object.entries(bySource).map(([id,val]) => ({id, val})).sort((a,b)=>b.val-a.val).slice(0,6);
+  if(arr.length===0) topSourcesEl.innerHTML = '<div class="mini muted">No expense data yet</div>';
+  arr.forEach(it=>{
+    const s = state.sources.find(x=>x.id===it.id);
+    const el = document.createElement('div'); el.className='pill'; el.textContent = `${s? s.name : 'Unknown'} • KES ${fmt(it.val)}`;
+    topSourcesEl.appendChild(el);
+  });
+}
+
+function renderTxList(){
+  txList.innerHTML = '';
+  const search = (txSearch.value || '').toLowerCase().trim();
+  const filter = txFilter.value;
+  const visible = state.txns.filter(t=>{
+    if(filter==='in' && t.type!=='in') return false;
+    if(filter==='out' && t.type!=='out') return false;
+    const s = state.sources.find(x=>x.id===t.sourceId);
+    if(search){
+      return (t.note||'').toLowerCase().includes(search) || (t.category||'').toLowerCase().includes(search) || (s && s.name.toLowerCase().includes(search));
+    }
+    return true;
+  });
+  if(visible.length===0){ txList.innerHTML = '<div class="mini muted">No transactions</div>'; return; }
+  visible.forEach(t=>{
+    const s = state.sources.find(x=>x.id===t.sourceId);
+    const el = document.createElement('div'); el.className='tx';
+    el.innerHTML = `<div>
+      <strong style="font-size:15px">${s? s.name : '—'}</strong>
+      <div class="mini">${t.date} • ${t.category || ''} • ${t.note || ''}</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-weight:900">${t.type==='in'? '+':'−'} KES ${fmt(t.amount)}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
+        <button class="ghost small" data-id="${t.id}" data-action="edit">Edit</button>
+        <button class="ghost small" data-id="${t.id}" data-action="del">Del</button>
+      </div>
+    </div>`;
+    el.querySelector('button[data-action="edit"]').addEventListener('click', ()=> openTxnModal(t.id));
+    el.querySelector('button[data-action="del"]').addEventListener('click', async ()=>{
+      if(!confirm('Delete transaction?')) return;
+      await idbDelete('txns', t.id);
+      await reloadAndRender();
+      toast('Deleted');
+    });
+    txList.appendChild(el);
+  });
+}
+
+/* ---------- operations ---------- */
+async function saveSource(){
+  const name = (addSourceInput.value || '').trim();
+  const type = addSourceType.value;
+  if(!name){ alert('Name required'); return; }
+  const s = { id: uid('src'), name, type, createdAt: new Date().toISOString(), order: Date.now() };
+  await idbPut('sources', s);
+  addSourceInput.value = '';
+  await reloadAndRender();
+  toast('Source added');
+}
+
+async function editSource(id){
+  const s = state.sources.find(x=>x.id===id);
+  if(!s) return;
+  const n = prompt('Rename source', s.name);
+  if(!n) return;
+  s.name = n.trim();
+  await idbPut('sources', s);
+  await reloadAndRender();
+  toast('Saved');
+}
+
+/* txn modal control */
+function showTxnModal(editId=null){
+  state.editingTxn = null;
+  delTxnBtn.style.display = 'none';
+  document.getElementById('txnTitle').textContent = editId ? 'Edit transaction' : 'Add transaction';
+  if(editId){
+    const t = state.txns.find(x=>x.id===editId);
+    if(!t) return;
+    state.editingTxn = t;
+    txnSource.value = t.sourceId;
+    txnType.value = t.type;
+    txnAmount.value = t.amount;
+    txnDate.value = t.date;
+    txnCategory.value = t.category || '';
+    txnNote.value = t.note || '';
+    delTxnBtn.style.display = 'inline-flex';
+  } else {
+    txnSource.value = state.sources[0] ? state.sources[0].id : '';
+    txnType.value = 'out';
+    txnAmount.value = '';
+    txnDate.value = nowISO();
+    txnCategory.value = '';
+    txnNote.value = '';
   }
+  txnBackdrop.classList.add('visible'); txnBackdrop.setAttribute('aria-hidden','false');
+  setTimeout(()=>{ const a=txnAmount; if(a) a.focus(); }, 150);
 }
+function closeTxnModal(){ state.editingTxn=null; txnBackdrop.classList.remove('visible'); txnBackdrop.setAttribute('aria-hidden','true'); }
 
-async function openTxnModal(txn=null){
+async function saveTxn(){
   try{
-    await ensurePagesLoaded();
-    editingTxn = txn ? Object.assign({}, txn) : null;
-    const sel = document.getElementById('txnPage'); sel.innerHTML = '';
-    if(state.pages.length === 0){
-      const o = document.createElement('option'); o.value = ''; o.textContent = 'No pages (create one)'; sel.appendChild(o);
-    } else {
-      state.pages.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.text = p.name; sel.appendChild(o); });
-    }
-
-    if(editingTxn){
-      document.getElementById('txnModalTitle').textContent = 'Edit transaction';
-      document.getElementById('delTxn').style.display = 'inline-flex';
-      document.getElementById('txnPage').value = editingTxn.pageId || (state.pages[0] && state.pages[0].id) || '';
-      document.getElementById('txnType').value = editingTxn.type;
-      document.getElementById('txnAmount').value = editingTxn.amount;
-      document.getElementById('txnDate').value = editingTxn.date || nowDateISO();
-      document.getElementById('txnCat').value = editingTxn.category || '';
-      document.getElementById('txnNote').value = editingTxn.note || '';
-    } else {
-      document.getElementById('txnModalTitle').textContent = 'Add transaction';
-      document.getElementById('delTxn').style.display = 'none';
-      document.getElementById('txnPage').value = state.currentPageId || (state.pages[0] && state.pages[0].id) || '';
-      document.getElementById('txnType').value = 'out';
-      document.getElementById('txnAmount').value = '';
-      document.getElementById('txnDate').value = nowDateISO();
-      document.getElementById('txnCat').value = '';
-      document.getElementById('txnNote').value = '';
-    }
-
-    txnBackdrop.classList.add('visible'); txnBackdrop.setAttribute('aria-hidden','false');
-    setTimeout(()=>{ const a = document.getElementById('txnAmount'); if(a) a.focus(); }, 180);
-  }catch(err){ console.error('openTxnModal err', err); showToast('Unable to open transaction dialog'); }
+    const sourceId = txnSource.value;
+    if(!sourceId){ alert('Select a source'); return; }
+    const amount = Number(txnAmount.value);
+    if(!txnAmount.value || isNaN(amount) || amount<=0){ alert('Amount must be positive'); return; }
+    const t = {
+      id: state.editingTxn ? state.editingTxn.id : uid('txn'),
+      sourceId,
+      type: txnType.value,
+      amount: amount,
+      date: txnDate.value || nowISO(),
+      category: (txnCategory.value||'').trim(),
+      note: (txnNote.value||'').trim(),
+      ts: Date.now()
+    };
+    await idbPut('txns', t);
+    closeTxnModal();
+    await reloadAndRender();
+    toast(state.editingTxn ? 'Transaction updated' : 'Saved');
+  }catch(err){ console.error('saveTxn err', err); toast('Save failed'); }
+}
+async function deleteEditingTxn(){
+  if(!state.editingTxn) return;
+  if(!confirm('Delete transaction?')) return;
+  await idbDelete('txns', state.editingTxn.id);
+  closeTxnModal();
+  await reloadAndRender();
+  toast('Deleted');
 }
 
-function closeTxnModal(){
-  editingTxn = null;
-  txnBackdrop.classList.remove('visible'); txnBackdrop.setAttribute('aria-hidden','true');
-}
-
-/* Save / delete handlers already safe — wrapped with try/catch when attached */
-
-/* ---------- chart drawing ---------- */
-function drawBalanceChart(pageId){
+/* ---------- export / import ---------- */
+async function exportAll(){
   try{
-    const canvas = document.getElementById('balanceChart'); if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const w = canvas.clientWidth, h = canvas.clientHeight || 180;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(h * dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
-    ctx.clearRect(0,0,w,h);
-    const tx = state.txns.filter(t => t.pageId === pageId).sort((a,b)=>a.ts - b.ts);
-    if(tx.length === 0){
-      ctx.fillStyle = 'rgba(10,12,12,0.04)'; ctx.fillRect(0,0,w,h);
-      ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.font = '14px ' + (getComputedStyle(document.documentElement).getPropertyValue('--font') || 'sans-serif');
-      ctx.fillText('No data',12,28); return;
-    }
-    let bal = 0; const pts = [];
-    tx.forEach(t => { bal += (t.type==='in'?Number(t.amount):-Number(t.amount)); pts.push({label:t.date, value:bal}); });
-    const min = Math.min(...pts.map(p=>p.value)), max = Math.max(...pts.map(p=>p.value));
-    const left=30,right=w-12,top=12,bottom=h-24,width=right-left,height=bottom-top;
-    ctx.strokeStyle='rgba(10,12,12,0.06)'; for(let i=0;i<3;i++){ const y=top + (i/2)*height; ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(right,y); ctx.stroke(); }
-    ctx.beginPath(); ctx.lineWidth=2; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#4E9A97';
-    pts.forEach((p,i)=>{ const x = left + (i/(pts.length-1||1))*width; const y = top + (1 - ( (p.value - min) / ((max-min)||1) ))*height; if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
-    ctx.stroke();
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#8fc3b8';
-    pts.forEach((p,i)=>{ const x = left + (i/(pts.length-1||1))*width; const y = top + (1 - ( (p.value - min) / ((max-min)||1) ))*height; ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2); ctx.fill(); });
-  }catch(err){ console.warn('chart draw err', err); }
+    const [sources, txns] = await Promise.all([idbGetAll('sources'), idbGetAll('txns')]);
+    const payload = { exportedAt: new Date().toISOString(), sources, txns };
+    const blob = new Blob([JSON.stringify(payload,null,2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='finance-export-'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(url);
+  }catch(err){ console.error('export err', err); toast('Export failed'); }
+}
+function importAll(){
+  const input = document.createElement('input'); input.type='file'; input.accept='application/json';
+  input.onchange = async e => {
+    const f = e.target.files[0]; if(!f) return;
+    try{
+      const txt = await f.text(); const obj = JSON.parse(txt);
+      if(!obj) throw new Error('Invalid file');
+      if(Array.isArray(obj.sources)){
+        for(const s of obj.sources){ if(!s.id) s.id = uid('src'); await idbPut('sources', s); }
+      }
+      if(Array.isArray(obj.txns)){
+        for(const t of obj.txns){ if(!t.id) t.id = uid('txn'); await idbPut('txns', t); }
+      }
+      await reloadAndRender();
+      toast('Import OK');
+    }catch(err){ console.error('import err', err); alert('Import failed: '+(err.message||err)); }
+  };
+  input.click();
 }
 
-/* ---------- attach handlers (called after boot) ---------- */
-function attachUIHandlers(){
+/* ---------- settings ---------- */
+async function applySettings(cfg){
   try{
-    // buttons that were disabled during boot
-    const enableBtns = ['exportBtn','importBtn','settingsBtn','addPageBtn','openTxnModal'];
-    enableBtns.forEach(id => { const b=document.getElementById(id); if(b) b.disabled = false; });
-
-    // pages/buttons
-    document.getElementById('addPageBtn').addEventListener('click', async ()=>{
-      try{
-        const name = prompt('Page name (e.g., Travel, Pocket):', 'New Page');
-        if(!name) return;
-        const p = { id: uid('page'), name, type:'personal', createdAt: Date.now(), _kind:'finance.page' };
-        await savePage(p);
-        await loadAll(); renderPages(); await renderPage(); showToast('Page created');
-      }catch(err){ console.error('add page err', err); showToast('Failed to create page'); }
-    });
-
-    // open txn modal
-    document.getElementById('openTxnModal').addEventListener('click', ()=> openTxnModal());
-    // modal close
-    document.getElementById('closeTxn').addEventListener('click', closeTxnModal);
-    document.getElementById('cancelTxn').addEventListener('click', closeTxnModal);
-
-    // save txn
-    document.getElementById('saveTxn').addEventListener('click', async ()=>{
-      try{
-        const pageId = document.getElementById('txnPage').value || state.currentPageId || (state.pages[0] && state.pages[0].id);
-        if(!pageId){ alert('Please create or select a page first.'); return; }
-        const type = document.getElementById('txnType').value;
-        const amountRaw = document.getElementById('txnAmount').value;
-        const amount = Number(amountRaw);
-        if(!amountRaw || isNaN(amount) || amount <= 0){ alert('Amount must be a positive number'); return; }
-        const date = document.getElementById('txnDate').value || nowDateISO();
-        const category = (document.getElementById('txnCat').value || (type==='in' ? 'Income' : 'General')).trim();
-        const note = document.getElementById('txnNote').value || '';
-        if(editingTxn){
-          editingTxn.pageId = pageId; editingTxn.type = type; editingTxn.amount = amount; editingTxn.date = date; editingTxn.category = category; editingTxn.note = note; editingTxn.ts = Date.now();
-          await saveTxn(editingTxn); showToast('Updated');
-        } else {
-          const t = { id: uid('txn'), pageId, type, amount, date, category, note, ts: Date.now(), _kind:'finance.txn' };
-          await saveTxn(t); showToast('Saved');
-        }
-        closeTxnModal(); await loadAll(); renderPages(); await renderPage();
-      }catch(err){ console.error('saveTxn err', err); showToast('Failed to save transaction'); }
-    });
-
-    // delete txn
-    document.getElementById('delTxn').addEventListener('click', async ()=>{
-      try{
-        if(!editingTxn) return; if(!confirm('Delete transaction?')) return;
-        await deleteTxn(editingTxn.id); closeTxnModal(); await loadAll(); renderPages(); await renderPage(); showToast('Deleted');
-      }catch(err){ console.error('delTxn err', err); showToast('Delete failed'); }
-    });
-
-    // search/filter
-    document.getElementById('txSearch').addEventListener('input', ()=> renderPage());
-    document.getElementById('txFilter').addEventListener('change', ()=> renderPage());
-
-    // export/import
-    document.getElementById('exportBtn').addEventListener('click', async ()=>{
-      try{
-        const data = await idbGetAll('data'); const settings = await idbGetAll('settings');
-        const payload = { exportedAt: new Date().toISOString(), data, settings };
-        const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' }); const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'finance-export-'+Date.now()+'.json'; a.click(); URL.revokeObjectURL(url);
-      }catch(err){ console.error('export err', err); showToast('Export failed'); }
-    });
-    document.getElementById('importBtn').addEventListener('click', ()=> {
-      try{
-        const input = document.createElement('input'); input.type='file'; input.accept='application/json';
-        input.onchange = async e => {
-          const f = e.target.files[0]; if(!f) return;
-          try{
-            const txt = await f.text(); const obj = JSON.parse(txt);
-            if(obj.data && Array.isArray(obj.data)){
-              for(const it of obj.data){ const exists = await idbGet('data', it.id); if(!exists) await idbPut('data', it); }
-              await loadAll(); renderPages(); await renderPage(); showToast('Import complete');
-            } else alert('Invalid import file');
-          }catch(err){ alert('Import failed: ' + err.message); }
-        };
-        input.click();
-      }catch(err){ console.error('import err', err); showToast('Import failed'); }
-    });
-
-    // settings
-    const settingsBtn = document.getElementById('settingsBtn');
-    settingsBtn.addEventListener('click', async (ev)=>{
-      try{
-        ev && ev.stopPropagation();
-        const s = await idbGet('settings','finance.ui');
-        const ui = (s && s.value) ? s.value : { fontSize: 18, largeText: false };
-        document.getElementById('settingFontSize').value = ui.fontSize || 18;
-        document.getElementById('settingLargeText').checked = !!ui.largeText;
-        document.getElementById('settingsModal').classList.add('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','false');
-      }catch(err){ console.error('open settings err', err); showToast('Unable to open settings'); }
-    });
-
-    document.getElementById('closeSettings').addEventListener('click', ()=> { document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true'); });
-    document.getElementById('cancelSettingsBtn').addEventListener('click', ()=> { document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true'); });
-
-    document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
-      try{
-        const fontSize = Number(document.getElementById('settingFontSize').value) || 18;
-        const largeText = !!document.getElementById('settingLargeText').checked;
-        await idbPut('settings', { key:'finance.ui', value: { fontSize, largeText } });
-        applyUISettings({ fontSize, largeText });
-        document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true');
-        showToast('Settings saved');
-      }catch(err){ console.error('save settings err', err); showToast('Save failed'); }
-    });
-
-    // home
-    document.getElementById('homeBtn').addEventListener('click', ()=> location.href='index.html');
-  }catch(err){ console.error('attachUIHandlers err', err); showToast('UI init failed'); }
-}
-
-/* ---------- settings apply ---------- */
-async function applyUISettings(ui){
-  try{
-    let cfg = ui;
-    if(!cfg){
-      const s = await idbGet('settings','finance.ui');
-      cfg = (s && s.value) ? s.value : { fontSize: 18, largeText: false };
-    }
     const size = Number(cfg.fontSize) || 18;
-    document.documentElement.style.setProperty('--base-font-size', size + 'px');
-    document.documentElement.style.setProperty('font-size', size + 'px');
-    if(cfg.largeText){
-      document.documentElement.style.setProperty('--btn-padding','16px 20px');
-      document.documentElement.style.setProperty('--tx-font-size','18px');
-    } else {
-      document.documentElement.style.setProperty('--btn-padding','14px 18px');
-      document.documentElement.style.setProperty('--tx-font-size','16px');
-    }
-  }catch(err){ console.warn('applyUISettings err', err); }
+    document.documentElement.style.setProperty('--base', size+'px');
+    document.documentElement.style.fontSize = size + 'px';
+    await idbPut('meta', { k:'ui', v: cfg });
+  }catch(e){ console.warn('applySettings err', e); }
+}
+async function loadSettings(){
+  try{
+    const s = await idbGet('meta', 'ui');
+    if(s && s.v){ settingFontSize.value = s.v.fontSize || 18; applySettings(s.v); }
+  }catch(e){ console.warn('loadSettings err', e); }
 }
 
-/* ---------- boot ---------- */
+/* ---------- reload helper ---------- */
+async function reloadAndRender(){
+  await loadAll();
+  renderSources();
+  computeTotals();
+  renderTopSources();
+  renderTxList();
+}
+
+/* ---------- attach handlers (after boot) ---------- */
+function attachHandlers(){
+  addSourceBtn.disabled = false;
+  addSourceManualBtn.disabled = false;
+  openTxnBtn.disabled = false;
+  fabAdd.addEventListener('click', ()=> showTxnModal(null));
+  openTxnBtn.addEventListener('click', ()=> showTxnModal(null));
+  document.getElementById('saveSourceBtn').addEventListener('click', saveSource);
+  exportBtn.disabled = false; importBtn.disabled = false; settingsBtn.disabled = false;
+  exportBtn.addEventListener('click', exportAll);
+  importBtn.addEventListener('click', importAll);
+  addSourceManualBtn.addEventListener('click', async ()=>{
+    const name = prompt('New source name (e.g., Side gig)');
+    if(!name) return;
+    addSourceInput.value = name; addSourceType.value = 'income';
+    await saveSource();
+  });
+
+  // txn modal buttons
+  saveTxnBtn.addEventListener('click', saveTxn);
+  delTxnBtn.addEventListener('click', deleteEditingTxn);
+  cancelTxnBtn.addEventListener('click', closeTxnModal);
+  closeTxnBtn.addEventListener('click', closeTxnModal);
+  // settings
+  settingsBtn.addEventListener('click', ()=> {
+    settingsModal.classList.add('visible'); settingsModal.setAttribute('aria-hidden','false');
+  });
+  closeSettingsBtn.addEventListener('click', ()=> { settingsModal.classList.remove('visible'); settingsModal.setAttribute('aria-hidden','true'); });
+  saveSettingsBtn.addEventListener('click', async ()=>{
+    const cfg = { fontSize: Number(settingFontSize.value) || 18 };
+    await applySettings(cfg);
+    settingsModal.classList.remove('visible'); settingsModal.setAttribute('aria-hidden','true');
+    toast('Saved');
+  });
+  resetDataBtn.addEventListener('click', async ()=>{
+    if(!confirm('Reset and delete ALL data? This cannot be undone.')) return;
+    // clear stores
+    const db = await openDB();
+    const tx = db.transaction(['sources','txns','meta'], 'readwrite');
+    tx.objectStore('sources').clear(); tx.objectStore('txns').clear(); tx.objectStore('meta').clear();
+    tx.oncomplete = async ()=> { await reloadAndRender(); toast('Reset'); };
+    tx.onerror = ()=> toast('Reset failed');
+  });
+
+  // search/filter
+  txSearch.addEventListener('input', ()=> renderTxList());
+  txFilter.addEventListener('change', ()=> renderTxList());
+}
+
+/* ---------- initial boot ---------- */
 (async function boot(){
-  const loadingEl = document.getElementById('loading');
   try{
+    // small delay to ensure DOM ready
     await loadAll();
-    await applyUISettings();
-    renderPages();
-    await renderPage();
-    // attach handlers only after initial render is successful
-    attachUIHandlers();
-    // hide loading pill
+    await loadSettings();
+    await reloadAndRender();
+    attachHandlers();
+    // remove loading
     if(loadingEl) loadingEl.remove();
+    state.ready = true;
   }catch(err){
     console.error('boot err', err);
-    showToast('Failed to initialize finance (see console)', 5000);
-    // still attempt to attach handlers so user can interact and debug
-    try{ attachUIHandlers(); }catch(e){ console.error('attach after boot fail', e); }
+    toast('Init failed — see console');
     if(loadingEl) loadingEl.textContent = 'Ready (partial)';
+    try{ attachHandlers(); }catch(e){ console.error('attach after fail', e); }
   }
 })();
 </script>

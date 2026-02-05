@@ -1,49 +1,179 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
+<meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Wishlist & Health</title>
 <style>
-body{margin:0;background:#FFF8F1;font-family:system-ui;color:#3B2F2F}
-.header{padding:14px;background:linear-gradient(90deg,#EC4899,#F472B6);color:#fff;border-radius:0 0 18px 18px}
-.container{padding:14px}
-.card{background:white;padding:14px;border-radius:16px;margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
-.btn{padding:10px;border-radius:12px;border:0;background:#EC4899;color:#fff;width:100%}
-.item{padding:10px 0;border-bottom:1px solid #eee}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center}
+:root{
+  --bg:#FFF8F1; --card:#fff; --text:#3B2F2F; --muted:#7A6F66;
+  --accent:#EC4899; --radius:16px; --gap:14px; --base-font:18px;
+}
+html{font-size:var(--base-font); -webkit-text-size-adjust:100%;}
+body{margin:0;background:var(--bg);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);line-height:1.35}
+.header{padding:16px;background:linear-gradient(90deg,var(--accent),#F472B6);color:#fff;border-radius:0 0 18px 18px}
+.header h1{margin:0;font-size:1.6rem}
+.header small{opacity:.95;font-size:1rem}
+.container{padding:var(--gap);padding-bottom:96px}
+.card{background:var(--card);padding:14px;border-radius:var(--radius);margin-bottom:var(--gap);box-shadow:0 8px 20px rgba(0,0,0,.05)}
+input[type="text"]{width:100%;padding:12px;border-radius:12px;border:1px solid #eee;font-size:1.05rem;box-sizing:border-box}
+.btn{padding:12px;border-radius:12px;border:0;background:var(--accent);color:#fff;width:100%;font-weight:700;font-size:1.05rem;touch-action:manipulation}
+.item{padding:12px 0;border-bottom:1px solid #f3f3f3;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.item .txt{font-size:1.05rem}
+.item .controls{display:flex;gap:8px}
+.ctrl{padding:8px 10px;border-radius:10px;border:0;font-size:0.95rem}
+.ctrl.edit{background:#FBBF24;color:#3b2f2f}
+.ctrl.del{background:#F87171;color:white}
+.empty{padding:18px;text-align:center;color:#7a6b6b;font-size:1rem}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;text-align:center;box-shadow:0 -4px 10px rgba(0,0,0,.06)}
+@media(min-width:720px){ .container{max-width:720px;margin:0 auto} }
 </style>
 </head>
 <body>
-<div class="header"><h1>Wishlist & Health</h1><small>Your desires & wellbeing</small></div>
-<div class="container">
-  <div class="card">
-    <input id="wishText" placeholder="Add wish or health note"/>
-    <button class="btn" onclick="addWish()" style="margin-top:8px">Add</button>
+  <div class="header">
+    <h1>Wishlist & Health</h1>
+    <small>Your desires & wellbeing</small>
   </div>
-  <div class="card">
-    <div id="wishList"></div>
+
+  <div class="container">
+    <div class="card" aria-label="Add wish or health note">
+      <input id="wishText" type="text" placeholder="Add wish or health note" aria-label="Wish text"/>
+      <div style="height:8px"></div>
+      <button id="addWishBtn" class="btn" aria-label="Add">Add</button>
+    </div>
+
+    <div class="card">
+      <div id="wishList" aria-live="polite"></div>
+    </div>
   </div>
-</div>
-<div class="bottom-nav"><a href="index.html">🏠</a></div>
+
+  <div class="bottom-nav"><a href="index.html" aria-label="Home">🏠</a></div>
 
 <script>
-const DB='tomorrowai-db';
-function db(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
-async function all(){const d=await db();return new Promise(res=>{const r=d.transaction('data').objectStore('data').getAll();r.onsuccess=e=>res(e.target.result||[]);});}
-async function put(v){const d=await db();d.transaction('data','readwrite').objectStore('data').put(v);}
-async function del(id){const d=await db();d.transaction('data','readwrite').objectStore('data').delete(id);}
+/* Small IDB wrapper with localStorage fallback */
+const DB_NAME = 'tomorrowai-db';
+const DB_VER = 2;
+const STORE = 'data';
+
+function supportsIDB(){ try{ return 'indexedDB' in window && window.indexedDB != null; }catch(e){ return false; } }
+
+function openDB(){
+  if(!supportsIDB()) return Promise.resolve(null);
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: 'id' });
+    };
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = e => rej(e.target.error);
+  });
+}
+function rq(req){ return new Promise((res,rej)=>{ req.onsuccess = ev => res(ev.target.result); req.onerror = ev => rej(ev.target.error); }); }
+
+async function getAll(){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('no-idb');
+    const tx = db.transaction(STORE,'readonly');
+    return await rq(tx.objectStore(STORE).getAll());
+  }catch(e){
+    // fallback to localStorage
+    try{ const raw = localStorage.getItem(DB_NAME+'-'+STORE); return raw ? JSON.parse(raw) : []; }catch(err){ return []; }
+  }
+}
+async function put(item){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('no-idb');
+    return await new Promise((res,rej)=>{
+      const tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).put(item);
+      tx.oncomplete = ()=>res(true);
+      tx.onerror = e => rej(e.target.error);
+    });
+  }catch(e){
+    // localStorage merge
+    const arr = await getAll();
+    const i = arr.findIndex(x=>x.id===item.id);
+    if(i >= 0) arr[i] = item; else arr.push(item);
+    localStorage.setItem(DB_NAME+'-'+STORE, JSON.stringify(arr));
+    return true;
+  }
+}
+async function del(id){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('no-idb');
+    return await new Promise((res,rej)=>{
+      const tx = db.transaction(STORE,'readwrite');
+      tx.objectStore(STORE).delete(id);
+      tx.oncomplete = ()=>res(true);
+      tx.onerror = e=>rej(e.target.error);
+    });
+  }catch(e){
+    const arr = await getAll();
+    const out = arr.filter(x=>x.id!==id);
+    localStorage.setItem(DB_NAME+'-'+STORE, JSON.stringify(out));
+    return true;
+  }
+}
+
+/* UI logic */
+const wishText = document.getElementById('wishText');
+const wishList = document.getElementById('wishList');
+const addWishBtn = document.getElementById('addWishBtn');
+
+function makeId(){ return 'wish_' + Date.now() + '_' + Math.floor(Math.random()*1000); }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 async function render(){
-  const items=(await all()).filter(x=>x.type==='wish');
-  wishList.innerHTML=items.map(i=>`<div class="item">${i.text}<button onclick="remove('${i.id}')">✕</button></div>`).join('');
+  const items = (await getAll()).filter(x=>x.type==='wish').sort((a,b)=>b.created - a.created);
+  if(!items.length){ wishList.innerHTML = '<div class="empty">No wishes or notes yet</div>'; return; }
+  wishList.innerHTML = items.map(i=>`
+    <div class="item" id="${i.id}">
+      <div class="txt">${esc(i.text)}</div>
+      <div class="controls">
+        <button class="ctrl edit" data-id="${i.id}">Edit</button>
+        <button class="ctrl del" data-id="${i.id}">Delete</button>
+      </div>
+    </div>
+  `).join('');
+  // wire controls
+  document.querySelectorAll('.ctrl.edit').forEach(b=>b.onclick = async ev=>{
+    const id = ev.currentTarget.dataset.id;
+    const arr = await getAll();
+    const it = arr.find(x=>x.id===id);
+    if(!it) return;
+    const nv = prompt('Edit note', it.text);
+    if(nv === null) return;
+    it.text = nv.trim() || it.text;
+    it.updated = Date.now();
+    await put(it);
+    render();
+  });
+  document.querySelectorAll('.ctrl.del').forEach(b=>b.onclick = async ev=>{
+    const id = ev.currentTarget.dataset.id;
+    if(!confirm('Delete this note?')) return;
+    await del(id); render();
+  });
 }
+
 async function addWish(){
-  if(!wishText.value)return;
-  await put({id:'wish_'+Date.now(),type:'wish',text:wishText.value});
-  wishText.value=''; render();
+  const text = (wishText.value||'').trim();
+  if(!text){ wishText.focus(); return; }
+  await put({ id: makeId(), type:'wish', text, created: Date.now() });
+  wishText.value = '';
+  await render();
 }
-async function remove(id){await del(id);render();}
-render();
+
+/* mobile-friendly: attach both click and touchstart (touchstart prevents 300ms delay on some devices) */
+addWishBtn.addEventListener('click', addWish);
+addWishBtn.addEventListener('touchstart', function(e){ e.preventDefault(); addWish(); });
+
+wishText.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') addWish(); });
+
+document.addEventListener('DOMContentLoaded', render);
 </script>
 </body>
 </html>

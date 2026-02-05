@@ -6,35 +6,35 @@
 <title>Journal — Tomorrow</title>
 <link rel="manifest" href="/manifest.json"/>
 <style>
-  /* --- Theme variables (mobile-first, cream calm theme) --- */
+  /* --- Theme variables (mobile-first, cream light-yellow friendly) --- */
   :root{
-    --bg: #FBF7F2;              /* calm cream page background */
-    --card: #FFFDF8;            /* card surface */
-    --paper: linear-gradient(180deg, rgba(255,250,243,0.98), rgba(255,253,248,0.96));
-    --text: #1e293b;            /* slightly softer dark */
+    --bg: #FFF9E6;              /* light cream / pale yellow background */
+    --card: #FFFDF4;            /* card surface */
+    --paper: linear-gradient(180deg, rgba(255,250,232,0.98), rgba(255,253,244,0.96));
+    --text: #0b1b24;            /* strong readable dark */
     --muted: #6B7280;
-    --accent: #A7F3D0;          /* pale calm green accent */
-    --accent-2: #34D399;
+    --accent: #FDE68A;          /* warm soft accent */
+    --accent-2: #FBBF24;
     --radius: 12px;
     --shadow: 0 10px 30px rgba(20,20,30,0.06);
     --line: rgba(15,23,42,0.04);
     --font: Inter, system-ui, Arial, sans-serif;
     --max-width: 920px;
-    --base-font-size: 17px;    /* larger base for comfy reading on phones */
+    --base-font-size: 19px;    /* larger base for comfy reading on phones */
     --tap-size: 48px;          /* minimum comfortable tap target */
   }
 
-  /* basic layout */
+  /* base layout & accessibility */
   html,body{height:100%;margin:0;background:var(--bg);font-family:var(--font);color:var(--text);-webkit-font-smoothing:antialiased;font-size:var(--base-font-size)}
   .app{max-width:var(--max-width);margin:0 auto;min-height:100vh;padding:14px 12px 120px}
   header{display:flex;align-items:center;gap:12px;padding:8px 0}
-  header h1{margin:0;font-size:20px}
-  header .sub{font-size:13px;color:var(--muted)}
+  header h1{margin:0;font-size:22px}
+  header .sub{font-size:14px;color:var(--muted)}
 
   /* buttons */
-  .btn{padding:12px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;min-height:var(--tap-size);display:inline-flex;align-items:center;justify-content:center}
-  .btn.ghost{background:transparent;color:var(--accent);border:1px solid rgba(15,23,42,0.06)}
-  .btn.danger{background:#ef4444}
+  .btn{padding:12px 14px;border-radius:12px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#0b1b24;cursor:pointer;min-height:var(--tap-size);display:inline-flex;align-items:center;justify-content:center}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid rgba(15,23,42,0.06)}
+  .btn.danger{background:#ef4444;color:white}
   .btn.small{padding:8px 10px;border-radius:10px;min-height:40px}
 
   /* cards */
@@ -42,40 +42,46 @@
   .muted{color:var(--muted);font-size:13px}
   .small{font-size:13px;color:var(--muted)}
 
-  /* Layout: mobile-first stacked; on wide show two columns */
+  /* layout */
   .layout{display:flex;flex-direction:column;gap:12px}
   @media(min-width:860px){ .layout{flex-direction:row} .left{flex:0 0 46%} .right{flex:1} }
 
   /* Editor */
-  .editor{background:var(--paper);border-radius:12px;padding:12px;border:1px solid var(--line);min-height:260px;position:relative}
+  .editor{background:var(--paper);border-radius:12px;padding:12px;border:1px solid var(--line);min-height:280px;position:relative}
   .editor input, .editor textarea{width:100%;border:0;background:transparent;font-family:inherit;color:var(--text)}
-  .editor textarea{min-height:170px;outline:none;padding:10px;font-size:16px;resize:vertical;border-radius:8px}
-  .input{padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);background:#fff;margin:0}
+  .editor textarea{min-height:200px;outline:none;padding:12px;font-size:18px;resize:vertical;border-radius:8px;color:var(--text)}
+  .input{padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);background:#fff;margin:0;font-size:16px;color:var(--text)}
   .meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
 
   /* Notebook lines */
   .notebook .editor{background:
-    repeating-linear-gradient(to bottom, rgba(246,244,241,0.6) 0px, rgba(246,244,241,0.6) 42px, transparent 42px, transparent 84px),
-    linear-gradient(90deg, rgba(255,250,243,0.98), rgba(255,253,248,0.98)); box-shadow:0 8px 24px rgba(20,18,50,0.04);
+    repeating-linear-gradient(to bottom, rgba(255,245,230,0.6) 0px, rgba(255,245,230,0.6) 44px, transparent 44px, transparent 88px),
+    linear-gradient(90deg, rgba(255,250,232,0.98), rgba(255,253,244,0.98)); box-shadow:0 8px 24px rgba(20,18,50,0.04);
   }
 
   /* Entries list */
-  .entries{display:flex;flex-direction:column;gap:10px}
-  .entry{padding:12px;border-radius:12px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,253,248,0.98));display:flex;flex-direction:column;gap:8px}
+  .entries{display:flex;flex-direction:column;gap:12px}
+  .entry{padding:12px;border-radius:12px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,253,248,0.98));display:flex;flex-direction:column;gap:10px}
   .entry.head{display:flex;justify-content:space-between;align-items:center}
   .entry .meta-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-  .tag{padding:6px 10px;border-radius:999px;background:rgba(167,243,208,0.28);color:#047857;font-weight:600;font-size:13px}
+  .tag{padding:6px 10px;border-radius:999px;background:rgba(250,204,21,0.14);color:#92400e;font-weight:700;font-size:13px}
   .mood{font-size:20px}
-  .preview{color:var(--muted);white-space:pre-wrap;max-height:140px;overflow:hidden;font-size:15px}
+  .preview{color:var(--muted);white-space:pre-wrap;max-height:160px;overflow:hidden;font-size:16px}
 
   /* top controls */
   .list-controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
   .search{flex:1;padding:10px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);font-size:15px}
 
-  /* selection */
-  .selection-bar{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(167,243,208,0.18);color:var(--accent);font-weight:600}
+  /* pagination */
+  .pagination{display:flex;gap:8px;align-items:center;justify-content:center;margin-top:12px;flex-wrap:wrap}
+  .page-btn{padding:8px 10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);background:white;cursor:pointer;min-width:40px;text-align:center}
+  .page-btn.active{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:var(--text);font-weight:700;border:0}
+  .page-info{font-size:13px;color:var(--muted)}
 
-  /* modal backdrop - ensure hidden backdrops don't block touches */
+  /* selection */
+  .selection-bar{display:flex;gap:8px;align-items:center;padding:8px;border-radius:8px;background:rgba(250,204,21,0.12);color:#92400e;font-weight:700}
+
+  /* modal backdrop */
   .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s;pointer-events:none}
   .modal-backdrop.visible{visibility:visible;opacity:1;pointer-events:auto}
   .modal{background:var(--card);padding:14px;border-radius:12px;max-width:520px;width:92%;box-shadow:0 20px 60px rgba(2,6,23,0.18)}
@@ -89,7 +95,7 @@
   .favorite{color:#F59E0B;font-weight:700}
   .trash-note{font-size:13px;color:var(--muted);margin-top:8px}
 
-  /* Make touch targets full width on small screens */
+  /* small screens adjustments */
   @media(max-width:520px){
     .meta{flex-direction:column;align-items:stretch}
     .meta .input, .meta select, .meta button{width:100%}
@@ -153,7 +159,7 @@
                 <option value="night">Night</option>
               </select>
               <label class="muted-xs" style="margin-left:auto">Font size</label>
-              <input id="fontSize" type="number" min="14" max="22" value="17" style="width:72px" class="input"/>
+              <input id="fontSize" type="number" min="14" max="22" value="19" style="width:72px" class="input"/>
             </div>
           </div>
         </div>
@@ -195,6 +201,10 @@
           </div>
 
           <div style="margin-top:10px" id="entriesContainer" class="entries" aria-live="polite"></div>
+
+          <!-- Pagination controls -->
+          <div id="paginationArea" class="pagination" aria-hidden="false" style="margin-top:10px"></div>
+          <div class="page-info" style="text-align:center;margin-top:6px" id="pageInfo"></div>
         </div>
       </section>
     </main>
@@ -254,7 +264,7 @@
       <div class="modal">
         <div><strong>Edit entry</strong></div>
         <input id="editTitle" class="input" placeholder="Title" style="margin-top:8px"/>
-        <textarea id="editText" style="width:100%;min-height:140px;margin-top:8px;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06)"></textarea>
+        <textarea id="editText" style="width:100%;min-height:140px;margin-top:8px;padding:8px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);font-size:16px"></textarea>
         <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
           <input id="editDate" type="date" class="input" />
           <select id="editMood" class="input" style="width:120px"><option value="">Mood</option><option value="😊">😊</option><option value="😔">😔</option><option value="😌">😌</option></select>
@@ -274,13 +284,10 @@
   </div>
 
 <script>
-/* ---------------------------
-   Robust storage helpers: IndexedDB with localStorage fallback
-   Ensures save works on mobile browsers with IDB quirks.
-   --------------------------- */
+/* ========== Storage helpers (kept unchanged except small naming) ========== */
+/* (IndexedDB with localStorage fallback) */
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
 let db = null;
-let idbAvailable = true;
 
 function openDB(){
   return new Promise((resolve, reject) => {
@@ -290,171 +297,112 @@ function openDB(){
         const d = e.target.result;
         if(!d.objectStoreNames.contains('data')) d.createObjectStore('data',{keyPath:'id'});
         if(!d.objectStoreNames.contains('settings')) d.createObjectStore('settings',{keyPath:'key'});
-        if(!d.objectStoreNames.contains('users')) d.createObjectStore('users',{keyPath:'email'});
-        if(!d.objectStoreNames.contains('auth')) d.createObjectStore('auth',{keyPath:'key'});
       };
       req.onsuccess = e => { db = e.target.result; resolve(db); };
-      req.onerror = e => { idbAvailable = false; console.warn('IndexedDB open failed', e.target.error); reject(e.target.error); };
+      req.onerror = e => { console.warn('IndexedDB open failed', e.target.error); reject(e.target.error); };
     }catch(err){
-      idbAvailable = false; console.warn('IndexedDB not available', err); reject(err);
+      console.warn('IndexedDB not available', err);
+      reject(err);
     }
   });
 }
 
-async function _getDB(){
-  if(db) return db;
-  try{ return await openDB(); }catch(e){ return null; }
-}
+async function _getDB(){ if(db) return db; try{ return await openDB(); }catch(e){ return null; } }
 
 async function idbPut(store, val){
-  // try IDB, else fallback to localStorage
   try{
     const d = await _getDB();
-    if(!d) throw new Error('IDB not available');
+    if(!d) throw new Error('IDB unavailable');
     return await new Promise((res, rej) => {
-      const tx = d.transaction(store, 'readwrite');
+      const tx = d.transaction(store,'readwrite');
       tx.objectStore(store).put(val);
       tx.oncomplete = () => res(true);
-      tx.onerror = (e) => { rej(e.target?.error || e); };
+      tx.onerror = e => rej(e.target?.error || e);
     });
   }catch(e){
-    // localStorage fallback
-    console.warn('idbPut fallback', store, e);
+    // fallback to localStorage
     try{
       if(store === 'settings' && val && val.key !== undefined){
         const v = val.value !== undefined ? val.value : val;
         localStorage.setItem('tomorrow:settings:' + val.key, JSON.stringify(v));
         return true;
       }
-      if(store === 'auth' && val && val.key !== undefined){
-        const v = val.value !== undefined ? val.value : val;
-        localStorage.setItem('tomorrow:auth:' + val.key, JSON.stringify(v));
-        return true;
-      }
-      if(store === 'users' && val && val.email){
-        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
-        users[val.email] = val;
-        localStorage.setItem('tomorrow:users', JSON.stringify(users));
-        return true;
-      }
       if(store === 'data'){
         const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
-        // avoid duplicates by id
-        if(!arr.find(x=>x.id === val.id)) arr.push(val);
-        else {
-          // replace existing
-          const idx = arr.findIndex(x=>x.id===val.id);
-          arr[idx] = val;
-        }
+        const idx = arr.findIndex(x=>x.id===val.id);
+        if(idx >= 0) arr[idx] = val; else arr.push(val);
         localStorage.setItem('tomorrow:data', JSON.stringify(arr));
         return true;
       }
-      // generic fallback
       localStorage.setItem(`tomorrow:${store}:${Date.now()}`, JSON.stringify(val));
       return true;
-    }catch(err){ console.error('localStorage fallback failed', err); throw err; }
+    }catch(err){ console.error('Local fallback failed', err); throw err; }
   }
 }
 
 async function idbGet(store, key){
   try{
     const d = await _getDB();
-    if(!d) throw new Error('IDB not available');
+    if(!d) throw new Error('IDB unavailable');
     return await new Promise((res, rej) => {
-      const tx = d.transaction(store, 'readonly');
+      const tx = d.transaction(store,'readonly');
       const r = tx.objectStore(store).get(key);
       r.onsuccess = e => res(e.target.result);
       r.onerror = e => rej(e.target.error || e);
     });
   }catch(e){
-    console.warn('idbGet fallback', store, key, e);
     try{
       if(store === 'settings'){
         const raw = localStorage.getItem('tomorrow:settings:' + key);
         if(!raw) return null;
         return { key: key, value: JSON.parse(raw) };
       }
-      if(store === 'auth'){
-        const raw = localStorage.getItem('tomorrow:auth:' + key);
-        if(!raw) return null;
-        return JSON.parse(raw);
-      }
-      if(store === 'users'){
-        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
-        return users[key] || null;
-      }
       if(store === 'data'){
         return JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
       }
-      const raw = localStorage.getItem(`tomorrow:${store}:${key}`);
-      return raw ? JSON.parse(raw) : null;
-    }catch(err){ console.error('localStorage get failed', err); return null; }
+      return null;
+    }catch(err){ console.error('local get failed', err); return null; }
   }
 }
 
 async function idbGetAll(store){
   try{
     const d = await _getDB();
-    if(!d) throw new Error('IDB not available');
+    if(!d) throw new Error('IDB unavailable');
     return await new Promise((res, rej) => {
-      const tx = d.transaction(store, 'readonly');
+      const tx = d.transaction(store,'readonly');
       const r = tx.objectStore(store).getAll();
       r.onsuccess = e => res(e.target.result || []);
       r.onerror = e => rej(e.target.error || e);
     });
   }catch(e){
-    console.warn('idbGetAll fallback', store, e);
     try{
       if(store === 'settings'){
         const out = [];
         for(const k in localStorage){
           if(k.startsWith('tomorrow:settings:')){
-            const key = k.replace('tomorrow:settings:','');
-            out.push({ key, value: JSON.parse(localStorage.getItem(k)) });
+            out.push({ key: k.replace('tomorrow:settings:',''), value: JSON.parse(localStorage.getItem(k)) });
           }
         }
         return out;
       }
-      if(store === 'users'){
-        const users = JSON.parse(localStorage.getItem('tomorrow:users') || '{}');
-        return Object.values(users);
-      }
-      if(store === 'auth'){
-        const out = [];
-        for(const k in localStorage){
-          if(k.startsWith('tomorrow:auth:')){
-            out.push({ key: k.replace('tomorrow:auth:',''), value: JSON.parse(localStorage.getItem(k)) });
-          }
-        }
-        return out;
-      }
-      if(store === 'data'){
-        return JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
-      }
-      // generic
-      const out = [];
-      for(const k in localStorage){
-        if(k.startsWith(`tomorrow:${store}:`)){
-          out.push(JSON.parse(localStorage.getItem(k)));
-        }
-      }
-      return out;
-    }catch(err){ console.error('localStorage getAll failed', err); return []; }
+      if(store === 'data') return JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+      return [];
+    }catch(err){ console.error('local getAll failed', err); return []; }
   }
 }
 
 async function idbDelete(store, key){
   try{
     const d = await _getDB();
-    if(!d) throw new Error('IDB not available');
+    if(!d) throw new Error('IDB unavailable');
     return await new Promise((res, rej) => {
-      const tx = d.transaction(store, 'readwrite');
+      const tx = d.transaction(store,'readwrite');
       tx.objectStore(store).delete(key);
       tx.oncomplete = () => res(true);
       tx.onerror = e => rej(e.target.error || e);
     });
   }catch(e){
-    console.warn('idbDelete fallback', store, key, e);
     try{
       if(store === 'data'){
         const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
@@ -462,53 +410,38 @@ async function idbDelete(store, key){
         localStorage.setItem('tomorrow:data', JSON.stringify(out));
         return true;
       }
-      if(store === 'settings'){
-        localStorage.removeItem('tomorrow:settings:' + key);
-        return true;
-      }
-      if(store === 'auth'){
-        localStorage.removeItem('tomorrow:auth:' + key);
-        return true;
-      }
-      const candidate = `tomorrow:${store}:${key}`;
-      localStorage.removeItem(candidate);
+      if(store === 'settings'){ localStorage.removeItem('tomorrow:settings:' + key); return true; }
       return true;
-    }catch(err){ console.error('localStorage delete failed', err); return false; }
+    }catch(err){ console.error('local delete failed', err); return false; }
   }
 }
 
-/* ---------------------------
-   Crypto helper (SHA-256)
-   --------------------------- */
-async function sha256hex(text){
-  const enc = new TextEncoder().encode(text);
-  const buf = await crypto.subtle.digest('SHA-256', enc);
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
-
-/* ---------------------------
-   Utilities
-   --------------------------- */
+/* --------------------------- helpers --------------------------- */
+async function sha256hex(text){ const enc = new TextEncoder().encode(text); const buf = await crypto.subtle.digest('SHA-256', enc); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); }
 function toISODate(d){ if(!d) return null; const y=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), day=('0'+d.getDate()).slice(-2); return `${y}-${m}-${day}`; }
 function nowTs(){ return Date.now(); }
 function uid(prefix='j'){ return prefix + '_' + Date.now() + '_' + Math.floor(Math.random()*9999); }
-function showToast(msg, time=1800){ const el = document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.textContent = msg; document.body.appendChild(el); setTimeout(()=>el.remove(), time); }
+function showToast(msg, time=1600){ const el = document.createElement('div'); el.style.position='fixed'; el.style.right='12px'; el.style.bottom='90px'; el.style.zIndex=16000; el.style.background='rgba(10,10,12,0.9)'; el.style.color='white'; el.style.padding='10px 14px'; el.style.borderRadius='10px'; el.style.fontSize='0.95rem'; el.textContent = msg; document.body.appendChild(el); setTimeout(()=>el.remove(), time); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function parseTags(s){ if(!s) return []; return s.split(',').map(x=>x.trim()).filter(Boolean).slice(0,6); }
 
-/* ---------------------------
-   App state
-   --------------------------- */
-let state = { entries: [], selection: new Set(), unlocked: true, editingId: null };
+/* --------------------------- App state & pagination --------------------------- */
+let state = {
+  entries: [],
+  selection: new Set(),
+  unlocked: true,
+  editingId: null,
+  currentPage: 1,
+  pageSize: 6  // entries per page (you can change)
+};
 
-/* ---------------------------
-   Load / Render
-   --------------------------- */
+/* --------------------------- Load & render entries --------------------------- */
 async function loadEntries(){
   const all = await idbGetAll('data');
   state.entries = (Array.isArray(all) ? all.filter(x => x && x.type === 'journal') : []).sort((a,b)=> (b.ts||0) - (a.ts||0));
 }
 
-function parseTags(s){ if(!s) return []; return s.split(',').map(x=>x.trim()).filter(Boolean).slice(0,6); }
-
+/* Render with pagination and filters */
 function renderEntries(){
   const container = document.getElementById('entriesContainer');
   container.innerHTML = '';
@@ -517,7 +450,7 @@ function renderEntries(){
 
   let list = state.entries.slice();
 
-  if(filter === 'favorites') list = list.filter(e=> e.favorite);
+  if(filter === 'favorites') list = list.filter(e=> e.favorite && !e.deleted);
   else if(filter === 'trash') list = list.filter(e=> e.deleted);
   else if(filter === 'notes') list = list.filter(e=> !e.deleted);
 
@@ -528,69 +461,142 @@ function renderEntries(){
     });
   }
 
-  if(list.length === 0){
+  // pagination calculations
+  const total = list.length;
+  const pageSize = state.pageSize;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if(state.currentPage > totalPages) state.currentPage = totalPages;
+  if(state.currentPage < 1) state.currentPage = 1;
+  const start = (state.currentPage - 1) * pageSize;
+  const paginated = list.slice(start, start + pageSize);
+
+  if(paginated.length === 0){
     container.innerHTML = `<div class="muted">No entries found.</div>`;
-    return;
+  } else {
+    paginated.forEach(e => {
+      const el = document.createElement('div'); el.className = 'entry'; el.dataset.id = e.id;
+      const head = document.createElement('div'); head.className='entry head';
+      const left = document.createElement('div');
+      const titleText = e.title ? escapeHtml(e.title) : (e.text ? escapeHtml(e.text).slice(0,36) : 'Untitled');
+      const title = document.createElement('div'); title.innerHTML = `<strong style="font-size:15px">${titleText}</strong>`;
+      const meta = document.createElement('div'); meta.className='meta-row muted-sm';
+      const dateText = e.date ? e.date : new Date(e.ts).toLocaleString();
+      meta.innerHTML = `<span class="muted-xs">${dateText}</span> ${e.mood ? '<span class="mood">'+escapeHtml(e.mood)+'</span>' : ''} ${e.favorite ? '<span class="tag" style="background:rgba(245,158,11,0.12);color:#92400e">★ favorite</span>' : ''} ${e.deleted ? '<span class="tag" style="background:rgba(239,68,68,0.06);color:#ef4444">Trash</span>' : ''}`;
+      left.appendChild(title); left.appendChild(meta);
+
+      const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
+      const check = document.createElement('input'); check.type='checkbox'; check.style.width='18px'; check.style.height='18px';
+      check.checked = state.selection.has(e.id);
+      check.addEventListener('change', (ev) => { if(ev.target.checked) state.selection.add(e.id); else state.selection.delete(e.id); refreshSelectionBar(); });
+      right.appendChild(check);
+
+      const favBtn = document.createElement('button'); favBtn.className='btn ghost'; favBtn.innerHTML = e.favorite ? '★' : '☆';
+      favBtn.addEventListener('click', async ()=>{ e.favorite = !e.favorite; await idbPut('data', e); await loadEntries(); renderEntries(); });
+      right.appendChild(favBtn);
+
+      const viewBtn = document.createElement('button'); viewBtn.className='btn ghost'; viewBtn.textContent = 'View';
+      viewBtn.addEventListener('click', ()=> openViewModal(e));
+      right.appendChild(viewBtn);
+
+      const editBtn = document.createElement('button'); editBtn.className='btn ghost'; editBtn.textContent = 'Edit';
+      editBtn.addEventListener('click', ()=> openEditModal(e));
+      right.appendChild(editBtn);
+
+      const delBtn = document.createElement('button'); delBtn.className='btn ghost'; delBtn.textContent = e.deleted ? 'Delete' : 'Trash';
+      delBtn.addEventListener('click', async ()=> {
+        if(e.deleted){
+          if(!confirm('Permanently delete this entry? This cannot be undone.')) return;
+          await idbDelete('data', e.id);
+          await loadEntries(); renderEntries(); showToast('Entry permanently deleted');
+        } else {
+          e.deleted = true; e.deletedAt = Date.now(); await idbPut('data', e); await loadEntries(); renderEntries(); showToast('Moved to Trash');
+        }
+      });
+      right.appendChild(delBtn);
+
+      head.appendChild(left); head.appendChild(right); el.appendChild(head);
+
+      const preview = document.createElement('div'); preview.className='preview'; preview.textContent = e.text || '';
+      el.appendChild(preview);
+
+      if(e.tags && e.tags.length){
+        const tagsRow = document.createElement('div'); tagsRow.style.display='flex'; tagsRow.style.gap='6px'; tagsRow.style.flexWrap='wrap';
+        e.tags.forEach(t => { const tEl = document.createElement('div'); tEl.className='tag'; tEl.textContent = t; tagsRow.appendChild(tEl); });
+        el.appendChild(tagsRow);
+      }
+
+      container.appendChild(el);
+    });
   }
 
-  list.forEach(e => {
-    const el = document.createElement('div'); el.className = 'entry'; el.dataset.id = e.id;
-    const head = document.createElement('div'); head.className='entry head';
-    const left = document.createElement('div');
-    const title = document.createElement('div'); title.innerHTML = `<strong style="font-size:15px">${e.title ? escapeHtml(e.title) : (e.text ? escapeHtml(e.text).slice(0,32) : 'Untitled')}</strong>`;
-    const meta = document.createElement('div'); meta.className='meta-row muted-sm';
-    const dateText = e.date ? e.date : new Date(e.ts).toLocaleString();
-    meta.innerHTML = `<span class="muted-xs">${dateText}</span> ${e.mood ? '<span class="mood">'+escapeHtml(e.mood)+'</span>' : ''} ${e.favorite ? '<span class="tag" style="background:rgba(245,158,11,0.12);color:#F59E0B">★ favorite</span>' : ''} ${e.deleted ? '<span class="tag" style="background:rgba(239,68,68,0.06);color:#ef4444">Trash</span>' : ''}`;
-    left.appendChild(title); left.appendChild(meta);
-
-    const right = document.createElement('div'); right.style.display='flex'; right.style.gap='8px'; right.style.alignItems='center';
-    const check = document.createElement('input'); check.type='checkbox'; check.style.width='18px'; check.style.height='18px';
-    check.checked = state.selection.has(e.id);
-    check.addEventListener('change', (ev) => { if(ev.target.checked) state.selection.add(e.id); else state.selection.delete(e.id); refreshSelectionBar(); });
-    right.appendChild(check);
-
-    const favBtn = document.createElement('button'); favBtn.className='btn ghost'; favBtn.innerHTML = e.favorite ? '★' : '☆';
-    favBtn.addEventListener('click', async ()=>{ e.favorite = !e.favorite; await idbPut('data', e); await loadEntries(); renderEntries(); });
-    right.appendChild(favBtn);
-
-    const editBtn = document.createElement('button'); editBtn.className='btn ghost'; editBtn.textContent = 'Edit';
-    editBtn.addEventListener('click', ()=> openEditModal(e));
-    right.appendChild(editBtn);
-
-    const delBtn = document.createElement('button'); delBtn.className='btn ghost'; delBtn.textContent = e.deleted ? 'Delete' : 'Trash';
-    delBtn.addEventListener('click', async ()=> {
-      if(e.deleted){
-        if(!confirm('Permanently delete this entry? This cannot be undone.')) return;
-        await idbDelete('data', e.id);
-        await loadEntries(); renderEntries(); showToast('Entry permanently deleted');
-      } else {
-        e.deleted = true; e.deletedAt = Date.now(); await idbPut('data', e); await loadEntries(); renderEntries(); showToast('Moved to Trash');
-      }
-    });
-    right.appendChild(delBtn);
-
-    head.appendChild(left); head.appendChild(right); el.appendChild(head);
-
-    const preview = document.createElement('div'); preview.className='preview'; preview.textContent = e.text || '';
-    el.appendChild(preview);
-
-    if(e.tags && e.tags.length){
-      const tagsRow = document.createElement('div'); tagsRow.style.display='flex'; tagsRow.style.gap='6px'; tagsRow.style.flexWrap='wrap';
-      e.tags.forEach(t => { const tEl = document.createElement('div'); tEl.className='tag'; tEl.textContent = t; tagsRow.appendChild(tEl); });
-      el.appendChild(tagsRow);
-    }
-
-    container.appendChild(el);
-  });
+  renderPagination(list.length, state.currentPage, state.pageSize);
   refreshSelectionBar();
 }
 
-/* small escape helper for title injection */
-function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
+/* ------------ pagination UI ------------ */
+function renderPagination(totalItems, currentPage, pageSize){
+  const area = document.getElementById('paginationArea');
+  area.innerHTML = '';
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
 
-/* ---------------------------
-   Selection bar and bulk actions
-   --------------------------- */
+  // if only 1 page hide pagination
+  if(totalPages <= 1){
+    document.getElementById('pageInfo').textContent = `${totalItems} entries`;
+    return;
+  }
+
+  // Prev
+  const prev = document.createElement('button'); prev.className='page-btn'; prev.textContent = 'Prev';
+  prev.disabled = currentPage <= 1; prev.addEventListener('click', ()=> setPage(currentPage - 1));
+  area.appendChild(prev);
+
+  // page numbers window: show up to 7 pages
+  const maxButtons = 7;
+  let start = Math.max(1, currentPage - Math.floor(maxButtons/2));
+  let end = Math.min(totalPages, start + maxButtons - 1);
+  if(end - start + 1 < maxButtons){
+    start = Math.max(1, end - maxButtons + 1);
+  }
+
+  if(start > 1){
+    const btn = document.createElement('button'); btn.className='page-btn'; btn.textContent = '1'; btn.addEventListener('click', ()=> setPage(1)); area.appendChild(btn);
+    if(start > 2){
+      const ell = document.createElement('div'); ell.className='page-btn'; ell.textContent = '...'; ell.style.pointerEvents='none'; area.appendChild(ell);
+    }
+  }
+
+  for(let p = start; p <= end; p++){
+    const btn = document.createElement('button'); btn.className='page-btn'; btn.textContent = String(p);
+    if(p === currentPage) btn.classList.add('active');
+    btn.addEventListener('click', ()=> setPage(p));
+    area.appendChild(btn);
+  }
+
+  if(end < totalPages){
+    if(end < totalPages - 1){
+      const ell = document.createElement('div'); ell.className='page-btn'; ell.textContent = '...'; ell.style.pointerEvents='none'; area.appendChild(ell);
+    }
+    const btn = document.createElement('button'); btn.className='page-btn'; btn.textContent = String(totalPages); btn.addEventListener('click', ()=> setPage(totalPages)); area.appendChild(btn);
+  }
+
+  // Next
+  const next = document.createElement('button'); next.className='page-btn'; next.textContent = 'Next';
+  next.disabled = currentPage >= totalPages; next.addEventListener('click', ()=> setPage(currentPage + 1));
+  area.appendChild(next);
+
+  document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages} • ${totalItems} entries`;
+}
+
+function setPage(n){
+  state.currentPage = Math.max(1, Math.floor(n));
+  // when search or filter changes, currentPage reset elsewhere. Here just re-render.
+  renderEntries();
+  // scroll entries into view (good for phone)
+  const top = document.getElementById('entriesContainer').getBoundingClientRect().top + window.scrollY - 80;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
+/* ---------------- selection bar --------------- */
 function refreshSelectionBar(){ const selBar = document.getElementById('selectionBar'); const count = state.selection.size; if(count === 0){ selBar.style.display = 'none'; return; } selBar.style.display = 'flex'; document.getElementById('selectionCount').textContent = `${count} selected`; }
 
 document.getElementById('bulkMoveTrash').addEventListener('click', async ()=>{ if(state.selection.size === 0) return; if(!confirm('Move selected entries to Trash?')) return; for(const id of Array.from(state.selection)){ const e = state.entries.find(x=>x.id===id); if(e){ e.deleted = true; e.deletedAt = Date.now(); await idbPut('data', e); } } state.selection.clear(); await loadEntries(); renderEntries(); showToast('Moved to Trash'); });
@@ -599,9 +605,7 @@ document.getElementById('bulkRestore').addEventListener('click', async ()=>{ if(
 
 document.getElementById('bulkDelete').addEventListener('click', async ()=>{ if(state.selection.size === 0) return; if(!confirm('Permanently delete selected entries?')) return; for(const id of Array.from(state.selection)){ await idbDelete('data', id); } state.selection.clear(); await loadEntries(); renderEntries(); showToast('Permanently deleted'); });
 
-/* ---------------------------
-   Save / Clear entry (with robust fallback)
-   --------------------------- */
+/* ---------------- Save / clear entry ---------------- */
 async function saveNewEntry(){
   try{
     const title = document.getElementById('entryTitle').value.trim();
@@ -611,15 +615,11 @@ async function saveNewEntry(){
     const tags = parseTags(document.getElementById('entryTags').value || '');
     if(!text && !title){ alert('Write something or add a title before saving'); return; }
     const ent = { id: uid('journal'), type:'journal', title, text, date, mood, tags, ts: nowTs(), favorite:false, deleted:false };
-    await idbPut('data', ent);           // will fallback to localStorage if IDB fails
-    await loadEntries();
-    renderEntries();
+    await idbPut('data', ent);
+    await loadEntries(); state.currentPage = 1; renderEntries();
     document.getElementById('entryTitle').value=''; document.getElementById('entryText').value=''; document.getElementById('entryTags').value='';
     showToast('Saved');
-  }catch(err){
-    console.error('Save failed', err);
-    alert('Could not save entry. Please try again. If this repeats, check storage permissions or try another browser.');
-  }
+  }catch(err){ console.error('Save failed', err); alert('Could not save entry. Check storage permissions or try another browser.'); }
 }
 
 document.getElementById('saveEntry').addEventListener('click', saveNewEntry);
@@ -630,13 +630,11 @@ document.getElementById('newQuick').addEventListener('click', ()=>{ document.get
 document.getElementById('todayQuick').addEventListener('click', async ()=>{ document.getElementById('entryDate').value = toISODate(new Date()); document.getElementById('entryText').value = ''; document.getElementById('entryTitle').value = `Note — ${new Date().toLocaleDateString()}`; });
 document.getElementById('favQuick').addEventListener('click', ()=>{ document.getElementById('filterSelect').value='favorites'; renderEntries(); });
 
-/* search & filter */
-document.getElementById('searchInput').addEventListener('input', ()=> renderEntries());
-document.getElementById('filterSelect').addEventListener('change', ()=> renderEntries());
+/* search & filter: reset to first page on change */
+document.getElementById('searchInput').addEventListener('input', ()=>{ state.currentPage = 1; renderEntries(); });
+document.getElementById('filterSelect').addEventListener('change', ()=>{ state.currentPage = 1; renderEntries(); });
 
-/* ---------------------------
-   Edit modal
-   --------------------------- */
+/* ---------------- Edit + View modal ---------------- */
 function openEditModal(entry){
   state.editingId = entry.id;
   document.getElementById('editTitle').value = entry.title || '';
@@ -663,9 +661,27 @@ document.getElementById('saveEdit').addEventListener('click', async ()=>{
   await loadEntries(); renderEntries(); closeEditModal(); showToast('Entry updated');
 });
 
-/* ---------------------------
-   Export / Import
-   --------------------------- */
+/* small "view" modal to read full saved entry (non-edit) */
+function openViewModal(entry){
+  // reuse edit modal but in view-only mode: fill edit fields and hide save
+  state.editingId = entry.id;
+  document.getElementById('editTitle').value = entry.title || '';
+  document.getElementById('editText').value = entry.text || '';
+  document.getElementById('editDate').value = entry.date || toISODate(new Date(entry.ts));
+  document.getElementById('editMood').value = entry.mood || '';
+  document.getElementById('editTags').value = (entry.tags || []).join(', ');
+  // hide save/allow only close
+  document.getElementById('saveEdit').style.display = 'none';
+  document.getElementById('cancelEdit').textContent = 'Close';
+  const m = document.getElementById('editModal'); m.classList.add('visible'); m.setAttribute('aria-hidden','false');
+}
+function closeViewModalRestore(){ // when closing a view restore buttons
+  document.getElementById('saveEdit').style.display = ''; document.getElementById('cancelEdit').textContent = 'Cancel';
+  closeEditModal();
+}
+document.getElementById('cancelEdit').addEventListener('click', ()=> { closeViewModalRestore(); });
+
+/* ---------------- Export / Import ---------------- */
 document.getElementById('exportBtn').addEventListener('click', async ()=>{
   const data = await idbGetAll('data');
   const settings = await idbGetAll('settings');
@@ -680,28 +696,26 @@ document.getElementById('importBtn').addEventListener('click', ()=> {
   input.addEventListener('change', async (e)=>{
     const f = e.target.files[0]; if(!f) return;
     try{
-      const text = await f.text();
-      const obj = JSON.parse(text);
+      const text = await f.text(); const obj = JSON.parse(text);
       if(obj.data && Array.isArray(obj.data)){
         for(const item of obj.data){
           const existing = await idbGet('data', item.id);
           if(!existing) await idbPut('data', item);
         }
-        await loadEntries(); renderEntries(); showToast('Import complete');
+        await loadEntries(); state.currentPage = 1; renderEntries(); showToast('Import complete');
       } else alert('Invalid import file');
     }catch(err){ alert('Import failed: ' + err.message); }
   });
   input.click();
 });
 
-/* ---------------------------
-   Settings / Security logic
-   --------------------------- */
+/* ---------------- Security settings ---------------- */
 document.getElementById('settingsBtn').addEventListener('click', async ()=> {
   const sec = await idbGet('settings','journal.security');
   document.getElementById('secEnable').value = (sec && sec.value && sec.value.enabled) ? 'yes' : 'no';
-  if(sec && sec.value && sec.value.custom) document.getElementById('secCustomQ').value = sec.value.customQuestion || '';
+  document.getElementById('secQuestion').value = (sec && sec.value && sec.value.questionKey) ? sec.value.questionKey : 'pet';
   document.getElementById('secCustomQ').style.display = (sec && sec.value && sec.value.questionKey === 'custom') ? 'block' : 'none';
+  if(sec && sec.value && sec.value.customQuestion) document.getElementById('secCustomQ').value = sec.value.customQuestion;
   const m = document.getElementById('settingsModal'); m.classList.add('visible'); m.setAttribute('aria-hidden','false');
 });
 document.getElementById('closeSettings').addEventListener('click', ()=> { const m = document.getElementById('settingsModal'); m.classList.remove('visible'); m.setAttribute('aria-hidden','true'); });
@@ -710,10 +724,7 @@ document.getElementById('secQuestion').addEventListener('change', (e)=> { docume
 
 document.getElementById('saveSecurity').addEventListener('click', async ()=>{
   const enabled = document.getElementById('secEnable').value === 'yes';
-  if(!enabled){
-    await idbPut('settings', { key:'journal.security', value: { enabled:false }});
-    showToast('Security disabled'); return;
-  }
+  if(!enabled){ await idbPut('settings', { key:'journal.security', value: { enabled:false }}); showToast('Security disabled'); return; }
   const qKey = document.getElementById('secQuestion').value;
   const customQ = document.getElementById('secCustomQ').value.trim();
   const answer = document.getElementById('secAnswer').value || '';
@@ -727,9 +738,7 @@ document.getElementById('saveSecurity').addEventListener('click', async ()=>{
 
 document.getElementById('removeSecurity').addEventListener('click', async ()=>{ if(!confirm('Remove the journal security question?')) return; await idbPut('settings', { key:'journal.security', value: { enabled:false }}); showToast('Security removed'); });
 
-/* ---------------------------
-   Unlock on load if security enabled
-   --------------------------- */
+/* unlock modal */
 async function checkSecurityOnLoad(){
   const sec = await idbGet('settings','journal.security');
   if(sec && sec.value && sec.value.enabled){
@@ -755,43 +764,41 @@ document.getElementById('unlockSubmit').addEventListener('click', async ()=>{
   } else { alert('Incorrect answer'); }
 });
 
-/* ---------------------------
-   Remove all local journal data
-   --------------------------- */
+/* ---------------- other misc controls ---------------- */
 document.getElementById('clearAllBtn').addEventListener('click', async ()=>{ if(!confirm('Remove all journal entries and settings for the journal? This cannot be undone.')) return; const all = await idbGetAll('data'); for(const it of all.filter(x=>x.type==='journal')) await idbDelete('data', it.id); await idbPut('settings', { key:'journal.security', value: { enabled:false }}); await initLoad(); showToast('All journal data removed'); });
 
-/* ---------------------------
-   Caches / service worker messaging
-   --------------------------- */
 document.getElementById('closeCacheBtn').addEventListener('click', async ()=>{ if(!confirm('Ask service worker to clear cached assets? App will reload.')) return; if(navigator.serviceWorker && navigator.serviceWorker.controller){ navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' }); } setTimeout(()=> location.reload(true), 800); });
 
-/* ---------------------------
-   Theme, mode and font-size handling
-   --------------------------- */
-document.getElementById('modeSelect').addEventListener('change', (e)=>{ const mode = e.target.value; document.body.classList.remove('notebook'); if(mode === 'notebook'){ document.body.classList.add('notebook'); } else if(mode === 'night'){ document.documentElement.style.setProperty('--bg', '#0b1220'); document.documentElement.style.setProperty('--card', '#071022'); document.documentElement.style.setProperty('--text', '#e6eef6'); document.documentElement.style.setProperty('--muted', '#9AA4B2'); } else { document.documentElement.style.removeProperty('--bg'); document.documentElement.style.removeProperty('--card'); document.documentElement.style.removeProperty('--text'); document.documentElement.style.removeProperty('--muted'); } });
+/* mode and font size handlers */
+document.getElementById('modeSelect').addEventListener('change', (e)=>{
+  const mode = e.target.value;
+  document.body.classList.remove('notebook');
+  // reset night overrides before applying
+  document.documentElement.style.removeProperty('--bg');
+  document.documentElement.style.removeProperty('--card');
+  document.documentElement.style.removeProperty('--text');
+  document.documentElement.style.removeProperty('--muted');
+  if(mode === 'notebook'){ document.body.classList.add('notebook'); }
+  else if(mode === 'night'){
+    document.documentElement.style.setProperty('--bg', '#071022');
+    document.documentElement.style.setProperty('--card', '#071A2A');
+    document.documentElement.style.setProperty('--text', '#E6EEF6');
+    document.documentElement.style.setProperty('--muted', '#9AA4B2');
+  }
+});
 
-document.getElementById('fontSize').addEventListener('change', (e)=>{ const v = Number(e.target.value) || 17; document.documentElement.style.setProperty('font-size', v + 'px'); });
+document.getElementById('fontSize').addEventListener('change', (e)=>{ const v = Number(e.target.value) || 19; document.documentElement.style.setProperty('font-size', v + 'px'); });
 
-/* ---------------------------
-   Home FAB
-   --------------------------- */
 document.getElementById('homeBtn').addEventListener('click', ()=> location.href='index.html');
 
-/* ---------------------------
-   Init
-   --------------------------- */
-async function initLoad(){ await loadEntries(); renderEntries(); }
+/* ---------------- init ---------------- */
+async function initLoad(){ await loadEntries(); state.currentPage = 1; renderEntries(); }
 
-// initial boot: check security then load
+// boot
 (async function boot(){
-  await checkSecurityOnLoad();
-  if(state.unlocked){
-    await initLoad();
-  } else {
-    // stay locked until unlock
-  }
+  try{ await checkSecurityOnLoad(); }catch(e){ console.warn('security check fail', e); }
+  if(state.unlocked) await initLoad();
 })();
-
 </script>
 </body>
 </html>

@@ -12,18 +12,18 @@
       /* base */
       --bg:#F7FBFF;
       --surface:#fff;
-      --muted:#6B7280;
-      --text:#0f172a;
+      --muted:#5B6168;            /* slightly stronger muted for readability */
+      --text:#0b1720;            /* slightly darker text */
       --radius:14px;
-      --base-font-size:15px;
-      --hub-icon-size:56px;
+      --base-font-size:18px;     /* bumped for older eyes */
+      --hub-icon-size:64px;      /* slightly larger icons */
       --btn-radius:20px;
-      --btn-padding:10px 14px;
+      --btn-padding:12px 16px;
       --btn-shadow:0 10px 30px rgba(15,23,42,0.08);
 
-      /* PALE GREEN ACCENTS (slightly paler than before) */
+      /* PALE GREEN ACCENTS (green -> yellow feel) */
       --accent: #A7F3D0;    /* paler minty green */
-      --accent-2: #34D399;  /* slightly richer secondary green */
+      --accent-2: #FDE68A;  /* warm yellow secondary */
 
       /* WARM PINK HEADER */
       --header-start: #FF6B9F;
@@ -33,46 +33,45 @@
       --title-accent: #FFD166;
     }
 
-    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial;font-size:var(--base-font-size)}
+    html,body{height:100%;margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial;font-size:var(--base-font-size);-webkit-font-smoothing:antialiased}
     .app{max-width:920px;margin:0 auto;height:100vh;display:flex;flex-direction:column}
     /* header now uses warm pink gradient */
-    header{padding:14px 16px;background:linear-gradient(90deg,var(--header-start),var(--header-end));color:#fff;border-radius:0 0 12px 12px;display:flex;align-items:center;gap:12px}
-    header h1{margin:0;font-size:20px;font-weight:800;color:var(--title-accent);text-shadow:0 2px 6px rgba(0,0,0,0.12)}
-    header .subtitle{font-size:12px;opacity:.95}
-    main{flex:1;overflow:auto;padding:16px}
-    .card{background:var(--surface);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--btn-shadow);border:1px solid rgba(15,23,42,0.04)}
-    .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
-    @media(min-width:720px){.grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}}
-    .hub-btn{border-radius:18px;padding:12px;text-align:center;cursor:pointer;min-height:120px;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(15,23,42,0.06);transition:transform .12s, box-shadow .12s;position:relative;overflow:visible}
+    header{padding:16px 18px;background:linear-gradient(90deg,var(--header-start),var(--header-end));color:#fff;border-radius:0 0 12px 12px;display:flex;align-items:center;gap:14px}
+    header h1{margin:0;font-size:22px;font-weight:800;color:var(--title-accent);text-shadow:0 2px 6px rgba(0,0,0,0.12)}
+    header .subtitle{font-size:14px;opacity:.95}
+    main{flex:1;overflow:auto;padding:18px}
+    .card{background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--btn-shadow);border:1px solid rgba(15,23,42,0.04)}
+    .grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}
+    @media(min-width:720px){.grid{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}}
+    .hub-btn{border-radius:12px;padding:12px;text-align:left;cursor:pointer;min-height:120px;display:flex;flex-direction:row;align-items:center;gap:12px;justify-content:flex-start;box-shadow:0 6px 18px rgba(15,23,42,0.06);transition:transform .12s, box-shadow .12s;position:relative;overflow:visible;background:var(--surface);border:1px solid rgba(15,23,42,0.03)}
     .hub-btn:active{transform:translateY(2px)}
-    /* hub-icon uses updated pale green gradient */
-    .hub-icon{width:var(--hub-icon-size);height:var(--hub-icon-size);border-radius:12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent),var(--accent-2));color:white;font-size:18px;flex:0 0 var(--hub-icon-size)}
-    .hub-icon svg{ width:28px; height:28px; stroke:currentColor; fill:none; display:block;}
-    .hub-label{font-weight:700;margin-top:8px;font-size:calc(var(--base-font-size) * 0.95);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-    .hub-sub{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .hub-accent{position:absolute;left:0;top:8px;bottom:8px;width:8px;border-radius:8px;box-shadow:0 6px 14px rgba(0,0,0,0.04);pointer-events:none}
+    .hub-icon{width:var(--hub-icon-size);height:var(--hub-icon-size);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-size:20px;flex:0 0 var(--hub-icon-size);box-shadow:0 6px 20px rgba(15,23,42,0.06)}
+    .hub-icon svg{ width:34px; height:34px; stroke:currentColor; fill:none; display:block;}
+    .hub-label{font-weight:800;margin-top:0;font-size:calc(var(--base-font-size) * 1.02);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+    .hub-sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .app-disable-btn{position:absolute;right:10px;top:8px;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:6px;border-radius:8px}
-    /* primary buttons use the pale green accent gradient */
-    .btn{padding:var(--btn-padding);border-radius:var(--btn-radius);border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:var(--btn-shadow);transition:transform .12s,box-shadow .12s}
-    .small{font-size:12px;color:var(--muted)}
-    footer.small{text-align:center;padding:8px 12px;color:var(--muted);font-size:12px}
+    .btn{padding:var(--btn-padding);border-radius:var(--btn-radius);border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#0b1720;cursor:pointer;box-shadow:var(--btn-shadow);transition:transform .12s,box-shadow .12s}
+    .btn.secondary{background:transparent;border:1px solid rgba(15,23,42,0.06);color:var(--muted)}
+    .small{font-size:13px;color:var(--muted)}
+    footer.small{text-align:center;padding:10px 12px;color:var(--muted);font-size:13px}
     .header-right{margin-left:auto;display:flex;align-items:center;gap:12px}
-    .icon-btn{background:transparent;border:0;color:white;cursor:pointer;display:flex;align-items:center;gap:8px;padding:6px;border-radius:10px}
-    .icon-svg{width:20px;height:20px;display:inline-block;vertical-align:middle}
+    .icon-btn{background:transparent;border:0;color:white;cursor:pointer;display:flex;align-items:center;gap:10px;padding:8px;border-radius:10px;font-size:15px}
+    .icon-btn svg{width:22px;height:22px}
     .modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(2,6,23,0.65);padding:20px;visibility:hidden;opacity:0;transition:opacity .12s;z-index:12000}
     .modal.visible{visibility:visible;opacity:1}
-    .modal-card{width:100%;max-width:520px;background:var(--surface);border-radius:12px;padding:18px;box-shadow:0 20px 60px rgba(2,6,23,0.22)}
-    label{display:block;margin-bottom:6px;font-weight:600}
-    input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(15,23,42,0.06);margin-bottom:8px}
-    .muted{font-size:13px;color:var(--muted)}
+    .modal-card{width:100%;max-width:560px;background:var(--surface);border-radius:12px;padding:20px;box-shadow:0 20px 60px rgba(2,6,23,0.22)}
+    label{display:block;margin-bottom:6px;font-weight:700;font-size:15px}
+    input,select,textarea{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(15,23,42,0.06);margin-bottom:10px;font-size:15px}
+    .muted{font-size:14px;color:var(--muted)}
     .hidden{display:none !important}
-    .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1e293b;font-size:12px}
-    /* floating button uses pale green accent */
+    .chip{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef2ff;color:#1e293b;font-size:13px}
     .ai-float{position:fixed;right:18px;bottom:18px;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;z-index:20000;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:white;cursor:pointer;box-shadow:0 12px 30px rgba(11,22,60,0.12)}
     .ai-float .letter{font-weight:900;font-size:20px}
     .profile-field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-    @media(max-width:520px){ .profile-field-row{grid-template-columns:1fr} .modal-card{height:100vh;border-radius:0;padding:16px;overflow:auto} .modal{align-items:flex-start;padding-top:16px} }
+    @media(max-width:520px){ .profile-field-row{grid-template-columns:1fr} .modal-card{height:100vh;border-radius:0;padding:16px;overflow:auto} .modal{align-items:flex-start;padding-top:16px} .hub-btn{flex-direction:row;min-height:96px;padding:10px} .hub-icon{width:56px;height:56px} }
     .error-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.65);color:white;display:flex;align-items:center;justify-content:center;z-index:13000;padding:18px}
-    .required-note{color:#b91c1c;font-size:13px;margin-bottom:8px}
+    .required-note{color:#b91c1c;font-size:14px;margin-bottom:8px}
   </style>
 </head>
 <body>
@@ -84,28 +83,29 @@
       </div>
 
       <div class="header-right" role="navigation" aria-label="Header controls">
-        <button id="openSettingsBtn" class="icon-btn" title="Settings / About">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <button id="openSettingsBtn" class="icon-btn" title="Settings / About" aria-haspopup="dialog">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
             <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/></svg>
-          <span class="small" style="color:white">Settings</span>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33"/>
+          </svg>
+          <span style="font-weight:700">Settings</span>
         </button>
-        <button id="installBtn" class="btn" style="display:none">Install</button>
+        <button id="installBtn" class="btn" style="display:none;white-space:nowrap">Install</button>
       </div>
     </header>
 
     <main>
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><strong>Sections</strong><div class="small">Open a page below</div></div>
+          <div><strong style="font-size:18px">Sections</strong><div class="small">Open a page below</div></div>
           <div style="display:flex;gap:8px;align-items:center">
-            <button id="downloadOfflineBtn" class="btn">Download for offline</button>
+            <button id="downloadOfflineBtn" class="btn" style="white-space:nowrap">Download for offline</button>
             <button id="openExportBtn" class="btn" title="Export local data">Export</button>
-            <button id="shareAppBtn" class="btn small" style="background:transparent;color:var(--surface);border:1px solid rgba(255,255,255,0.06)">Share</button>
+            <button id="shareAppBtn" class="btn small" style="background:transparent;color:var(--muted);border:1px solid rgba(15,23,42,0.04)">Share</button>
           </div>
         </div>
 
-        <div style="margin-top:12px" class="grid" id="hubGrid" aria-live="polite"></div>
+        <div style="margin-top:14px" class="grid" id="hubGrid" aria-live="polite"></div>
         <div id="offlineNote" class="small muted" style="margin-top:8px;display:none">Offline (server unreachable). Local mode active.</div>
       </div>
 
@@ -118,7 +118,7 @@
   <!-- Profile modal (required) -->
   <div id="profileModal" class="modal" aria-hidden="true">
     <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
-      <h3 id="profileTitle" style="margin-top:0">Tell us about yourself</h3>
+      <h3 id="profileTitle" style="margin-top:0;font-size:20px">Tell us about yourself</h3>
       <div class="muted">Only asked once locally. These details are stored on-device and will be synced to server when online so admin can see them.</div>
 
       <div style="margin-top:12px">
@@ -162,10 +162,10 @@
   <!-- Settings modal -->
   <div id="settingsModal" class="modal" aria-hidden="true">
     <div class="modal-card">
-      <button class="settings-close-x" id="settingsCancelX" title="Close" style="float:right;border:0;background:transparent;font-size:20px">✕</button>
-      <h3 style="margin-top:0">Settings</h3>
+      <button class="settings-close-x" id="settingsCancelX" title="Close" style="float:right;border:0;background:transparent;font-size:22px">✕</button>
+      <h3 style="margin-top:0;font-size:20px">Settings</h3>
       <label>Display name</label><input id="settingDisplayName" placeholder="Your name" />
-      <label>Font size (px)</label><input id="settingFontSize" type="number" min="12" max="22" value="15" />
+      <label>Font size (px)</label><input id="settingFontSize" type="number" min="14" max="24" value="18" />
       <label>Theme accent</label>
       <select id="settingAccent">
         <option value="teal">Teal</option><option value="blue">Blue</option><option value="purple">Purple</option><option value="custom">Custom</option>
@@ -181,7 +181,7 @@
         <button id="cancelSettingsBtn" class="btn secondary">Cancel</button>
       </div>
       <div style="margin-top:14px">
-        <button id="clearCachesBtn" class="btn small" style="background:#ef4444">Clear caches (safe)</button>
+        <button id="clearCachesBtn" class="btn small" style="background:#ef4444;color:white">Clear caches (safe)</button>
       </div>
     </div>
   </div>
@@ -192,10 +192,12 @@
   <script>
 /* Robust index.html — profile REQUIRED. IndexedDB with localStorage fallback. */
 
+/* Configuration */
 const DB_NAME = 'tomorrowai-db', DB_VER = 2;
 let dbPromise = null;
 let idbAvailable = true;
 
+/* Open DB (cached promise) */
 function openDB(){
   if(dbPromise) return dbPromise;
   dbPromise = new Promise((resolve,reject) => {
@@ -206,7 +208,7 @@ function openDB(){
         if(!db.objectStoreNames.contains('settings')) db.createObjectStore('settings',{keyPath:'key'});
         if(!db.objectStoreNames.contains('users')) db.createObjectStore('users',{keyPath:'email'});
         if(!db.objectStoreNames.contains('auth')) db.createObjectStore('auth',{keyPath:'key'});
-        if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id', autoIncrement:true});
+        if(!db.objectStoreNames.contains('data')) db.createObjectStore('data',{keyPath:'id'});
       };
       req.onsuccess = e => resolve(e.target.result);
       req.onerror = e => { idbAvailable = false; console.warn('IndexedDB open error', e.target.error); reject(e.target.error); };
@@ -215,22 +217,19 @@ function openDB(){
   return dbPromise;
 }
 
-/* idb helpers with graceful fallback to localStorage */
+/* IDB helpers with fallback to localStorage */
 async function idbPut(store, value){
-  // try IDB first
   try{
     if(!idbAvailable) throw new Error('IndexedDB unavailable');
     const db = await openDB();
     return await new Promise((res,rej)=>{
       const tx = db.transaction(store,'readwrite');
       const os = tx.objectStore(store);
-      // ensure the shape matches the store keyPath expectations
       os.put(value);
       tx.oncomplete = ()=>res(true);
       tx.onerror = e => rej(e.target.error || e);
     });
   }catch(e){
-    // fallback to localStorage (structured)
     console.warn('idbPut failed — falling back to localStorage', store, e);
     try{
       if(store === 'settings' && value && (value.key !== undefined)){
@@ -251,7 +250,9 @@ async function idbPut(store, value){
       }
       if(store === 'data'){
         const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
-        arr.push(value);
+        // avoid duplicates by id
+        const idx = arr.findIndex(x=>x.id === value.id);
+        if(idx >= 0) arr[idx] = value; else arr.push(value);
         localStorage.setItem('tomorrow:data', JSON.stringify(arr));
         return true;
       }
@@ -357,6 +358,43 @@ async function idbGetAll(store){
   }
 }
 
+async function idbDelete(store, key){
+  try{
+    if(!idbAvailable) throw new Error('IndexedDB unavailable');
+    const db = await openDB();
+    return await new Promise((res,rej)=>{
+      const tx = db.transaction(store,'readwrite');
+      tx.objectStore(store).delete(key);
+      tx.oncomplete = ()=>res(true);
+      tx.onerror = e => rej(e.target.error || e);
+    });
+  }catch(e){
+    console.warn('idbDelete fallback', store, key, e);
+    try{
+      if(store === 'data'){
+        const arr = JSON.parse(localStorage.getItem('tomorrow:data') || '[]');
+        const out = arr.filter(x=> x.id !== key);
+        localStorage.setItem('tomorrow:data', JSON.stringify(out));
+        return true;
+      }
+      if(store === 'settings'){
+        localStorage.removeItem('tomorrow:settings:' + key);
+        return true;
+      }
+      if(store === 'auth'){
+        localStorage.removeItem('tomorrow:auth:' + key);
+        return true;
+      }
+      const candidate = `tomorrow:${store}:${key}`;
+      localStorage.removeItem(candidate);
+      return true;
+    }catch(err){
+      console.error('localStorage delete failed', err);
+      return false;
+    }
+  }
+}
+
 /* Helper to normalize settings.profile shape (some stores use {key, value}) */
 async function getProfileRecord(){
   const raw = await idbGet('settings','profile');
@@ -364,6 +402,7 @@ async function getProfileRecord(){
   return raw.value ? raw.value : raw;
 }
 
+/* Small toast helper */
 function showToast(msg,ms=2200){
   const el = document.createElement('div');
   el.style.position='fixed'; el.style.right='12px'; el.style.bottom='24px'; el.style.zIndex=99999;
@@ -373,7 +412,7 @@ function showToast(msg,ms=2200){
   setTimeout(()=> el.remove(), ms);
 }
 
-/* Hub items (same as before) */
+/* Hub items (original list preserved) */
 const hubItems = [
   { id:'finance', label:'Finance', sub:'Accounts & txns', href:'finance.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M12 1v22"/><path d="M5 7h14"/></svg>` },
   { id:'goals', label:'Goals', sub:'Plans & targets', href:'goals.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-7-7"/></svg>` },
@@ -386,50 +425,85 @@ const hubItems = [
   { id:'more', label:'More', sub:'Links & apps', href:'more.html', icon:`<svg viewBox="0 0 24 24" stroke="white"><path d="M12 5v14M5 12h14"/></svg>` }
 ];
 
+/* Color map for hub items — green->yellow for the 'green feeling' cards; other colors for readability */
+const colorMap = {
+  'habits': { gradient: 'linear-gradient(135deg,#A7F3D0,#FDE68A)', accent: '#A7F3D0' },
+  'journal': { gradient: 'linear-gradient(135deg,#CFFCE1,#FFF3B0)', accent: '#CFFCE1' },
+  'wishlist': { gradient: 'linear-gradient(135deg,#DFF7E6,#FFF8C4)', accent: '#DFF7E6' },
+  'menustral': { gradient: 'linear-gradient(135deg,#FFE0F0,#FFF3B8)', accent: '#FFE0F0' },
+  'tasks': { gradient: 'linear-gradient(135deg,#E6F7FF,#FFF9D9)', accent: '#E6F7FF' },
+  'finance': { gradient: 'linear-gradient(135deg,#8FD3F4,#4A90E2)', accent: '#4A90E2' },
+  'goals': { gradient: 'linear-gradient(135deg,#FDE68A,#FBBF24)', accent: '#FDE68A' },
+  'export': { gradient: 'linear-gradient(135deg,#D5CCFF,#A78BFA)', accent: '#A78BFA' },
+  'more': { gradient: 'linear-gradient(135deg,#FFD7B5,#FFB677)', accent: '#FFB677' }
+};
+
+/* Dedupe helper — ensures we don't render duplicates if hubItems contains repeats */
+function uniqueById(items){
+  const map = new Map();
+  for(const it of items) if(it && it.id) map.set(it.id, it);
+  return Array.from(map.values());
+}
+
+/* Render hub grid with left accent stripe and accessible labels */
 let allowInternalNav = false;
 function markInternalNav(){ allowInternalNav = true; setTimeout(()=> allowInternalNav = false, 900); }
 
 async function renderHubGrid(){
-  const grid = document.getElementById('hubGrid'); if(!grid) return; grid.innerHTML = '';
+  const grid = document.getElementById('hubGrid'); if(!grid) return;
+  grid.innerHTML = '';
+
+  // dedupe the hubItems to protect against accidental duplicates
+  const items = uniqueById(hubItems);
+
   const profile = await getProfileRecord();
   const currentAuth = await idbGet('auth','current');
   const email = currentAuth?.value?.email || (profile ? profile._email : null);
   const currentUser = email ? (await idbGet('users', email) || null) : null;
 
-  hubItems.forEach(it => {
+  for(const it of items){
     const btn = document.createElement('div'); btn.className='hub-btn';
+    btn.setAttribute('role','button');
+    btn.setAttribute('tabindex','0');
+    btn.dataset.app = it.id;
+
+    // color / gradient
+    const col = colorMap[it.id] || { gradient: 'linear-gradient(135deg,#E6F7FF,#FFF9D9)', accent:'#A7F3D0' };
+
+    // left accent stripe
+    const accentDiv = document.createElement('div'); accentDiv.className='hub-accent';
+    accentDiv.style.background = col.gradient;
+    btn.appendChild(accentDiv);
+
+    // icon
+    const iconWrap = document.createElement('div'); iconWrap.className = 'hub-icon';
+    iconWrap.style.background = col.gradient;
+    iconWrap.innerHTML = it.icon;
+    btn.appendChild(iconWrap);
+
+    // label area
+    const labelArea = document.createElement('div'); labelArea.style.flex = '1';
+    const label = document.createElement('div'); label.className = 'hub-label'; label.textContent = it.label;
+    const sub = document.createElement('div'); sub.className = 'hub-sub'; sub.textContent = it.sub;
+    labelArea.appendChild(label); labelArea.appendChild(sub);
+    btn.appendChild(labelArea);
+
+    // optional disable control (follows your earlier logic)
     const disabledForUser = currentUser && Array.isArray(currentUser.disabledApps) && currentUser.disabledApps.includes(it.id);
-    const disableButtonHtml = (currentUser && currentUser.email && currentUser.email.endsWith('@local') === false)
-                             ? `<button class="app-disable-btn" data-app="${it.id}" title="${disabledForUser ? 'Enable this section' : 'Disable this section'}">${disabledForUser ? 'Enable' : 'Disable'}</button>`
-                             : '';
-
-    btn.innerHTML = `
-      ${disableButtonHtml}
-      <div class="hub-icon" aria-hidden="true">${it.icon}</div>
-      <div class="hub-label" title="${it.label}">${it.label}</div>
-      <div class="hub-sub">${it.sub}</div>
-    `;
-
-    btn.addEventListener('click', async (ev)=>{
-      const targetIsDisable = ev.target && ev.target.matches('button[data-app]');
-      if(targetIsDisable) return;
-      if(disabledForUser){ showToast('This section is disabled for your account.'); return; }
-      markInternalNav();
-      location.href = it.href;
-    });
-
-    const disableBtn = btn.querySelector('button[data-app]');
-    if(disableBtn){
-      disableBtn.addEventListener('click', async (ev)=>{
-        ev.stopPropagation();
-        await toggleAppDisabledForCurrentUser(it.id);
-        await renderHubGrid();
-      });
+    if(currentUser && typeof currentUser.email === 'string'){
+      const disableBtn = document.createElement('button'); disableBtn.className='app-disable-btn'; disableBtn.textContent = disabledForUser ? 'Enable' : 'Disable';
+      disableBtn.title = disabledForUser ? 'Enable this section' : 'Disable this section';
+      disableBtn.addEventListener('click', async (ev)=>{ ev.stopPropagation(); await toggleAppDisabledForCurrentUser(it.id); await renderHubGrid(); });
+      btn.appendChild(disableBtn);
+      if(disabledForUser){ btn.style.opacity = '0.6'; btn.style.filter = 'grayscale(6%)'; }
     }
 
-    if(disabledForUser){ btn.style.opacity = '0.56'; btn.style.filter = 'grayscale(6%)'; }
+    // click / keyboard nav
+    btn.addEventListener('click', (ev)=>{ if(ev.target && ev.target.matches('button')) return; markInternalNav(); location.href = it.href; });
+    btn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); btn.click(); } });
+
     grid.appendChild(btn);
-  });
+  }
 }
 
 /* toggle disabled apps (keeps local users store updated) */
@@ -451,7 +525,7 @@ async function toggleAppDisabledForCurrentUser(appId){
   }); }catch(e){}
 }
 
-/* PROFILE: required flow */
+/* PROFILE: required flow & helpers */
 function makeLocalEmail(){ const rnd = Math.floor(Math.random()*1e8).toString(16); return `user-${Date.now().toString(16)}-${rnd}@local`; }
 
 async function saveLocalProfile(profile){
@@ -468,12 +542,10 @@ async function saveLocalProfile(profile){
     createdAt: existing?.createdAt || now,
     lastSeen: now
   };
-  // write using idbPut (will fallback to localStorage if needed)
   await idbPut('settings', { key:'profile', value: record });
-  await idbPut('users', { email: email, name: record.name, location: record.location, country: record.country, created_at: record.createdAt, last_seen: record.lastSeen, enabled:1, disabled_apps: JSON.stringify([]), meta: JSON.stringify({ age: record.age, gender: record.gender }) });
+  await idbPut('users', { email: email, name: record.name, location: record.location, country: record.country, created_at: record.createdAt, last_seen: record.lastSeen, enabled:1, disabledApps: [] });
   await idbPut('auth', { key:'current', value:{ email: email, name: record.name }});
   await renderHubGrid();
-  // note: we attempt server sync, but admin reading from device is supported by local storage above
   trySyncProfileToServer();
 }
 
@@ -484,9 +556,7 @@ async function trySyncProfileToServer(){
   if(!navigator.onLine){ document.getElementById('offlineNote').style.display = 'block'; return; }
   try{
     const payload = { email: email, name: profile.name || email, location: profile.location || '', country: profile.country || '', meta: { age: profile.age||'', gender: profile.gender||'' } };
-    const res = await fetch('/api/register', {
-      method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload)
-    });
+    const res = await fetch('/api/register', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
     if(res && res.ok){
       const json = await res.json().catch(()=>null);
       if(json && json.ok && json.user){
@@ -499,8 +569,8 @@ async function trySyncProfileToServer(){
           created_at: userRec.createdAt,
           last_seen: userRec.lastSeen,
           enabled: userRec.enabled ? 1 : 0,
-          disabled_apps: JSON.stringify(userRec.disabledApps || []),
-          meta: JSON.stringify(userRec.meta || {})
+          disabledApps: userRec.disabledApps || [],
+          meta: userRec.meta || {}
         });
         await idbPut('auth', { key:'current', value:{ email: userRec.email, name: userRec.name }});
         showToast('Profile synced to server');
@@ -560,13 +630,13 @@ function hideProfileModal(){
 }
 function blockEscape(e){ if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); return false; } }
 
-/* Settings / SW helpers (unchanged) */
+/* Settings / SW helpers (visible and preserved) */
 document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{
   const settingsAll = await idbGetAll('settings');
   const settings = {};
   settingsAll.forEach(s => settings[s.key] = s.value);
   document.getElementById('settingDisplayName').value = settings.profileName || (settings.profile && settings.profile.name) || '';
-  document.getElementById('settingFontSize').value = settings.fontSize || 15;
+  document.getElementById('settingFontSize').value = settings.fontSize || Number(getComputedStyle(document.documentElement).getPropertyValue('--base-font-size')) || 18;
   document.getElementById('settingAccent').value = settings.accent || 'teal';
   document.getElementById('settingDarkMode').checked = !!settings.darkMode;
   document.getElementById('settingsModal').classList.add('visible');
@@ -575,7 +645,7 @@ document.getElementById('openSettingsBtn').addEventListener('click', async ()=>{
 document.getElementById('settingsCancelX').addEventListener('click', ()=>{ document.getElementById('settingsModal').classList.remove('visible'); document.getElementById('settingsModal').setAttribute('aria-hidden','true'); });
 document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
   const name = document.getElementById('settingDisplayName').value.trim();
-  const fz = Number(document.getElementById('settingFontSize').value) || 15;
+  const fz = Number(document.getElementById('settingFontSize').value) || 18;
   const accent = document.getElementById('settingAccent').value;
   const dark = document.getElementById('settingDarkMode').checked;
   await idbPut('settings', { key:'profileName', value: name });
@@ -586,7 +656,7 @@ document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
   document.getElementById('settingsModal').classList.remove('visible');
 });
 
-/* a few utility buttons (download offline, clear caches) still post messages to SW if present */
+/* utility buttons */
 document.getElementById('clearCachesBtn').addEventListener('click', async ()=>{ if(navigator.serviceWorker && navigator.serviceWorker.controller){ navigator.serviceWorker.controller.postMessage({ type:'CLEAR_CACHES' }); showToast('Sent clear caches to service worker'); } else { showToast('Service worker not active'); } });
 
 document.getElementById('openExportBtn').addEventListener('click', async ()=>{
@@ -601,10 +671,12 @@ document.getElementById('downloadOfflineBtn').addEventListener('click', async ()
 
 document.getElementById('shareAppBtn').addEventListener('click', async ()=>{ const shareData = { title: 'Tomorrow — Personal App', text: 'Try Tomorrow PWA', url: location.origin + location.pathname }; if(navigator.share){ try{ await navigator.share(shareData); }catch(e){ showToast('Share canceled'); } } else { try{ await navigator.clipboard.writeText(shareData.url); showToast('Link copied'); }catch(e){ showToast('Cannot copy link'); } } });
 
-/* settings application */
+/* apply settings visually (font-size, dark mode, title) */
 async function applySettings(){
   const settingsAll = await idbGetAll('settings'); const settings = {}; settingsAll.forEach(s=>settings[s.key]=s.value);
-  document.documentElement.style.setProperty('--base-font-size', (settings.fontSize || 15) + 'px');
+  const fz = settings.fontSize || 18;
+  document.documentElement.style.setProperty('--base-font-size', fz + 'px');
+  document.documentElement.style.fontSize = (fz) + 'px';
   if(settings.profileName) document.getElementById('appTitle').textContent = `Tomorrow Personal App — ${settings.profileName}`;
   if(settings.darkMode){
     document.documentElement.style.setProperty('--bg','#061223');
@@ -614,12 +686,33 @@ async function applySettings(){
   } else {
     document.documentElement.style.setProperty('--bg','#F7FBFF');
     document.documentElement.style.setProperty('--surface','#fff');
-    document.documentElement.style.setProperty('--text','#0f172a');
-    document.documentElement.style.setProperty('--muted','#6B7280');
+    document.documentElement.style.setProperty('--text','#0b172a');
+    document.documentElement.style.setProperty('--muted','#5B6168');
   }
 }
 
-/* SW registration (keeps same behavior) */
+/* Screen orientation: try to lock to portrait (best-effort) */
+async function tryLockOrientation(){
+  try{
+    if(screen.orientation && screen.orientation.lock){
+      await screen.orientation.lock('portrait');
+      showToast('Orientation locked to portrait (if supported)');
+    } else if(window.screen && window.screen.lockOrientation){
+      const ok = window.screen.lockOrientation('portrait');
+      if(ok) showToast('Orientation locked to portrait (legacy API)');
+    } else {
+      // not supported — nothing to do
+      console.debug('Screen Orientation API not supported or not available');
+    }
+  }catch(err){
+    console.debug('Orientation lock failed', err);
+  }
+}
+
+/* floating T */
+document.getElementById('aiFloatBtn').addEventListener('click', ()=>{ showToast('Smart action (placeholder)'); tryLockOrientation().catch(()=>{}); });
+
+/* Service worker registration & messaging */
 let deferredInstallPrompt = null; const installBtn = document.getElementById('installBtn');
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstallPrompt = e; if(installBtn){ installBtn.style.display='inline-block'; installBtn.onclick = async ()=>{ installBtn.style.display='none'; deferredInstallPrompt.prompt(); try{ const choice = await deferredInstallPrompt.userChoice; if(choice && choice.outcome==='accepted') showToast('App installed'); else showToast('Install dismissed'); }catch(e){} deferredInstallPrompt = null; }; } });
 
@@ -636,7 +729,6 @@ async function registerServiceWorker(){
     if (navigator.serviceWorker.controller) {
       try { navigator.serviceWorker.controller.postMessage({ type: 'DOWNLOAD_OFFLINE' }); } catch(e){}
     } else {
-      // wait until worker becomes ready/active, then request download
       navigator.serviceWorker.ready.then(r => { if(r.active) try { r.active.postMessage({ type: 'DOWNLOAD_OFFLINE' }); } catch(e){} });
     }
 
@@ -659,7 +751,18 @@ function requestCheckForUpdates(){
   }
 }
 
-/* startup flow */
+/* Network events */
+window.addEventListener('online', () => { showToast('Online — syncing...'); trySyncProfileToServer(); renderHubGrid(); requestCheckForUpdates(); });
+window.addEventListener('offline', () => { showToast('Offline — local-only mode'); document.getElementById('offlineNote').style.display = 'block'; });
+
+/* Navigation safety (unchanged) */
+try{ const pathname = (location.pathname || '/').split('/').pop() || ''; const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/'; if(isIndex){ history.replaceState({ home: true }, ''); history.pushState({ home: true, spacer: true }, ''); } }catch(e){}
+window.addEventListener('popstate', (ev) => { if(ev.state && ev.state.spacer){ if(confirm('Do you want to leave the app?')) { history.back(); } else { history.pushState({ home:true, spacer:true }, ''); } } });
+
+/* Initial validation + boot */
+function beforeUnloadBlock(e){ e.preventDefault(); e.returnValue = 'Please save your profile before leaving.'; }
+function showErrorOverlay(msg){ const el = document.createElement('div'); el.className='error-overlay'; el.innerHTML = `<div><h3>Startup error</h3><div style="max-width:560px">${msg}</div></div>`; document.body.appendChild(el); }
+
 async function boot(){
   try{ await applySettings().catch(()=>{}); }catch(e){}
   try{
@@ -669,43 +772,30 @@ async function boot(){
       setTimeout(()=> profileNameInput.focus(), 350);
       window.addEventListener('beforeunload', beforeUnloadBlock);
     } else {
-      // ensure auth.current exists
       await idbPut('auth', { key:'current', value:{ email: profile._email, name: profile.name }});
       trySyncProfileToServer();
-      renderHubGrid();
+      await renderHubGrid();
     }
     await renderHubGrid();
+    tryLockOrientation().catch(()=>{});
   }catch(e){ console.error('Boot error', e); showErrorOverlay('IndexedDB not available or another startup error occurred. Check console.'); }
 }
-function beforeUnloadBlock(e){ e.preventDefault(); e.returnValue = 'Please save your profile before leaving.'; }
 
-function showErrorOverlay(msg){ const el = document.createElement('div'); el.className='error-overlay'; el.innerHTML = `<div><h3>Startup error</h3><div style="max-width:560px">${msg}</div></div>`; document.body.appendChild(el); }
-
-<!-- online/offline -->
-window.addEventListener('online', () => { showToast('Online — syncing...'); trySyncProfileToServer(); renderHubGrid(); requestCheckForUpdates(); });
-window.addEventListener('offline', () => { showToast('Offline — local-only mode'); document.getElementById('offlineNote').style.display = 'block'; });
-
-/* floating T */
-document.getElementById('aiFloatBtn').addEventListener('click', ()=>{ showToast('Smart action (placeholder)'); });
-
-/* navigation safety (unchanged) */
-try{ const pathname = (location.pathname || '/').split('/').pop() || ''; const isIndex = pathname === '' || pathname === 'index.html' || pathname === '/'; if(isIndex){ history.replaceState({ home: true }, ''); history.pushState({ home: true, spacer: true }, ''); } }catch(e){}
-window.addEventListener('popstate', (ev) => { if(ev.state && ev.state.spacer){ if(confirm('Do you want to leave the app?')) { history.back(); } else { history.pushState({ home:true, spacer:true }, ''); } } });
-
-/* initial validation + boot */
 validateProfileForm();
 boot();
 
+/* Expose a small helper in case page scripts load twice – prevents duplicate render calls */
+if(!window._tomorrowHubInit) window._tomorrowHubInit = true;
+
   </script>
 
-  <!-- Service Worker registration snippet (added as requested) -->
+  <!-- Service Worker registration snippet (duplicate-safe extra call) -->
   <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', async () => {
       try {
         const reg = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
         console.log('ServiceWorker registered', reg);
-        // Warm cache: tell worker to download offline assets (optional)
         if (reg.active) {
           reg.active.postMessage({ type: 'DOWNLOAD_OFFLINE' });
         } else {

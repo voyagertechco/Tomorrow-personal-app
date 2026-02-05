@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Finance — Tomorrow</title>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/><title>Finance — Tomorrow</title>
 <link rel="manifest" href="/manifest.json"/>
 <style>
   :root{
-    /* accessibility-first scaling */
+    /* accessibility-first scaling (bigger by default) */
     --bg:#FFFDF8;
     --card:#ffffff;
     --text:#07232a;
@@ -18,11 +18,11 @@
     --line:rgba(10,12,12,0.08);
     --font:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, system-ui, sans-serif;
     --max-width:920px;
-    --base-font-size:17px;      /* increased from 15 -> more legible */
+    --base-font-size:18px;      /* increased so text is not tiny */
     --line-height:1.55;
-    --btn-padding:12px 16px;    /* bigger touch targets */
-    --pill-size:14px;
-    --tx-font-size:15px;
+    --btn-padding:14px 18px;    /* bigger touch targets */
+    --pill-size:15px;
+    --tx-font-size:16px;
   }
 
   html,body{
@@ -34,15 +34,16 @@
     font-size:var(--base-font-size);
     -webkit-font-smoothing:antialiased;
     line-height:var(--line-height);
+    -webkit-text-size-adjust:100%;
   }
 
-  .app{max-width:var(--max-width);margin:0 auto;padding:16px 16px 120px}
+  .app{max-width:var(--max-width);margin:0 auto;padding:18px 16px 120px}
   header{display:flex;align-items:center;gap:14px;margin-bottom:14px}
-  header h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-0.2px}
-  header .mini{font-size:14px;color:var(--muted);margin-top:2px}
+  header h1{margin:0;font-size:26px;font-weight:800;letter-spacing:-0.2px}
+  header .mini{font-size:15px;color:var(--muted);margin-top:2px}
 
-  .card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--line)}
-  .row{display:flex;gap:10px;align-items:center}
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:14px;box-shadow:var(--shadow);border:1px solid var(--line)}
+  .row{display:flex;gap:12px;align-items:center}
   .col{flex:1}
   .btn{
     padding:var(--btn-padding);
@@ -51,68 +52,73 @@
     background:linear-gradient(90deg,var(--accent),var(--accent-2));
     color:white;
     cursor:pointer;
-    font-weight:700;
-    font-size:15px;
+    font-weight:800;
+    font-size:16px;
+    -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
   }
   .btn.ghost{
     background:transparent;
     border:1px solid var(--line);
     color:var(--text);
-    font-weight:700;
-    padding:10px 12px;
+    font-weight:800;
+    padding:12px 14px;
+    font-size:15px;
   }
   .btn.ghost:focus, .btn:focus { outline:3px solid rgba(78,154,151,0.18); outline-offset:3px; }
 
   input,select,textarea{
-    padding:12px;
-    border-radius:10px;
+    padding:14px;
+    border-radius:12px;
     border:1px solid var(--line);
-    font-size:15px;
+    font-size:16px;
     line-height:1.4;
     background:transparent;
     color:var(--text);
   }
   input:focus, select:focus, textarea:focus { outline:3px solid rgba(78,154,151,0.14); outline-offset:3px; }
 
-  .mini{font-size:14px;color:var(--muted)}
-  .tx-list{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+  .mini{font-size:15px;color:var(--muted)}
+  .tx-list{display:flex;flex-direction:column;gap:12px;margin-top:12px}
   .tx{
-    display:flex;justify-content:space-between;align-items:center;padding:12px;border-radius:12px;border:1px solid rgba(10,12,12,0.04);
+    display:flex;justify-content:space-between;align-items:center;padding:14px;border-radius:12px;border:1px solid rgba(10,12,12,0.04);
     background:linear-gradient(180deg,#fff,#fff);
     font-size:var(--tx-font-size);
   }
   .tx .left { max-width:66%; }
-  .tx .left strong{ font-size:15px; font-weight:700; display:block; color:var(--text) }
-  .tx .left .note { color:var(--muted); font-size:13px; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100% }
+  .tx .left strong{ font-size:16px; font-weight:800; display:block; color:var(--text) }
+  .tx .left .note { color:var(--muted); font-size:14px; margin-top:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100% }
 
   .amount{font-weight:900;font-size:18px;color:var(--text)}
-  .pill{padding:6px 10px;border-radius:999px;background:rgba(0,0,0,0.04);font-weight:700;margin-right:6px;display:inline-block;font-size:var(--pill-size)}
-  canvas{width:100%;height:160px;display:block;border-radius:8px;background:transparent}
+  .pill{padding:8px 12px;border-radius:999px;background:rgba(0,0,0,0.04);font-weight:800;margin-right:6px;display:inline-block;font-size:var(--pill-size)}
+  canvas{width:100%;height:180px;display:block;border-radius:8px;background:transparent}
 
-  /* generic modal/backdrop behavior */
-  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s}
-  .modal-backdrop.visible{visibility:visible;opacity:1}
-  .modal{background:var(--card);padding:14px;border-radius:12px;max-width:780px;width:94%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
+  /* generic modal/backdrop behavior - mobile friendly */
+  .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s;pointer-events:none}
+  .modal-backdrop.visible{visibility:visible;opacity:1;pointer-events:auto}
+  .modal{background:var(--card);padding:16px;border-radius:12px;max-width:780px;width:94%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
   .modal .modal-row{display:flex;gap:10px;align-items:center}
   .danger{background:var(--danger);color:white}
-  .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
+  .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:64px;height:64px;border-radius:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
 
   /* controls spacing improvements */
-  header a{ text-decoration:none;color:var(--accent);font-weight:800;font-size:15px }
-  #pages button{font-size:14px;padding:10px 12px}
-  #pageTitle{font-size:18px;font-weight:800}
-  #pageSub{font-size:14px;color:var(--muted)}
-  #pageBalance{font-size:15px;padding:8px 12px}
-  #balanceVal{font-size:20px;font-weight:800}
-  #cumulation{font-size:13px;color:var(--muted);margin-top:8px}
+  header a{ text-decoration:none;color:var(--accent);font-weight:800;font-size:16px }
+  #pages button{font-size:15px;padding:12px 14px}
+  #pageTitle{font-size:20px;font-weight:900}
+  #pageSub{font-size:15px;color:var(--muted)}
+  #pageBalance{font-size:16px;padding:10px 14px}
+  #balanceVal{font-size:22px;font-weight:900}
+  #cumulation{font-size:14px;color:var(--muted);margin-top:8px}
 
   /* transaction modal inputs made larger */
-  #txnModal .modal select, #txnModal .modal input, #txnModal .modal textarea { font-size:15px }
+  #txnModal .modal select, #txnModal .modal input, #txnModal .modal textarea { font-size:16px; padding:12px; }
 
   @media (max-width:720px){
     .row{flex-direction:column;align-items:stretch}
     header{align-items:flex-start}
     .tx .left{ max-width:60% }
+    .app{padding:14px 12px 110px}
+    header h1{font-size:22px}
   }
 </style>
 </head>
@@ -175,8 +181,8 @@
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
             <div><strong style="font-size:16px">Transactions</strong><div class="mini">Add income or expense and tag it</div></div>
             <div style="display:flex;gap:10px;align-items:center">
-              <input id="txSearch" placeholder="Search note or category" style="padding:10px;border-radius:8px;border:1px solid var(--line);min-width:180px"/>
-              <select id="txFilter" style="padding:10px;border-radius:8px;border:1px solid var(--line)">
+              <input id="txSearch" placeholder="Search note or category" style="padding:12px;border-radius:10px;border:1px solid var(--line);min-width:180px"/>
+              <select id="txFilter" style="padding:12px;border-radius:10px;border:1px solid var(--line)">
                 <option value="all">All</option><option value="in">Income</option><option value="out">Expense</option>
               </select>
             </div>
@@ -199,13 +205,13 @@
       <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
         <select id="txnPage" style="min-width:200px" aria-label="Select page"></select>
         <select id="txnType" style="min-width:140px" aria-label="Transaction type"><option value="out">Expense</option><option value="in">Income</option></select>
-        <input id="txnAmount" type="number" placeholder="Amount" style="min-width:140px" aria-label="Amount"/>
+        <input id="txnAmount" type="number" inputmode="decimal" placeholder="Amount" style="min-width:140px" aria-label="Amount"/>
         <input id="txnDate" type="date" style="min-width:160px" aria-label="Date"/>
         <input id="txnCat" placeholder="Category e.g., Food" style="min-width:160px" aria-label="Category"/>
       </div>
 
       <div style="margin-top:12px">
-        <textarea id="txnNote" placeholder="Note (optional)" style="width:100%;min-height:90px;padding:12px;border-radius:10px;border:1px solid var(--line)" aria-label="Note"></textarea>
+        <textarea id="txnNote" placeholder="Note (optional)" style="width:100%;min-height:110px;padding:12px;border-radius:10px;border:1px solid var(--line)" aria-label="Note"></textarea>
       </div>
 
       <div style="display:flex;gap:10px;margin-top:12px">
@@ -216,7 +222,7 @@
     </div>
   </div>
 
-  <!-- Settings modal (new) -->
+  <!-- Settings modal -->
   <div id="settingsModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
     <div class="modal" role="document" aria-labelledby="settingsTitle">
       <div style="display:flex;justify-content:space-between;align-items:center">
@@ -225,14 +231,14 @@
       </div>
 
       <div style="margin-top:12px">
-        <label style="display:block;margin-bottom:6px;font-weight:700">Base font size (px)</label>
-        <input id="settingFontSize" type="number" min="14" max="24" value="17" style="width:120px"/>
+        <label style="display:block;margin-bottom:8px;font-weight:800">Base font size (px)</label>
+        <input id="settingFontSize" type="number" min="14" max="28" value="18" style="width:120px"/>
 
-        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+        <div style="margin-top:12px;display:flex;align-items:center;gap:12px">
           <input id="settingLargeText" type="checkbox"/><label for="settingLargeText" class="mini">Enable Large Text (increase UI scale)</label>
         </div>
 
-        <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <div style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end">
           <button id="saveSettingsBtn" class="btn">Save</button>
           <button id="cancelSettingsBtn" class="btn ghost">Cancel</button>
         </div>
@@ -240,7 +246,7 @@
     </div>
   </div>
 
-  <div class="fab-home" id="homeBtn" title="Home"><svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 3l9 8h-3v8h-4v-6H10v6H6v-8H3z"></path></svg></div>
+  <div class="fab-home" id="homeBtn" title="Home"><svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 3l9 8h-3v8h-4v-6H10v6H6v-8H3z"></path></svg></div>
 
 <script>
 /* ---------- IndexedDB helpers (robust) ---------- */
@@ -319,8 +325,8 @@ async function loadAll(){
   const all = await idbGetAll('data');
   state.pages = all.filter(x => x && x._kind === 'finance.page');
   if(state.pages.length === 0){
-    // seed defaults
-    for(const p of DEFAULT_PAGES){ await idbPut('data', Object.assign({_kind:'finance.page'}, p)); }
+    // seed defaults (robust for first-run/offline)
+    for(const p of DEFAULT_PAGES){ try{ await idbPut('data', Object.assign({_kind:'finance.page'}, p)); }catch(e){ console.warn('seed fail',e); } }
     state.pages = (await idbGetAll('data')).filter(x=>x._kind === 'finance.page');
   }
   state.txns = (await idbGetAll('data')).filter(x => x && x._kind === 'finance.txn');
@@ -341,12 +347,16 @@ function renderPages(){
     btn.className = 'btn ghost';
     btn.textContent = p.name;
     btn.style.borderRadius = '10px';
+    btn.setAttribute('role','button'); btn.tabIndex = 0;
     if(p.id === state.currentPageId){ btn.style.background = 'linear-gradient(90deg,var(--accent),var(--accent-2))'; btn.style.color='white'; }
-    btn.addEventListener('click', async ()=> {
+    const activate = async ()=> {
       state.currentPageId = p.id;
       await idbPut('settings', { key:'finance.currentPage', value: p.id });
       renderPages(); await renderPage();
-    });
+    };
+    btn.addEventListener('click', activate);
+    btn.addEventListener('touchstart', (e)=>{ e.preventDefault(); activate(); });
+    btn.addEventListener('keydown', (e)=>{ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); } });
     pagesEl.appendChild(btn);
   });
 }
@@ -527,7 +537,7 @@ document.getElementById('saveTxn').addEventListener('click', async ()=>{
 function drawBalanceChart(pageId){
   const canvas = document.getElementById('balanceChart');
   const ctx = canvas.getContext('2d');
-  const w = canvas.clientWidth, h = canvas.clientHeight || 160;
+  const w = canvas.clientWidth, h = canvas.clientHeight || 180;
   const dpr = window.devicePixelRatio || 1;
   canvas.width = Math.floor(w * dpr); canvas.height = Math.floor(h * dpr); ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
@@ -581,21 +591,26 @@ document.getElementById('importBtn').addEventListener('click', ()=> {
   input.click();
 });
 
-/* ---------- Settings modal behavior (new) ---------- */
+/* ---------- Settings modal behavior (improved) ---------- */
 const settingsBackdrop = document.getElementById('settingsModal');
-document.getElementById('settingsBtn').addEventListener('click', async ()=> {
-  // load stored settings
+// ensure settings button is responsive on touch devices
+const settingsBtn = document.getElementById('settingsBtn');
+settingsBtn.addEventListener('click', async (ev)=>{
+  ev.stopPropagation();
   const s = await idbGet('settings','finance.ui');
-  const ui = (s && s.value) ? s.value : { fontSize: 17, largeText: false };
-  document.getElementById('settingFontSize').value = ui.fontSize || 17;
+  const ui = (s && s.value) ? s.value : { fontSize: 18, largeText: false };
+  document.getElementById('settingFontSize').value = ui.fontSize || 18;
   document.getElementById('settingLargeText').checked = !!ui.largeText;
   settingsBackdrop.classList.add('visible'); settingsBackdrop.setAttribute('aria-hidden','false');
 });
+settingsBtn.addEventListener('touchstart', (e)=>{ e.preventDefault(); settingsBtn.click(); });
+
+// close / cancel
 document.getElementById('closeSettings').addEventListener('click', ()=> { settingsBackdrop.classList.remove('visible'); settingsBackdrop.setAttribute('aria-hidden','true'); });
 document.getElementById('cancelSettingsBtn').addEventListener('click', ()=> { settingsBackdrop.classList.remove('visible'); settingsBackdrop.setAttribute('aria-hidden','true'); });
 
 document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
-  const fontSize = Number(document.getElementById('settingFontSize').value) || 17;
+  const fontSize = Number(document.getElementById('settingFontSize').value) || 18;
   const largeText = !!document.getElementById('settingLargeText').checked;
   await idbPut('settings', { key:'finance.ui', value: { fontSize, largeText } });
   applyUISettings({ fontSize, largeText });
@@ -608,17 +623,17 @@ async function applyUISettings(ui){
   let cfg = ui;
   if(!cfg){
     const s = await idbGet('settings','finance.ui');
-    cfg = (s && s.value) ? s.value : { fontSize: 17, largeText: false };
+    cfg = (s && s.value) ? s.value : { fontSize: 18, largeText: false };
   }
-  const size = Number(cfg.fontSize) || 17;
+  const size = Number(cfg.fontSize) || 18;
   document.documentElement.style.setProperty('--base-font-size', size + 'px');
   document.documentElement.style.setProperty('font-size', size + 'px');
   if(cfg.largeText){
-    document.documentElement.style.setProperty('--btn-padding','14px 18px');
-    document.documentElement.style.setProperty('--tx-font-size','17px');
+    document.documentElement.style.setProperty('--btn-padding','16px 20px');
+    document.documentElement.style.setProperty('--tx-font-size','18px');
   } else {
-    document.documentElement.style.setProperty('--btn-padding','12px 16px');
-    document.documentElement.style.setProperty('--tx-font-size','15px');
+    document.documentElement.style.setProperty('--btn-padding','14px 18px');
+    document.documentElement.style.setProperty('--tx-font-size','16px');
   }
 }
 
@@ -628,6 +643,7 @@ document.getElementById('homeBtn').addEventListener('click', ()=> location.href=
 /* ---------- boot ---------- */
 (async function boot(){
   try{
+    // ensure pages exist quickly (especially for offline first-run)
     await loadAll();
     await applyUISettings();
     renderPages();

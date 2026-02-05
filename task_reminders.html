@@ -4,28 +4,47 @@
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Tasks & Reminders — Tomorrow</title>
-
 <style>
 :root{
   --bg:#FFF8F1; --card:#fff; --text:#3B2F2F; --muted:#7A6F66;
   --accent:#14B8A6; --accent2:#0D9488; --radius:16px;
+  --gap:14px;
+  --base-font:18px; /* larger for older eyes / phone-first */
 }
-body{margin:0;font-family:system-ui;background:var(--bg);color:var(--text)}
-.header{padding:14px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border-radius:0 0 18px 18px}
-h1{margin:0;font-size:18px}
-.sub{font-size:12px;opacity:.9}
-.container{padding:14px}
-.card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:14px;box-shadow:0 8px 20px rgba(0,0,0,.05)}
-input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
-.btn{width:100%;padding:12px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:600}
-.task{padding:10px 0;border-bottom:1px solid #f0e7dc}
+html { font-size: var(--base-font); -webkit-text-size-adjust:100%; }
+body{margin:0;font-family:system-ui, -apple-system, "Segoe UI", Roboto, Arial;background:var(--bg);color:var(--text)}
+.header{padding:18px 14px;background:linear-gradient(90deg,var(--accent),var(--accent2));color:#fff;border-radius:0 0 18px 18px}
+h1{margin:0;font-size:1.45rem}
+.sub{font-size:1rem;opacity:.95;margin-top:6px}
+.container{padding:var(--gap);padding-bottom:110px} /* room for bottom nav */
+.card{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:var(--gap);box-shadow:0 8px 20px rgba(0,0,0,.05)}
+input, button, select, textarea { font-size:1.05rem; }
+input{width:100%;padding:12px;border-radius:12px;border:1px solid #eee;box-sizing:border-box}
+#taskTime{padding:10px 12px}
+.btn{width:100%;padding:14px;border-radius:12px;border:0;background:var(--accent);color:#fff;font-weight:700;font-size:1.05rem;touch-action:manipulation}
+.btn.small{padding:10px}
+.task{padding:12px 0;border-bottom:1px solid #f0e7dc;display:flex;flex-direction:column}
 .task:last-child{border-bottom:none}
-.task small{color:var(--muted)}
+.task .title{font-size:1.05rem;font-weight:700}
+.task .meta{font-size:0.95rem;color:var(--muted);margin-top:6px}
+.task .controls{margin-top:10px;display:flex;gap:8px}
+.ctrl{flex:1;padding:10px;border-radius:10px;border:0;font-size:0.95rem}
+.ctrl.del{background:#F87171;color:white}
+.ctrl.done{background:#059669;color:white}
+.empty{padding:18px;text-align:center;color:#7a6b6b;font-size:1rem}
+
+/* bottom nav */
 .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:white;padding:10px;display:flex;justify-content:center;box-shadow:0 -4px 10px rgba(0,0,0,.06)}
-.icon{width:22px;height:22px}
+.icon{width:26px;height:26px}
+
+/* wider screens */
+@media(min-width:720px){
+  :root{--base-font:16px}
+  .container{max-width:720px;margin:0 auto}
+  h1{font-size:1.6rem}
+}
 </style>
 </head>
-
 <body>
 <div class="header">
   <h1>Tasks & Reminders</h1>
@@ -33,11 +52,14 @@ input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
 </div>
 
 <div class="container">
-  <div class="card">
-    <strong>New Task</strong><br/><br/>
-    <input id="taskText" placeholder="What do you need to do?"/>
-    <input id="taskTime" type="datetime-local" style="margin-top:8px"/>
-    <button class="btn" style="margin-top:10px" onclick="addTask()">Add Task</button>
+  <div class="card" aria-label="Add new task">
+    <strong>New Task</strong>
+    <div style="height:8px"></div>
+    <input id="taskText" placeholder="What do you need to do?" aria-label="Task text"/>
+    <div style="height:8px"></div>
+    <input id="taskTime" type="datetime-local" aria-label="Task time"/>
+    <div style="height:10px"></div>
+    <button id="addBtn" class="btn" aria-label="Add task">Add Task</button>
   </div>
 
   <div class="card">
@@ -47,40 +69,178 @@ input{width:100%;padding:11px;border-radius:12px;border:1px solid #eee}
 </div>
 
 <div class="bottom-nav">
-  <a href="index.html">
-    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+  <a href="index.html" aria-label="Home">
+    <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
       <path d="M3 10L12 3l9 7v10a2 2 0 0 1-2 2h-4v-6H9v6H5a2 2 0 0 1-2-2z"/>
     </svg>
   </a>
 </div>
 
 <script>
-const DB='tomorrowai-db'; 
-function openDB(){return new Promise(res=>{const r=indexedDB.open(DB,2);r.onupgradeneeded=e=>{const d=e.target.result;if(!d.objectStoreNames.contains('data'))d.createObjectStore('data',{keyPath:'id'});};r.onsuccess=e=>res(e.target.result);});}
-async function getAll(){const d=await openDB();return new Promise(res=>{const t=d.transaction('data','readonly').objectStore('data').getAll();t.onsuccess=e=>res(e.target.result||[]);});}
-async function put(v){const d=await openDB();const tx=d.transaction('data','readwrite');tx.objectStore('data').put(v);}
-async function del(id){const d=await openDB();const tx=d.transaction('data','readwrite');tx.objectStore('data').delete(id);}
+/* Robust small IndexedDB wrapper with localStorage fallback,
+   explicit element bindings, and mobile-friendly event handling. */
 
-async function render(){
-  const all=(await getAll()).filter(x=>x.type==='task');
-  const out=document.getElementById('tasksList'); out.innerHTML='';
-  if(!all.length) return out.innerHTML='<small>No tasks yet</small>';
-  all.forEach(t=>{
-    const div=document.createElement('div');
-    div.className='task';
-    div.innerHTML=`<strong>${t.text}</strong>
-      <div><small>${t.time||''}</small></div>
-      <button onclick="delTask('${t.id}')">Delete</button>`;
-    out.appendChild(div);
+const DB_NAME = 'tomorrowai-db';
+const DB_VER = 2;
+const STORE = 'data';
+
+const taskTextEl = document.getElementById('taskText');
+const taskTimeEl = document.getElementById('taskTime');
+const addBtn = document.getElementById('addBtn');
+const tasksListEl = document.getElementById('tasksList');
+
+/* IDB helpers */
+function openDB(){
+  if(!('indexedDB' in window)) return Promise.resolve(null);
+  return new Promise((res, rej)=>{
+    const r = indexedDB.open(DB_NAME, DB_VER);
+    r.onupgradeneeded = (e)=> {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(STORE)){
+        db.createObjectStore(STORE, { keyPath: 'id' });
+      }
+    };
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = e => rej(e.target.error);
   });
 }
-async function addTask(){
-  if(!taskText.value)return alert('Enter task');
-  await put({id:'task_'+Date.now(),type:'task',text:taskText.value,time:taskTime.value});
-  taskText.value=''; taskTime.value=''; render();
+function rq(req){
+  return new Promise((res, rej)=>{
+    req.onsuccess = ev => res(ev.target.result);
+    req.onerror = ev => rej(ev.target.error);
+  });
 }
-async function delTask(id){await del(id);render();}
-render();
+
+/* CRUD with fallback */
+async function getAll(){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('No IndexedDB');
+    const tx = db.transaction(STORE,'readonly');
+    const store = tx.objectStore(STORE);
+    const items = await rq(store.getAll());
+    return items || [];
+  }catch(err){
+    try{
+      const raw = localStorage.getItem(DB_NAME);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  }
+}
+
+async function put(item){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('No IndexedDB');
+    const tx = db.transaction(STORE,'readwrite');
+    const store = tx.objectStore(STORE);
+    await rq(store.put(item));
+    return true;
+  }catch(err){
+    // fallback: merge into localStorage array
+    try{
+      const arr = await getAll();
+      const i = arr.findIndex(x=>x.id===item.id);
+      if(i>=0) arr[i] = item; else arr.push(item);
+      localStorage.setItem(DB_NAME, JSON.stringify(arr));
+      return true;
+    }catch(e){ return false; }
+  }
+}
+
+async function del(id){
+  try{
+    const db = await openDB();
+    if(!db) throw new Error('No IndexedDB');
+    const tx = db.transaction(STORE,'readwrite');
+    const store = tx.objectStore(STORE);
+    await rq(store.delete(id));
+    return true;
+  }catch(err){
+    try{
+      const arr = await getAll();
+      const out = arr.filter(x=>x.id !== id);
+      localStorage.setItem(DB_NAME, JSON.stringify(out));
+      return true;
+    }catch(e){ return false; }
+  }
+}
+
+/* UI helpers */
+function makeId(){ return 'task_' + Date.now() + '_' + Math.floor(Math.random()*1000); }
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+async function render(){
+  const all = (await getAll()).filter(x=>x.type === 'task').sort((a,b)=> (b.created||'') - (a.created||''));
+  tasksListEl.innerHTML = '';
+  if(!all.length){
+    tasksListEl.innerHTML = '<div class="empty">No tasks yet</div>';
+    return;
+  }
+  all.forEach(t=>{
+    const wrapper = document.createElement('div');
+    wrapper.className = 'task';
+    const safeText = escapeHtml(t.text);
+    const timeText = t.time ? new Date(t.time).toLocaleString() : '';
+    wrapper.innerHTML = `
+      <div class="title">${safeText}</div>
+      <div class="meta">${timeText}</div>
+      <div class="controls">
+        <button class="ctrl done" data-id="${t.id}">Done</button>
+        <button class="ctrl del" data-id="${t.id}">Delete</button>
+      </div>
+    `;
+    tasksListEl.appendChild(wrapper);
+  });
+
+  // attach handlers (event delegation alternative would work too)
+  tasksListEl.querySelectorAll('.ctrl.done').forEach(b => {
+    b.onclick = async (ev) => {
+      const id = ev.currentTarget.dataset.id;
+      await markDone(id);
+    };
+  });
+  tasksListEl.querySelectorAll('.ctrl.del').forEach(b => {
+    b.onclick = async (ev) => {
+      const id = ev.currentTarget.dataset.id;
+      if(confirm('Delete this task?')) { await del(id); render(); }
+    };
+  });
+}
+
+async function addTask(){
+  const text = taskTextEl.value && taskTextEl.value.trim();
+  const time = taskTimeEl.value || '';
+  if(!text){
+    taskTextEl.focus();
+    return;
+  }
+  const item = { id: makeId(), type:'task', text, time, created: Date.now(), done: false };
+  await put(item);
+  taskTextEl.value = '';
+  taskTimeEl.value = '';
+  render();
+}
+
+async function markDone(id){
+  const arr = await getAll();
+  const t = arr.find(x=>x.id === id);
+  if(!t) return;
+  t.done = !t.done;
+  t.updated = Date.now();
+  await put(t);
+  render();
+}
+
+/* Event wiring */
+addBtn.addEventListener('click', addTask);
+// also allow Enter in the text field to add
+taskTextEl.addEventListener('keydown', function(e){
+  if(e.key === 'Enter') addTask();
+});
+
+// initialize
+document.addEventListener('DOMContentLoaded', render);
 </script>
 </body>
 </html>

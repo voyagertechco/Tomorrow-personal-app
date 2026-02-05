@@ -88,9 +88,12 @@
   .amount{font-weight:900;font-size:18px;color:var(--text)}
   .pill{padding:6px 10px;border-radius:999px;background:rgba(0,0,0,0.04);font-weight:700;margin-right:6px;display:inline-block;font-size:var(--pill-size)}
   canvas{width:100%;height:160px;display:block;border-radius:8px;background:transparent}
+
+  /* generic modal/backdrop behavior */
   .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:14000;visibility:hidden;opacity:0;transition:opacity .12s}
   .modal-backdrop.visible{visibility:visible;opacity:1}
   .modal{background:var(--card);padding:14px;border-radius:12px;max-width:780px;width:94%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
+  .modal .modal-row{display:flex;gap:10px;align-items:center}
   .danger{background:var(--danger);color:white}
   .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
 
@@ -111,7 +114,6 @@
     header{align-items:flex-start}
     .tx .left{ max-width:60% }
   }
-
 </style>
 </head>
 <body>
@@ -187,8 +189,8 @@
   </div>
 
   <!-- add / edit transaction modal -->
-  <div id="txnModal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="txnModalTitle">
+  <div id="txnModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal" role="document" aria-labelledby="txnModalTitle">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div><strong id="txnModalTitle">Add transaction</strong><div class="mini">Choose page, type, category</div></div>
         <div><button id="closeTxn" class="btn ghost" aria-label="Close transaction dialog">Close</button></div>
@@ -210,6 +212,30 @@
         <button id="saveTxn" class="btn" aria-label="Save transaction">Save</button>
         <button id="delTxn" class="btn ghost" style="display:none" aria-label="Delete transaction">Delete</button>
         <button id="cancelTxn" class="btn ghost" aria-label="Cancel and close">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings modal (new) -->
+  <div id="settingsModal" class="modal-backdrop" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="modal" role="document" aria-labelledby="settingsTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong id="settingsTitle">Finance Settings</strong><div class="mini">Adjust app visibility & text size</div></div>
+        <div><button id="closeSettings" class="btn ghost">Close</button></div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label style="display:block;margin-bottom:6px;font-weight:700">Base font size (px)</label>
+        <input id="settingFontSize" type="number" min="14" max="24" value="17" style="width:120px"/>
+
+        <div style="margin-top:10px;display:flex;align-items:center;gap:10px">
+          <input id="settingLargeText" type="checkbox"/><label for="settingLargeText" class="mini">Enable Large Text (increase UI scale)</label>
+        </div>
+
+        <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+          <button id="saveSettingsBtn" class="btn">Save</button>
+          <button id="cancelSettingsBtn" class="btn ghost">Cancel</button>
+        </div>
       </div>
     </div>
   </div>
@@ -388,39 +414,61 @@ async function renderPage(){
     el.appendChild(left); el.appendChild(right); txList.appendChild(el);
   });
 
-  // ensure txn modal page select is current
+  // ensure txn modal page select is current (so modal always shows pages)
   const sel = document.getElementById('txnPage'); sel.innerHTML = '';
-  state.pages.forEach(p => {
-    const o = document.createElement('option'); o.value = p.id; o.textContent = p.name;
-    if(p.id === state.currentPageId) o.selected = true;
+  if(state.pages.length === 0){
+    const o = document.createElement('option'); o.value = ''; o.textContent = 'No pages';
     sel.appendChild(o);
-  });
+  } else {
+    state.pages.forEach(p => {
+      const o = document.createElement('option'); o.value = p.id; o.textContent = p.name;
+      if(p.id === state.currentPageId) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
 
   drawBalanceChart(page.id);
 }
 
-/* ---------- txn modal wiring ---------- */
+/* ---------- txn modal wiring (robust) ---------- */
 const txnBackdrop = document.getElementById('txnModal');
 let editingTxn = null;
 document.getElementById('openTxnModal').addEventListener('click', ()=> openTxnModal());
 document.getElementById('closeTxn').addEventListener('click', closeTxnModal);
 document.getElementById('cancelTxn').addEventListener('click', closeTxnModal);
-document.getElementById('delTxn').addEventListener('click', async ()=>{
+document.getElementById('delTxn').addEventListener('click', async ()=> {
   if(!editingTxn) return;
   if(!confirm('Delete transaction?')) return;
   await deleteTxn(editingTxn.id);
   closeTxnModal(); await loadAll(); renderPages(); await renderPage(); showToast('Deleted');
 });
 
-function openTxnModal(txn=null){
+async function ensurePagesLoaded(){
+  // ensure pages exist before opening modal
+  if(!state.pages || state.pages.length === 0){
+    await loadAll();
+    await renderPages();
+  }
+}
+
+async function openTxnModal(txn=null){
+  // ensure pages available
+  await ensurePagesLoaded();
+
   editingTxn = txn ? Object.assign({}, txn) : null;
   // populate pages immediately
   const sel = document.getElementById('txnPage'); sel.innerHTML = '';
-  state.pages.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.text = p.name; sel.appendChild(o); });
+  if(state.pages.length === 0){
+    const o = document.createElement('option'); o.value = ''; o.textContent = 'No pages (create one)';
+    sel.appendChild(o);
+  } else {
+    state.pages.forEach(p => { const o = document.createElement('option'); o.value = p.id; o.text = p.name; sel.appendChild(o); });
+  }
+
   if(editingTxn){
     document.getElementById('txnModalTitle').textContent = 'Edit transaction';
     document.getElementById('delTxn').style.display = 'inline-flex';
-    document.getElementById('txnPage').value = editingTxn.pageId;
+    document.getElementById('txnPage').value = editingTxn.pageId || (state.pages[0] && state.pages[0].id) || '';
     document.getElementById('txnType').value = editingTxn.type;
     document.getElementById('txnAmount').value = editingTxn.amount;
     document.getElementById('txnDate').value = editingTxn.date || nowDateISO();
@@ -429,29 +477,39 @@ function openTxnModal(txn=null){
   } else {
     document.getElementById('txnModalTitle').textContent = 'Add transaction';
     document.getElementById('delTxn').style.display = 'none';
-    document.getElementById('txnPage').value = state.currentPageId;
+    document.getElementById('txnPage').value = state.currentPageId || (state.pages[0] && state.pages[0].id) || '';
     document.getElementById('txnType').value = 'out';
     document.getElementById('txnAmount').value = '';
     document.getElementById('txnDate').value = nowDateISO();
     document.getElementById('txnCat').value = '';
     document.getElementById('txnNote').value = '';
   }
-  txnBackdrop.classList.add('visible'); txnBackdrop.style.visibility='visible'; txnBackdrop.style.opacity=1; txnBackdrop.setAttribute('aria-hidden','false');
+
+  // show modal
+  txnBackdrop.classList.add('visible'); txnBackdrop.setAttribute('aria-hidden','false');
+  // focus amount for quicker entry
+  setTimeout(()=>{ const a = document.getElementById('txnAmount'); if(a) a.focus(); }, 180);
 }
 
 function closeTxnModal(){
   editingTxn = null;
-  txnBackdrop.classList.remove('visible'); txnBackdrop.style.visibility='hidden'; txnBackdrop.style.opacity=0; txnBackdrop.setAttribute('aria-hidden','true');
+  txnBackdrop.classList.remove('visible'); txnBackdrop.setAttribute('aria-hidden','true');
 }
 
 document.getElementById('saveTxn').addEventListener('click', async ()=>{
-  const pageId = document.getElementById('txnPage').value;
+  // simple validation and defensive checks
+  const pageId = document.getElementById('txnPage').value || state.currentPageId || (state.pages[0] && state.pages[0].id);
+  if(!pageId){
+    alert('Please create or select a page first.');
+    return;
+  }
   const type = document.getElementById('txnType').value;
-  const amount = Number(document.getElementById('txnAmount').value) || 0;
+  const amountRaw = document.getElementById('txnAmount').value;
+  const amount = Number(amountRaw);
+  if(!amountRaw || isNaN(amount) || amount <= 0){ alert('Amount must be a positive number'); return; }
   const date = document.getElementById('txnDate').value || nowDateISO();
   const category = (document.getElementById('txnCat').value || (type==='in' ? 'Income' : 'General')).trim();
   const note = document.getElementById('txnNote').value || '';
-  if(amount <= 0){ alert('Amount must be greater than 0'); return; }
   if(editingTxn){
     editingTxn.pageId = pageId; editingTxn.type = type; editingTxn.amount = amount; editingTxn.date = date; editingTxn.category = category; editingTxn.note = note; editingTxn.ts = Date.now();
     await saveTxn(editingTxn);
@@ -523,6 +581,47 @@ document.getElementById('importBtn').addEventListener('click', ()=> {
   input.click();
 });
 
+/* ---------- Settings modal behavior (new) ---------- */
+const settingsBackdrop = document.getElementById('settingsModal');
+document.getElementById('settingsBtn').addEventListener('click', async ()=> {
+  // load stored settings
+  const s = await idbGet('settings','finance.ui');
+  const ui = (s && s.value) ? s.value : { fontSize: 17, largeText: false };
+  document.getElementById('settingFontSize').value = ui.fontSize || 17;
+  document.getElementById('settingLargeText').checked = !!ui.largeText;
+  settingsBackdrop.classList.add('visible'); settingsBackdrop.setAttribute('aria-hidden','false');
+});
+document.getElementById('closeSettings').addEventListener('click', ()=> { settingsBackdrop.classList.remove('visible'); settingsBackdrop.setAttribute('aria-hidden','true'); });
+document.getElementById('cancelSettingsBtn').addEventListener('click', ()=> { settingsBackdrop.classList.remove('visible'); settingsBackdrop.setAttribute('aria-hidden','true'); });
+
+document.getElementById('saveSettingsBtn').addEventListener('click', async ()=>{
+  const fontSize = Number(document.getElementById('settingFontSize').value) || 17;
+  const largeText = !!document.getElementById('settingLargeText').checked;
+  await idbPut('settings', { key:'finance.ui', value: { fontSize, largeText } });
+  applyUISettings({ fontSize, largeText });
+  settingsBackdrop.classList.remove('visible'); settingsBackdrop.setAttribute('aria-hidden','true');
+  showToast('Settings saved');
+});
+
+async function applyUISettings(ui){
+  // apply either passed object or stored one
+  let cfg = ui;
+  if(!cfg){
+    const s = await idbGet('settings','finance.ui');
+    cfg = (s && s.value) ? s.value : { fontSize: 17, largeText: false };
+  }
+  const size = Number(cfg.fontSize) || 17;
+  document.documentElement.style.setProperty('--base-font-size', size + 'px');
+  document.documentElement.style.setProperty('font-size', size + 'px');
+  if(cfg.largeText){
+    document.documentElement.style.setProperty('--btn-padding','14px 18px');
+    document.documentElement.style.setProperty('--tx-font-size','17px');
+  } else {
+    document.documentElement.style.setProperty('--btn-padding','12px 16px');
+    document.documentElement.style.setProperty('--tx-font-size','15px');
+  }
+}
+
 /* ---------- Home button ---------- */
 document.getElementById('homeBtn').addEventListener('click', ()=> location.href='index.html');
 
@@ -530,6 +629,7 @@ document.getElementById('homeBtn').addEventListener('click', ()=> location.href=
 (async function boot(){
   try{
     await loadAll();
+    await applyUISettings();
     renderPages();
     await renderPage();
   }catch(err){

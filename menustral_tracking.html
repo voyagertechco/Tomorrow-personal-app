@@ -63,6 +63,7 @@
     border:1px solid rgba(15,23,42,0.04);
     transition:transform .08s, box-shadow .08s;
     -webkit-tap-highlight-color: transparent;
+    position:relative;
   }
   .cell:active{transform:translateY(2px)}
   .cell .num{font-weight:700; margin-top:2px}
@@ -72,6 +73,7 @@
   .cell.safe{background:var(--safe);border:1px solid rgba(34,197,94,0.06)}
   .cell.other-month{opacity:0.45}
   .cell .tag{margin-top:6px;font-size:11px;padding:4px 6px;border-radius:8px;background:rgba(255,255,255,0.06)}
+  .cell .note-indicator{position:absolute;right:6px;top:6px;width:9px;height:9px;border-radius:50%;background:#0b84ff;box-shadow:0 1px 4px rgba(11,132,255,0.14)}
   .cal-footer{margin-top:8px;font-size:0.95rem;color:var(--muted)}
 
   /* chart */
@@ -81,11 +83,18 @@
   /* modals */
   .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;z-index:1200;visibility:hidden;opacity:0;transition:opacity .12s}
   .modal-backdrop.visible{visibility:visible;opacity:1}
-  .modal-card{background:var(--card);padding:16px;border-radius:12px;max-width:460px;width:94%;box-shadow:0 20px 60px rgba(2,6,23,0.2)}
+  .modal-card{background:var(--card);padding:16px;border-radius:12px;max-width:560px;width:94%;box-shadow:0 20px 60px rgba(2,6,23,0.2);max-height:86vh;overflow:auto}
 
   /* floating home */
   .fab-home{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;background:linear-gradient(90deg,var(--accent),var(--accent-2));width:56px;height:56px;border-radius:28px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 30px rgba(2,6,23,0.16);border:6px solid rgba(255,255,255,0.12);cursor:pointer;z-index:1200}
   .fab-home svg{width:22px;height:22px;fill:white}
+
+  /* day-note UI */
+  .day-note-title{font-size:1rem;font-weight:700;margin-bottom:6px}
+  .day-note-meta{font-size:0.95rem;color:var(--muted);margin-bottom:8px}
+  .notes-list{display:flex;flex-direction:column;gap:10px}
+  .note-row{padding:8px;border-radius:10px;border:1px solid rgba(15,23,42,0.04);background:linear-gradient(180deg,rgba(255,255,255,0.98),rgba(255,255,255,0.96))}
+  .note-row .meta{font-size:13px;color:var(--muted);margin-bottom:6px}
 
   @media (max-width:520px){
     .cell{min-height:78px}
@@ -175,6 +184,7 @@
         <div class="muted" style="display:flex;gap:8px;align-items:center">
           <button id="openSecurityBtn" class="btn secondary" aria-label="Open security">Security</button>
           <button id="reminderBtn" class="btn secondary" aria-label="Remind me">Remind me (session)</button>
+          <button id="viewAllNotesBtn" class="btn secondary" aria-label="View all notes">View notes</button>
         </div>
       </div>
 
@@ -198,11 +208,12 @@
 
     <!-- Notes & export -->
     <div class="card">
-      <label for="notes">Manual notes</label>
+      <label for="notes">General notes (all-cycles)</label>
       <textarea id="notes" rows="3" placeholder="Add notes about symptoms, mood or anything you want to record..."></textarea>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
         <button id="saveNotes" class="btn" aria-label="Save notes">Save notes</button>
         <button id="exportData" class="btn secondary" aria-label="Export data">Export data</button>
+        <button id="viewAllNotesBtn2" class="btn secondary" aria-label="View all notes (duplicate)">View notes</button>
       </div>
     </div>
 
@@ -258,6 +269,51 @@
     </div>
   </div>
 
+  <!-- Day Note modal -->
+  <div id="dayNoteBackdrop" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card" id="dayNoteCard">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div class="day-note-title" id="dayNoteTitle">Date</div>
+          <div class="day-note-meta" id="dayNoteMeta">Meta</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="toggleManualMarkBtn" class="btn secondary">Toggle manual mark</button>
+          <button id="closeDayNote" class="btn secondary">Close</button>
+        </div>
+      </div>
+
+      <div style="margin-top:12px">
+        <label for="dayNoteText">Personal note for this day</label>
+        <textarea id="dayNoteText" rows="6" placeholder="Symptoms, mood, notes..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="saveDayNoteBtn" class="btn">Save</button>
+          <button id="deleteDayNoteBtn" class="btn secondary">Delete note</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- All notes modal -->
+  <div id="allNotesBackdrop" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal-card" id="allNotesCard">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div><strong>All Saved Notes</strong><div class="muted">Per-day notes and general notes</div></div>
+        <button id="closeAllNotes" class="btn secondary">Close</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <div style="margin-bottom:10px"><strong>General notes</strong><div class="muted" id="allGeneralNotePreview" style="margin-top:6px"></div></div>
+        <div><strong>Per-day notes</strong></div>
+        <div id="notesList" class="notes-list" style="margin-top:8px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <button id="exportAllNotesBtn" class="btn">Export notes</button>
+          <button id="clearAllNotesBtn" class="btn secondary">Clear all per-day notes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Floating Home -->
   <div class="fab-home" id="homeBtn" title="Home (index)">
     <svg viewBox="0 0 24 24"><path d="M12 3l9 8h-3v8h-4v-6H10v6H6v-8H3z"></path></svg>
@@ -297,16 +353,13 @@ async function storagePut(store, key, value){
         const tx = db.transaction(store,'readwrite');
         const os = tx.objectStore(store);
         const payload = (store === 'settings') ? { key, value } : (value && value.id ? value : Object.assign({ id: key }, value));
-        const op = (store === 'settings') ? os.put(payload) : os.put(payload);
-        tx.oncomplete = () => res(true);
+        os.put(payload);
+        tx.oncomplete = ()=>res(true);
         tx.onerror = e => rej(e.target.error);
       });
     }
-  }catch(e){
-    // fallthrough to localStorage fallback
-  }
+  }catch(e){ /* fallback below */ }
 
-  // localStorage fallback: keep a small map per store
   try{
     const storeKey = `${DB_NAME}::${store}`;
     const raw = localStorage.getItem(storeKey);
@@ -493,6 +546,8 @@ async function renderCalendar(year, month){
 
   const allData = await storageGetAll('data');
   const manualMarks = new Set(allData.filter(d=>d && d.type==='menstrual').map(d=>d.date));
+  // per-day notes keys: men_note_YYYY-MM-DD
+  const perDayNotes = new Set(allData.filter(d=>d && d.type==='menstrual_note').map(d=>d.date));
 
   const lastPeriod = parseDateInput(document.getElementById('lastPeriod').value);
   const cycleLen = Number(document.getElementById('cycleLength').value) || 28;
@@ -517,7 +572,7 @@ async function renderCalendar(year, month){
     const d = prevMonthLast - i;
     const dateObj = new Date(year, month-1, d);
     const iso = toISODate(dateObj);
-    const el = makeCell(d, iso, true, manualMarks, periodDays, fertileDays, ovulationDays);
+    const el = makeCell(d, iso, true, manualMarks, periodDays, fertileDays, ovulationDays, perDayNotes);
     calendarGrid.appendChild(el);
   }
 
@@ -525,7 +580,7 @@ async function renderCalendar(year, month){
   for(let day=1; day<=daysInMonth; day++){
     const dateObj = new Date(year, month, day);
     const iso = toISODate(dateObj);
-    const el = makeCell(day, iso, false, manualMarks, periodDays, fertileDays, ovulationDays);
+    const el = makeCell(day, iso, false, manualMarks, periodDays, fertileDays, ovulationDays, perDayNotes);
     calendarGrid.appendChild(el);
   }
 
@@ -535,7 +590,7 @@ async function renderCalendar(year, month){
   for(let d=1; d<=nextFiller; d++){
     const dateObj = new Date(year, month+1, d);
     const iso = toISODate(dateObj);
-    const el = makeCell(d, iso, true, manualMarks, periodDays, fertileDays, ovulationDays);
+    const el = makeCell(d, iso, true, manualMarks, periodDays, fertileDays, ovulationDays, perDayNotes);
     calendarGrid.appendChild(el);
   }
 
@@ -552,7 +607,7 @@ async function renderCalendar(year, month){
   drawCycleChart(cycleStarts);
 }
 
-function makeCell(dayNum, iso, otherMonth, manualMarks, periodDays, fertileDays, ovulationDays){
+function makeCell(dayNum, iso, otherMonth, manualMarks, periodDays, fertileDays, ovulationDays, perDayNotes){
   const div = document.createElement('div');
   div.className = 'cell' + (otherMonth ? ' other-month' : '');
   const num = document.createElement('div'); num.className='num'; num.textContent = dayNum;
@@ -571,8 +626,13 @@ function makeCell(dayNum, iso, otherMonth, manualMarks, periodDays, fertileDays,
     div.classList.add('safe');
   }
 
-  div.addEventListener('click', async (e)=>{ e.stopPropagation(); await toggleManualMark(iso); });
-  // also support longpress/touch if needed (click is usually enough with bindClickTouch for buttons)
+  // show small dot if per-day note exists
+  if(perDayNotes.has(iso)){
+    const ni = document.createElement('div'); ni.className = 'note-indicator'; div.appendChild(ni);
+  }
+
+  // open day modal on click (view/edit per-day note + toggle manual mark)
+  div.addEventListener('click', async (e)=>{ e.stopPropagation(); openDayModal(iso); });
 
   let titleParts = [];
   if(manualMarks.has(iso)) titleParts.push('Manual period');
@@ -584,6 +644,7 @@ function makeCell(dayNum, iso, otherMonth, manualMarks, periodDays, fertileDays,
   return div;
 }
 
+/* manual mark toggling (keeps previous behavior) */
 async function toggleManualMark(dateStr){
   const key = 'men_' + dateStr;
   const existing = await storageGet('data', key);
@@ -600,12 +661,167 @@ async function clearManualMarks(){
   await renderCalendar(currentYear, currentMonth);
 }
 
+/* --------------- Day note modal logic --------------- */
+const dayNoteBackdrop = document.getElementById('dayNoteBackdrop');
+const dayNoteTitle = document.getElementById('dayNoteTitle');
+const dayNoteMeta = document.getElementById('dayNoteMeta');
+const dayNoteText = document.getElementById('dayNoteText');
+const saveDayNoteBtn = document.getElementById('saveDayNoteBtn');
+const deleteDayNoteBtn = document.getElementById('deleteDayNoteBtn');
+const toggleManualMarkBtn = document.getElementById('toggleManualMarkBtn');
+let activeDayIso = null;
+
+async function openDayModal(iso){
+  activeDayIso = iso;
+  dayNoteTitle.textContent = iso;
+  // compute meta (prediction + manual)
+  const allData = await storageGetAll('data');
+  const manualMarks = new Set(allData.filter(d=>d && d.type==='menstrual').map(d=>d.date));
+  const lastPeriod = parseDateInput(document.getElementById('lastPeriod').value);
+  const cycleLen = Number(document.getElementById('cycleLength').value) || 28;
+  const luteal = Number(document.getElementById('luteal').value) || 14;
+  const cycleStarts = predictCycles(lastPeriod, cycleLen, Number(document.getElementById('monthsAhead').value) || 6);
+  const periodLen = Number(document.getElementById('periodLength').value) || 5;
+
+  const isManual = manualMarks.has(iso);
+  const isPredPeriod = cycleStarts.some(s => {
+    for(let i=0;i<periodLen;i++) if(toISODate(addDays(s,i)) === iso) return true;
+    return false;
+  });
+  const ov = cycleStarts.find(s => toISODate(addDays(s, cycleLen - luteal)) === iso);
+  const isOv = !!ov;
+
+  let metaParts = [];
+  if(isManual) metaParts.push('Manual period');
+  if(isPredPeriod) metaParts.push('Predicted period');
+  if(isOv) metaParts.push('Predicted ovulation');
+  dayNoteMeta.textContent = metaParts.join(' • ') || 'No prediction';
+
+  // load existing note if any
+  const noteKey = 'men_note_' + iso;
+  const existing = await storageGet('data', noteKey);
+  dayNoteText.value = existing && existing.note ? existing.note : '';
+
+  // update toggle button label
+  toggleManualMarkBtn.textContent = isManual ? 'Remove manual mark' : 'Add manual mark';
+
+  dayNoteBackdrop.classList.add('visible');
+  dayNoteBackdrop.setAttribute('aria-hidden','false');
+}
+
+document.getElementById('closeDayNote').addEventListener('click', ()=> {
+  dayNoteBackdrop.classList.remove('visible'); dayNoteBackdrop.setAttribute('aria-hidden','true');
+  activeDayIso = null;
+});
+
+saveDayNoteBtn.addEventListener('click', async ()=>{
+  if(!activeDayIso) return;
+  const val = dayNoteText.value.trim();
+  const key = 'men_note_' + activeDayIso;
+  if(val === ''){
+    // empty -> remove note if exists
+    await storageDelete('data', key);
+    showToast('Note cleared');
+  } else {
+    await storagePut('data', key, { id:key, type:'menstrual_note', ts:Date.now(), date: activeDayIso, note: val });
+    showToast('Note saved');
+  }
+  await renderCalendar(currentYear, currentMonth);
+});
+
+deleteDayNoteBtn.addEventListener('click', async ()=>{
+  if(!activeDayIso) return;
+  if(!confirm('Delete this note?')) return;
+  const key = 'men_note_' + activeDayIso;
+  await storageDelete('data', key);
+  dayNoteText.value = '';
+  showToast('Note deleted');
+  await renderCalendar(currentYear, currentMonth);
+});
+
+toggleManualMarkBtn.addEventListener('click', async ()=>{
+  if(!activeDayIso) return;
+  await toggleManualMark(activeDayIso);
+  // update modal meta & toggle label
+  const allData = await storageGetAll('data');
+  const manualMarks = new Set(allData.filter(d=>d && d.type==='menstrual').map(d=>d.date));
+  const isManual = manualMarks.has(activeDayIso);
+  toggleManualMarkBtn.textContent = isManual ? 'Remove manual mark' : 'Add manual mark';
+  // refresh meta text
+  const lastPeriod = parseDateInput(document.getElementById('lastPeriod').value);
+  const cycleLen = Number(document.getElementById('cycleLength').value) || 28;
+  const luteal = Number(document.getElementById('luteal').value) || 14;
+  const cycleStarts = predictCycles(lastPeriod, cycleLen, Number(document.getElementById('monthsAhead').value) || 6);
+  const periodLen = Number(document.getElementById('periodLength').value) || 5;
+  const isPredPeriod = cycleStarts.some(s => {
+    for(let i=0;i<periodLen;i++) if(toISODate(addDays(s,i)) === activeDayIso) return true;
+    return false;
+  });
+  const ov = cycleStarts.find(s => toISODate(addDays(s, cycleLen - luteal)) === activeDayIso);
+  const isOv = !!ov;
+  const metaParts = [];
+  if(isManual) metaParts.push('Manual period');
+  if(isPredPeriod) metaParts.push('Predicted period');
+  if(isOv) metaParts.push('Predicted ovulation');
+  dayNoteMeta.textContent = metaParts.join(' • ') || 'No prediction';
+  await renderCalendar(currentYear, currentMonth);
+});
+
+/* --------------- All notes modal --------------- */
+const allNotesBackdrop = document.getElementById('allNotesBackdrop');
+const notesListEl = document.getElementById('notesList');
+const allGeneralNotePreview = document.getElementById('allGeneralNotePreview');
+
+async function openAllNotes(){
+  allNotesBackdrop.classList.add('visible'); allNotesBackdrop.setAttribute('aria-hidden','false');
+  const allData = await storageGetAll('data');
+  const notes = allData.filter(d=>d && d.type === 'menstrual_note').sort((a,b)=> (b.ts||0) - (a.ts||0));
+  notesListEl.innerHTML = '';
+  for(const n of notes){
+    const row = document.createElement('div'); row.className = 'note-row';
+    const meta = document.createElement('div'); meta.className='meta'; meta.textContent = `${n.date} • ${new Date(n.ts).toLocaleString()}`;
+    const text = document.createElement('div'); text.textContent = n.note || ''; text.style.whiteSpace = 'pre-wrap';
+    const actions = document.createElement('div'); actions.style.marginTop='8px'; actions.style.display='flex'; actions.style.gap='8px'; actions.style.justifyContent='flex-end';
+    const editBtn = document.createElement('button'); editBtn.className='btn secondary'; editBtn.textContent='Edit';
+    editBtn.addEventListener('click', ()=> { openDayModal(n.date); allNotesBackdrop.classList.remove('visible'); });
+    const delBtn = document.createElement('button'); delBtn.className='btn secondary'; delBtn.textContent='Delete';
+    delBtn.addEventListener('click', async ()=>{ if(!confirm('Delete this note?')) return; await storageDelete('data', n.id); showToast('Note deleted'); openAllNotes(); });
+    actions.appendChild(editBtn); actions.appendChild(delBtn);
+    row.appendChild(meta); row.appendChild(text); row.appendChild(actions);
+    notesListEl.appendChild(row);
+  }
+  const gen = await storageGet('settings','menstrual.notes');
+  allGeneralNotePreview.textContent = gen && gen.value ? gen.value : '(none)';
+}
+
+document.getElementById('viewAllNotesBtn').addEventListener('click', openAllNotes);
+document.getElementById('viewAllNotesBtn2').addEventListener('click', openAllNotes);
+document.getElementById('closeAllNotes').addEventListener('click', ()=> { allNotesBackdrop.classList.remove('visible'); allNotesBackdrop.setAttribute('aria-hidden','true'); });
+
+document.getElementById('exportAllNotesBtn').addEventListener('click', async ()=>{
+  const settingsArr = await storageGetAll('settings');
+  const dataArr = await storageGetAll('data');
+  const payload = { exportedAt: new Date().toISOString(), settings: settingsArr, data: dataArr };
+  const blob = new Blob([JSON.stringify(payload,null,2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = 'menstrual-notes-export-' + Date.now() + '.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+document.getElementById('clearAllNotesBtn').addEventListener('click', async ()=>{
+  if(!confirm('Remove all per-day notes? This cannot be undone.')) return;
+  const all = await storageGetAll('data');
+  const notes = all.filter(d=>d && d.type==='menstrual_note');
+  for(const n of notes) await storageDelete('data', n.id);
+  showToast('All per-day notes removed');
+  openAllNotes();
+  await renderCalendar(currentYear, currentMonth);
+});
+
 /* --------------- Chart (safe DPR handling) --------------- */
 const canvas = document.getElementById('cycleChart');
 const ctx = canvas.getContext('2d');
 
 function drawCycleChart(cycleStarts){
-  // compute cycle lengths
   const lens = [];
   for(let i=1;i<cycleStarts.length;i++){
     const diff = Math.round((cycleStarts[i] - cycleStarts[i-1])/(24*3600*1000));
@@ -617,10 +833,9 @@ function drawCycleChart(cycleStarts){
   const h = canvas.clientHeight || 140;
   canvas.width = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
-  ctx.setTransform(dpr,0,0,dpr,0,0); // reset transform cleanly
+  ctx.setTransform(dpr,0,0,dpr,0,0);
   ctx.clearRect(0,0,w,h);
 
-  // draw grid lines
   ctx.strokeStyle = 'rgba(15,23,42,0.06)'; ctx.lineWidth = 1;
   for(let y=0;y<4;y++){
     const yy = 10 + (h-20)*y/3;
@@ -639,7 +854,6 @@ function drawCycleChart(cycleStarts){
   const height = bottom-top;
   const step = width / Math.max(1, lens.length-1);
 
-  // draw line
   ctx.beginPath();
   ctx.strokeStyle = (getComputedStyle(document.documentElement).getPropertyValue('--accent') || '#F472B6').trim();
   ctx.lineWidth = 2.5;
@@ -650,7 +864,6 @@ function drawCycleChart(cycleStarts){
   });
   ctx.stroke();
 
-  // draw points
   ctx.fillStyle = (getComputedStyle(document.documentElement).getPropertyValue('--accent-2') || '#A78BFA').trim();
   lens.forEach((v,i)=>{
     const x = left + (i)*step;
@@ -658,7 +871,6 @@ function drawCycleChart(cycleStarts){
     ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
   });
 
-  // labels & average
   ctx.fillStyle = 'rgba(15,23,42,0.7)'; ctx.font = '12px Inter, system-ui, Arial';
   ctx.fillText('Cycle days', 12, 12);
   const avg = Math.round(lens.reduce((a,b)=>a+b,0)/lens.length);
@@ -668,7 +880,6 @@ function drawCycleChart(cycleStarts){
   ctx.moveTo(left, avgY); ctx.lineTo(right, avgY); ctx.stroke();
   ctx.setLineDash([]);
   ctx.fillText('Avg: ' + avg + 'd', right - 60, Math.max(12, avgY - 6));
-
   document.getElementById('chartNote').textContent = 'Showing predicted cycle lengths (differences between successive predicted starts). Average shown by dashed line.';
 }
 
@@ -797,7 +1008,7 @@ bindClickTouch(document.getElementById('reminderBtn'), async ()=>{
 bindClickTouch(document.getElementById('saveNotes'), async ()=>{
   settings.notes = document.getElementById('notes').value || '';
   await storagePut('settings','menstrual.notes', settings.notes);
-  showToast('Notes saved');
+  showToast('General notes saved');
 });
 
 bindClickTouch(document.getElementById('exportData'), async ()=>{
